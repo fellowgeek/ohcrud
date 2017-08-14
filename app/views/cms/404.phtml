@@ -1,0 +1,16 @@
+<div class="row">
+	<div class="col-sm-12">
+		<div class="text-left">
+			<h1>Oh CRUD! You just got 404'd.</h1>
+			<p>The page you requested at <span class="label label-success"><?php print($path); ?></span> could not be found, either contact your webmaster or try again.</p>
+			<p>Use your browser's <b>Back</b> button to navigate to the page you have perviously come from, or you could just press this neat little button:</p>
+			<br/>
+			<p>
+				<a class="btn btn-default btn-lg" href="/" role="button">Take Me Home</a>
+				<a class="btn btn-default btn-lg" href="/Documents/" role="button">Read Documents</a>
+			</p>
+			<br/>
+			<?php $this->debug(); ?>
+		</div>
+	</div>
+</div>
