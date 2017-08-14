@@ -390,6 +390,6 @@ I'm sorry Dave, I'm afraid I can't do that.
 You can call OhCrud paths and endpoints from your server's command line. When calling an endpoint from command line OhCrud will bypass the permissions array completely. If the otput type is not defined, OhCrud will print a debug output in the console. See example output below:
 
 <pre>php path_to/index.php "/endpont/example/"
+</pre>
 
 ![](https://erfan.me/assets/images/debug002.png)
-</pre>
