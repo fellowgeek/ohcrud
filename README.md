@@ -49,7 +49,8 @@ After all the files are copied in place you need to configure your webserver to 
 
 Make sure apache has the *mod_rewrite* enabled, there is a *.htaccess* file included in OhCrud package that should take care of everything for you but if you need to make one make sure it looks like this:
 
-<pre><IfModule mod_rewrite.c>
+<pre>
+&lt;IfModule mod_rewrite.c&gt;
 	RewriteEngine On
 	RewriteBase /
 	RewriteCond %{REQUEST_FILENAME} !-f
@@ -58,7 +59,7 @@ Make sure apache has the *mod_rewrite* enabled, there is a *.htaccess* file incl
 
 	RewriteRule ^/?logs/app\.log$ - [F,L]
 	RewriteRule ^/?assets/db/data\.db$ - [F,L]
-</IfModule>
+&lt;/IfModule&gt;
 </pre>
 
 Make sure your Apache virtual host is configured with the AllowOverride option so that the .htaccess rewrite rules can be used:
