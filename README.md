@@ -394,3 +394,6 @@ You can call OhCrud paths and endpoints from your server's command line. When ca
 </pre>
 
 ![](https://erfan.me/assets/images/debug002.png)
+
+
+[![forthebadge](http://forthebadge.com/images/badges/powered-by-electricity.svg)](http://forthebadge.com)
