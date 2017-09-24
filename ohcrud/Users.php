@@ -12,7 +12,7 @@ class Users extends \OhCrud\DB {
         if(__OHCRUD_DEBUG_MODE__ == true) {
 
             // variables
-            $usersTableExists = FALSE;
+            $usersTableExists = false;
 
             switch($this->config["DRIVER"]) {
                 case "SQLITE":
@@ -94,7 +94,7 @@ class Users extends \OhCrud\DB {
             unset($user->PASSWORD);
             unset($user->TOKEN);
             if($userHasLoggedIn == true) {
-                $_SESSION['User'] = $user;
+                $this->setSession('User', $user);
             } else {
                 // delay and log after failed login attempt
                 $this->log('warning', 'Login attempt was not successful', (array) $user);
@@ -105,7 +105,7 @@ class Users extends \OhCrud\DB {
     }
 
     public function logout() {
-        unset($_SESSION['User']);
+        $this->unsetSession('User');
         return true;
     }
 

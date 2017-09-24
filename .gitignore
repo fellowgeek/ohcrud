@@ -4,3 +4,5 @@
 settings.php
 /.vscode/*
 .DS_Store
+composer.phar
+composer.lock

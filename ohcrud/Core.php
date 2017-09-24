@@ -36,6 +36,24 @@ class Core {
         return $this;
     }
 
+    public function setSession($key, $value) {
+        session_start();
+        if(isset($key) == true && isset($value) == true) {
+            $_SESSION[$key] = $value;
+        }
+        session_write_close();
+        return $this;
+    }
+
+    public function unsetSession($key) {
+        session_start();
+        if(isset($key) == true) {
+            unset($_SESSION[$key]);
+        }
+        session_write_close();
+        return $this;
+    }
+
     public function output() {
 
         $output = '';
@@ -83,6 +101,9 @@ class Core {
     }
 
     public function headers() {
+        if($this->outputType == null) {
+            return $this;
+        }
         if(headers_sent() == false && $this->outputHeadersSent == false) {
             $this->outputHeadersSent = true;
             http_response_code($this->outputStatusCode);
@@ -146,6 +167,7 @@ class Core {
             $data_string = '';
             foreach($data as $key => $value) { $data_string .= $key . '=' . urlencode($value) . '&'; }
             rtrim($data_string, '&');
+            if($method == 'GET') { $url .= '?' . $data_string; }
         }
 
         try {
