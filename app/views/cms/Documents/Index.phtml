@@ -409,11 +409,25 @@ $this->log('info', 'This is a test log.')->debug($_SERVER)->request('https://www
 										<td>You can set HTML headers here.</td>
 										<td>OhCrud Object</td>
 									</tr>
+
 									<tr>
 										<td class="monospace">setOutputStatusCode($outputStatusCode)</td>
 										<td>This is set automatically if operation is successfull or if any errors happen. You can set your own HTTP status code here as well.</td>
 										<td>OhCrud Object</td>
 									</tr>
+
+									<tr>
+										<td class="monospace">setSession($key, $value)</td>
+										<td>This method sets a PHP session value and unlocks session data.</td>
+										<td>OhCrud Object</td>
+									</tr>
+
+									<tr>
+										<td class="monospace">unsetSession($key)</td>
+										<td>This method unsets a PHP session value and unlocks session data.</td>
+										<td>OhCrud Object</td>
+									</tr>
+
 									<tr>
 										<td class="monospace">output()</td>
 										<td>This method causes the class to produce the output based on the <mark>outputType</mark></td>
