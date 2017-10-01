@@ -189,6 +189,8 @@ $this->log('info', 'This is a test log.')->debug($_SERVER)->request('https://www
 | setOutputType($outputType) | Output can be set to *'HTML'*, *'JSON'* or *NULL*. | OhCrud Object |
 | setOutputHeaders($outputHeaders = array()) | You can set HTML headers here. | OhCrud Object |
 | setOutputStatusCode($outputStatusCode) | This is set automatically if operation is successfull or if any errors happen. You can set your own HTTP status code here as well. | OhCrud Object |
+| setSession($key, $value) | This method sets a PHP session value and unlocks session data. | OhCrud Object |
+| unsetSession($key) | This method unsets a PHP session value and unlocks session data. | OhCrud Object |
 | output() | This method causes the class to produce the output based on the *outputType* | OhCrud Object |
 | log($level = 'debug', $message, array $context = array()) | This method is a wrapper for [Monolog](https://seldaek.github.io/monolog/) and will produce an entry into the defualt log file. | OhCrud Object |
 | error($message, $outputStatusCode = 500) | This method will throw an error and logs the error into the defualt log file. Calling this method also cause *success* to be *FALSE*. | OhCrud Object |
