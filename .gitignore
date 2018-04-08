@@ -7,3 +7,4 @@ settings.php
 .DS_Store
 composer.phar
 composer.lock
+/assets/db/data.db
