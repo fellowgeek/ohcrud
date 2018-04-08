@@ -68,6 +68,7 @@ class DB extends \OhCrud\Core {
                 return $this->output();
             } else {
                 $this->data = $result;
+                $this->data->lastInsertId = $this->db->lastInsertId();
                 return $this->output();
             }
         } catch (\PDOException $e) {
