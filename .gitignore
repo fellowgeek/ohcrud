@@ -1,6 +1,7 @@
 *.DS_Store
 ._*
 /logs/*
+/vendor/*
 settings.php
 /.vscode/*
 .DS_Store
