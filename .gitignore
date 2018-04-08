@@ -1,9 +1,9 @@
 *.DS_Store
 ._*
-logs/*
-vendor/*
+logs/
+vendor/
 settings.php
-.vscode/*
+.vscode/
 .DS_Store
 composer.phar
 composer.lock
