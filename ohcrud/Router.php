@@ -17,74 +17,59 @@ class Router extends \OhCrud\Core {
         $pathArray = $GLOBALS['PATH_ARRAY'];
         $method = '';
         $ohcrudEndPoints = unserialize(__OHCRUD_ENDPOINTS__);
-        $stop = false;
 
         // try to create the object first
         if(array_key_exists($path, $ohcrudEndPoints) == true) {
             $objectName = $ohcrudEndPoints[$path];
             $object = new $objectName;
 
-            if(isset($object->permissions) == true) {
-                if($this->checkPermissions($object->permissions) == false) {
-                    if(isset($_SESSION['User']) == false) {
-                        $this->authorize();
-                    } else {
-                        $this->forbidden();
-                    }
-                }
+            if(isset($object->permissions) == true && $this->checkPermissions($object->permissions) == false) {
+                if(isset($_SESSION['User']) == false) $this->authorize(); else $this->forbidden();
             }
-            $stop = true;
+
+            return $this;
         }
 
         // if object is not found try to create the object from the base path and call object method from ending path
-        if($stop == false) {
-            $method = array_pop($pathArray);
-            $path = '/' . implode('/', $pathArray) . '/';
+        $method = array_pop($pathArray);
+        $path = '/' . implode('/', $pathArray) . '/';
 
-            if(array_key_exists($path, $ohcrudEndPoints) == true) {
-                $objectName = $ohcrudEndPoints[$path];
-                $object = new $objectName;
+        if(array_key_exists($path, $ohcrudEndPoints) == true) {
+            $objectName = $ohcrudEndPoints[$path];
+            $object = new $objectName;
 
-                if(isset($object->permissions) == true) {
-                    if(method_exists($object, $method) == true) {
-                        if($this->checkPermissions($object->permissions, $method) == true) {
-                            $object->$method($_REQUEST);
-                        } else {
-                            if(isset($_SESSION['User']) == false) {
-                                $this->authorize();
-                            } else {
-                                $this->forbidden();
-                            }
-                        }
-                        $stop = true;
-                    }
-                }
+            if(isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
+                $request = (object) $_REQUEST;
+                $payload = file_get_contents('php://input');
+                if(empty($payload) == false)
+                    if($_SERVER['CONTENT_TYPE'] == 'application/json') $request->payload = \json_decode($payload); else $request->payload = $payload;
+                $object->$method($request);
+            } else {
+                if(isset($_SESSION['User']) == false) $this->authorize(); else $this->forbidden();
             }
+            return $this;
         }
 
         // redirect to default path handler, if handler is present or 404
-        if($stop == false) {
-            if(__OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
-                $objectName = __OHCRUD_DEFAULT_PATH_HANDLER__;
-                $object = new $objectName;
-                if(method_exists($object, 'defaultPathHandler') == true) {
-                    $object->defaultPathHandler($GLOBALS['PATH'], $GLOBALS['PATH_ARRAY']);
-                    $stop = true;
-                }
-            } else {
-                $this->outputType = 'JSON';
-                $this->error('Oh CRUD! You just got 404\'d.', 404);
-                $this->output();
+        if(__OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
+            $objectName = __OHCRUD_DEFAULT_PATH_HANDLER__;
+            $object = new $objectName;
+            if(method_exists($object, 'defaultPathHandler') == true) {
+                $object->defaultPathHandler($GLOBALS['PATH'], $GLOBALS['PATH_ARRAY']);
+                return $this;
             }
         }
+
+        $this->outputType = 'JSON';
+        $this->error('Oh CRUD! You just got 404\'d.', 404);
+        $this->output();
+
     }
 
     private function checkPermissions($expression, $method = null) {
 
         // grand permission if script is called from command line interface
-        if(PHP_SAPI == 'cli') {
-            return true;
-        }
+        if(PHP_SAPI == 'cli') return true;
 
         // variables
         $objectHasPermission = false;
@@ -93,16 +78,14 @@ class Router extends \OhCrud\Core {
 
         // check object permission
         if(isset($expression['object']) == true) {
-            if($expression['object'] == __OHCRUD_PERMISSION_ALL__ || ($expression['object'] >= $userPermissions && $userPermissions != false)) {
+            if($expression['object'] == __OHCRUD_PERMISSION_ALL__ || ($expression['object'] >= $userPermissions && $userPermissions != false))
                 $objectHasPermission = true;
-            }
         }
 
         // check method permission
         if(isset($method) == true) {
-            if(isset($expression[$method]) == true && ($expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions != false))) {
+            if(isset($expression[$method]) == true && ($expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions != false)))
                 $methodHasPermission = true;
-            }
         } else {
             $methodHasPermission = true;
         }

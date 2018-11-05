@@ -7,7 +7,10 @@
     ],
     "require": {
         "monolog/monolog": "1.22.1",
-        "fellowgeek/php-ref": "dev-master"
+        "fellowgeek/php-ref": "dev-master",
+        "erusev/parsedown": "^1.7",
+        "ezyang/htmlpurifier": "^4.10",
+        "filp/whoops": "^2.3"
     },
     "autoload": {
         "files": [
@@ -18,6 +21,7 @@
                 "app/models/"
             ],
             "App\\Controllers\\": "app/controllers/",
+            "App\\Controllers\\Widgets\\": "app/controllers/widgets/",
             "OhCrud\\": "ohcrud/"
         }
     }

@@ -1,0 +1,20 @@
+<?php
+namespace App\Models;
+
+// prevent direct access
+if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+
+class Content {
+
+    const TYPE_DB = 'DB';
+    const TYPE_FILE = 'FILE';
+
+    public $theme = 'default.php';
+    public $type = '';
+    public $title = '';
+    public $text = '';
+    public $html = '';
+    public $is404 = false;
+
+}
+?>

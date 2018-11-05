@@ -8,3 +8,4 @@ settings.php
 composer.phar
 composer.lock
 /assets/db/data.db
+/assets/files

@@ -1,16 +1,15 @@
-<div class="row">
-	<div class="col-sm-12">
-		<div class="text-left">
-			<h1>Oh CRUD! You just got 404'd.</h1>
-			<p>The page you requested at <span class="label label-success"><?php print($path); ?></span> could not be found, either contact your webmaster or try again.</p>
-			<p>Use your browser's <b>Back</b> button to navigate to the page you have perviously come from, or you could just press this neat little button:</p>
-			<br/>
-			<p>
-				<a class="btn btn-default btn-lg" href="/" role="button">Take Me Home</a>
-				<a class="btn btn-default btn-lg" href="/Documents/" role="button">Read Documents</a>
-			</p>
-			<br/>
-			<?php $this->debug(); ?>
-		</div>
-	</div>
+<?php
+    if(isset($_SESSION['User']) == false) {
+        print("<a href=\"/login/?redirect=$path?action=edit\"><img src=\"/assets/images/ICON_EDIT.png\" id=\"OhCRUD_Page_Button_Action_Edit\" /></a>");
+    } else {
+        print("<a href=\"$path?action=edit\"><img src=\"/assets/images/ICON_EDIT.png\" id=\"OhCRUD_Page_Button_Action_Edit\" /></a>");
+    }
+?>
+
+<div class="center-vh">
+    <h1>Oh CRUD! You just got 404'd.</h1>
+    <p>The page you requested at: <b><?= $path ?></b> could not be found.</p>
+    <p>Use your browser's <b>Back</b> button to navigate to the page you have previously come from, or you could edit this page by pressing the edit button.</p>
+    <br/>
+    <a href="/"><button>HOME</button></a>
 </div>

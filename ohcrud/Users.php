@@ -59,7 +59,6 @@ class Users extends \OhCrud\DB {
                     'USERNAME' => 'admin',
                     'PASSWORD' => password_hash(
                         'admin', PASSWORD_BCRYPT, [
-                            'salt' => __OHCRUD_SECRET__,
                             'cost' => 10
                             ]
                         ),

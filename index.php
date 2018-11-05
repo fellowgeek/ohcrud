@@ -8,6 +8,13 @@
     // composer autoload
     require_once __DIR__ . '/vendor/autoload.php';
 
+    // register whoops
+    if(__OHCRUD_DEBUG_MODE__ == true) {
+        $whoops = new \Whoops\Run;
+        $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+        $whoops->register();
+    }
+
     // start PHP session
     session_set_cookie_params(__OHCRUD_SESSION_LIFETIME__, '/', __SITE__);
     session_start();
