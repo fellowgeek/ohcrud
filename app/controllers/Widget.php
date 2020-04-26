@@ -42,4 +42,3 @@ class Widget extends \OhCrud\DB {
     }
 
 }
-?>

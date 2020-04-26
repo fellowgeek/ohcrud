@@ -246,4 +246,3 @@ class CMS extends \OhCrud\DB {
     }
 
 }
-?>

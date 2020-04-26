@@ -118,4 +118,3 @@ class Users extends \OhCrud\DB {
     }
 
 }
-?>

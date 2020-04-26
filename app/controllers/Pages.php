@@ -81,4 +81,3 @@ class Pages extends \App\Models\Pages {
     }
 
 }
-?>

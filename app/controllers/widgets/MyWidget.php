@@ -24,4 +24,3 @@ class MyWidget extends \App\Controllers\Widget {
     }
 
 }
-?>

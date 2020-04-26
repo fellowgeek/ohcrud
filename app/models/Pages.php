@@ -56,4 +56,3 @@ class Pages extends \OhCrud\DB {
     }
 
 }
-?>

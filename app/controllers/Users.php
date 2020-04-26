@@ -53,4 +53,3 @@ class Users extends \OhCrud\Core {
     }
 
 }
-?>

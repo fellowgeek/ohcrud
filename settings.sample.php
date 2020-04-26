@@ -18,7 +18,7 @@ define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
 define('__OHCRUD_LOG_FILE__', __SELF__ . 'logs/app.log');
 
 // secret used for password hash ( should be unique for each application )
-define('__OHCRUD_SECRET__', '{ENTER SECRET HERE}');
+define('__OHCRUD_SECRET__', 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
 
 // session lifetime in seconds
 define('__OHCRUD_SESSION_LIFETIME__', 3600);
@@ -63,4 +63,3 @@ define('__OHCRUD_ENDPOINTS__', serialize([
 // WEB/CMS end point ( AKA default path handler )
 define('__OHCRUD_DEFAULT_PATH_HANDLER__', '\App\Controllers\CMS');
 
-?>

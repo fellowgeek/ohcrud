@@ -61,4 +61,3 @@ class Files extends \App\Models\Files {
     }
 
 }
-?>

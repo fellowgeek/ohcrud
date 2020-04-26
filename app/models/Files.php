@@ -51,4 +51,3 @@ class Files extends \OhCrud\DB {
     }
 
 }
-?>

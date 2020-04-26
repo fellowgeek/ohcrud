@@ -220,4 +220,3 @@ class DB extends \OhCrud\Core {
     }
 
 }
-?>

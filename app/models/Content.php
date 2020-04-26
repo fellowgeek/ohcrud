@@ -17,4 +17,3 @@ class Content {
     public $is404 = false;
 
 }
-?>

@@ -35,4 +35,3 @@ class Example extends \OhCrud\DB {
     }
 
 }
-?>
