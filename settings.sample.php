@@ -17,6 +17,9 @@ define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
 // log file path
 define('__OHCRUD_LOG_FILE__', __SELF__ . 'logs/app.log');
 
+// secret used for password hash ( should be unique for each application )
+define('__OHCRUD_SECRET__', '{ENTER SECRET HERE}');
+
 // session lifetime in seconds
 define('__OHCRUD_SESSION_LIFETIME__', 3600);
 
