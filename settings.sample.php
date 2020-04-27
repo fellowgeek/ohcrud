@@ -6,7 +6,7 @@
 define('__SELF__', '/' . trim(dirname(__FILE__) . '/', '/') . '/');
 
 // application url
-define('__SITE__', $_SERVER['HTTP_HOST']);
+define('__SITE__', $_SERVER['SERVER_NAME']);
 
 // debug mode ( set to false for production )
 define('__OHCRUD_DEBUG_MODE__', true);
