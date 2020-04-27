@@ -17,11 +17,7 @@
             "settings.php"
             ],
 	    "psr-4": {
-            "App\\Models\\": [
-                "app/models/"
-            ],
-            "App\\Controllers\\": "app/controllers/",
-            "App\\Controllers\\Widgets\\": "app/controllers/widgets/",
+            "app\\": "app/",
             "OhCrud\\": "ohcrud/"
         }
     }

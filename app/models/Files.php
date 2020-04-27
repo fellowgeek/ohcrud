@@ -1,5 +1,5 @@
 <?php
-namespace App\Models;
+namespace app\models;
 
 // prevent direct access
 if(isset($GLOBALS['OHCRUD']) == false) { die(); }

@@ -1,12 +1,12 @@
 <?php
-namespace App\Controllers;
+namespace app\controllers;
 
 use HTMLPurifier;
 
 // prevent direct access
 if(isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Pages extends \App\Models\Pages {
+class Pages extends \app\models\Pages {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
@@ -58,7 +58,7 @@ class Pages extends \App\Models\Pages {
                 'URL' => $request->payload->URL,
                 'NAME' => $request->payload->NAME,
                 'TEXT' => $request->payload->TEXT,
-                'STATUS' => \App\Models\Pages::STATUS_ACTIVE
+                'STATUS' => \app\models\Pages::STATUS_ACTIVE
                 ]
             );
         } else {
@@ -67,7 +67,7 @@ class Pages extends \App\Models\Pages {
                 [
                     'NAME' => $request->payload->NAME,
                     'TEXT' => $request->payload->TEXT,
-                    'STATUS' => \App\Models\Pages::STATUS_ACTIVE
+                    'STATUS' => \app\models\Pages::STATUS_ACTIVE
                 ],
                 'URL = :URL',
                 [

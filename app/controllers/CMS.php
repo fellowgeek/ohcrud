@@ -1,5 +1,5 @@
 <?php
-namespace App\Controllers;
+namespace app\controllers;
 
 use Parsedown;
 use HTMLPurifier;
@@ -20,7 +20,7 @@ class CMS extends \OhCrud\DB {
         parent::__construct();
 
         $this->request = $_REQUEST;
-        $this->content = new \App\Models\Content;
+        $this->content = new \app\models\Content;
 
         // setup markdown processor and HTML purifier
         $this->parsedown = new Parsedown();
@@ -103,7 +103,7 @@ class CMS extends \OhCrud\DB {
     // load content
     private function getContent($path, $shouldSetOutputStatusCode = true) {
 
-        $content = new \App\Models\Content;
+        $content = new \app\models\Content;
         $content->theme = $this->content->theme;
 
         // try getting page content from file
@@ -115,7 +115,7 @@ class CMS extends \OhCrud\DB {
         // try getting page content from database
         $page = $this->read(
             'Pages',
-            'URL = :URL AND STATUS = ' . \App\Models\Pages::STATUS_ACTIVE,
+            'URL = :URL AND STATUS = ' . \app\models\Pages::STATUS_ACTIVE,
             [
                 ':URL' =>  $path
             ]
@@ -133,7 +133,7 @@ class CMS extends \OhCrud\DB {
             return $content;
         }
 
-        $content->type = \App\Models\Content::TYPE_DB;
+        $content->type = \app\models\Content::TYPE_DB;
         $content->title = $page->NAME;
 
         // check if user has permission
@@ -152,7 +152,7 @@ class CMS extends \OhCrud\DB {
     // load widget(s)
     private function getWidget($widgetString, $shouldSetOutputStatusCode = true) {
 
-        $content = new \App\Models\Content;
+        $content = new \app\models\Content;
         $widgetParameters = [];
 
         parse_str(str_replace('|', '&', $widgetString), $widgetParameters);
@@ -162,7 +162,7 @@ class CMS extends \OhCrud\DB {
         // check if widget exists
         if(\file_exists(__SELF__ . 'app/controllers/widgets/' . $widgetClass . '.php') == true) {
 
-            $widgetClass = 'App\Controllers\Widgets\\' . $widgetClass;
+            $widgetClass = 'app\controllers\Widgets\\' . $widgetClass;
             $widget = new $widgetClass;
             $widget->output($widgetParameters);
             $content = $widget->content;
@@ -189,9 +189,9 @@ class CMS extends \OhCrud\DB {
     // load hard coded content
     private function getContentFromFile($path, $is404 = false) {
 
-        $content = new \App\Models\Content;
+        $content = new \app\models\Content;
         $content->theme = $this->content->theme;
-        $content->type = \App\Models\Content::TYPE_FILE;
+        $content->type = \app\models\Content::TYPE_FILE;
 
         $content->title = ucwords(trim($path, '/'));
         ob_start();

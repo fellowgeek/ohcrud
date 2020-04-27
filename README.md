@@ -131,8 +131,8 @@ Below you can see a breakdown of the OhCrud folders in alphabetical order.
 | Directory | Description |
 | --- | --- |
 | /app/ | The app directory, as you might expect, contains the core code of your application. We'll explore this directory in more detail below; however, almost all of the classes in your application will be in this directory. |
-| /app/controllers/ | By default, this directory is namespaced under *\App\Controllers* and is autoloaded by Composer using the PSR-4 autoloading standard. Ideally your controller classes should exists under this directory. |
-| /app/models/ | By default, this directory is namespaced under *\App\Models* and is autoloaded by Composer using the PSR-4 autoloading standard. Ideally your model classes should exists under this directory. |
+| /app/controllers/ | By default, this directory is namespaced under *\app\controllers* and is autoloaded by Composer using the PSR-4 autoloading standard. Ideally your controller classes should exists under this directory. |
+| /app/models/ | By default, this directory is namespaced under *\app\models* and is autoloaded by Composer using the PSR-4 autoloading standard. Ideally your model classes should exists under this directory. |
 | /app/views/ | This directory is for your application views. |
 | /assets/css/ | CSS assets are located here, by default OhCrud comes with boostrap framework. |
 | /assets/db/ | We used this directory to include a default SQLITE databse file. |
@@ -318,7 +318,7 @@ Becasue router is matching paths to namespaces, it is very fast and you can chan
 Before calling objects and methods Router checks the target class for the public *$permissions* array property.
 
 ```php
-namespace App\Models;
+namespace app\models;
 
 class Example extends \OhCrud\DB {
 

@@ -1,10 +1,10 @@
 <?php
-namespace App\Controllers;
+namespace app\controllers;
 
 // prevent direct access
 if(isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Files extends \App\Models\Files {
+class Files extends \app\models\Files {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
@@ -50,7 +50,7 @@ class Files extends \App\Models\Files {
             'STATUS'    => 1
         ];
 
-        $files = new \App\Models\Files;
+        $files = new \app\models\Files;
         $filesOutput = $files->create('Files', $filesParameters);
         if(isset($filesOutput->data->lastInsertId) == true) {
             $filesParameters['ID'] = $filesOutput->data->lastInsertId;

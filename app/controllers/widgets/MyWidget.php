@@ -1,10 +1,10 @@
 <?php
-namespace App\Controllers\Widgets;
+namespace app\controllers\Widgets;
 
 // prevent direct access
 if(isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class MyWidget extends \App\Controllers\Widget {
+class MyWidget extends \app\controllers\Widget {
 
     public function __construct() {
 

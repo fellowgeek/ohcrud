@@ -41,16 +41,16 @@ define('__OHCRUD_DB_CONFIG__', serialize([
 
 // API end points
 define('__OHCRUD_ENDPOINTS__', serialize([
-        '/api/pages/' => 'App\Controllers\Pages',
-        '/api/users/' => 'App\Controllers\Users',
-        '/api/files/' => 'App\Controllers\Files',
-        '/example/' => 'App\Models\Example'
+        '/api/pages/' => 'app\controllers\Pages',
+        '/api/users/' => 'app\controllers\Users',
+        '/api/files/' => 'app\controllers\Files',
+        '/example/' => 'app\models\Example'
 
         /*
         map URL paths to objects (controllers, models, etc...)
-        '/example2/' => 'App\Models\TestModel1',
-        '/example1/' => 'App\Models\TestModel2',
-        '/example3/' => 'App\Models\TestModel3',
+        '/example2/' => 'app\models\TestModel1',
+        '/example1/' => 'app\models\TestModel2',
+        '/example3/' => 'app\models\TestModel3',
         .
         .
         .
@@ -61,5 +61,5 @@ define('__OHCRUD_ENDPOINTS__', serialize([
 );
 
 // WEB/CMS end point ( AKA default path handler )
-define('__OHCRUD_DEFAULT_PATH_HANDLER__', '\App\Controllers\CMS');
+define('__OHCRUD_DEFAULT_PATH_HANDLER__', '\app\controllers\CMS');
 
