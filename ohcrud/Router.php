@@ -40,6 +40,9 @@ class Router extends \OhCrud\Core {
 
             if(isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
                 $request = (object) $_REQUEST;
+                if(empty($_GET) == false)  $request->GET = (object) $_GET;
+                if(empty($_POST) == false)  $request->POST = (object) $_POST;
+
                 $payload = file_get_contents('php://input');
                 if(empty($payload) == false)
                     if($_SERVER['CONTENT_TYPE'] == 'application/json') $request->payload = \json_decode($payload); else $request->payload = $payload;
