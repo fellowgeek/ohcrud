@@ -39,7 +39,7 @@ class Router extends \OhCrud\Core {
             $object = new $objectName;
 
             if(isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
-                $request = (object) $_REQUEST;
+                $request = (object) \array_merge($_REQUEST, $_GET, $_POST);
                 if(empty($_GET) == false)  $request->GET = (object) $_GET;
                 if(empty($_POST) == false)  $request->POST = (object) $_POST;
 
