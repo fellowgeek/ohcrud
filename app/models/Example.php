@@ -2,7 +2,7 @@
 namespace app\models;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Example extends \OhCrud\DB {
 

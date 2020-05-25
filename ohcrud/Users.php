@@ -2,14 +2,14 @@
 namespace OhCrud;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Users extends \OhCrud\DB {
 
     function __construct() {
         parent::__construct();
 
-        if(__OHCRUD_DEBUG_MODE__ == true) {
+        if (__OHCRUD_DEBUG_MODE__ == true) {
 
             // variables
             $usersTableExists = false;
@@ -17,7 +17,7 @@ class Users extends \OhCrud\DB {
             switch($this->config["DRIVER"]) {
                 case "SQLITE":
                         $usersTableExists = @$this->run("SELECT COUNT(*) AS Count FROM sqlite_master WHERE `name`='Users';")->first()->Count;
-                        if($usersTableExists == 0) {
+                        if ($usersTableExists == 0) {
                             $sql = "CREATE TABLE `Users` (
                                     `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
                                     `USERNAME`	TEXT,
@@ -35,7 +35,7 @@ class Users extends \OhCrud\DB {
                     break;
                 case "MYSQL":
                         $usersTableExists = @$this->run("SELECT COUNT(*) AS Count FROM information_schema.tables WHERE `table_schema`='" . $this->config["MYSQL_DB"] . "' AND `table_name`= 'Users';")->first()->Count;
-                        if($usersTableExists == 0) {
+                        if ($usersTableExists == 0) {
                             $sql = "CREATE TABLE `Users` (
                                     `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
                                     `USERNAME` varchar(128) NOT NULL DEFAULT '',
@@ -54,7 +54,7 @@ class Users extends \OhCrud\DB {
                     break;
             }
 
-            if($usersTableExists == 0 && $this->success == true) {
+            if ($usersTableExists == 0 && $this->success == true) {
                 $this->create('Users', [
                     'USERNAME' => 'admin',
                     'PASSWORD' => password_hash(
@@ -88,11 +88,11 @@ class Users extends \OhCrud\DB {
             )
         )->first();
 
-        if($user != false) {
+        if ($user != false) {
             $userHasLoggedIn = password_verify($password, $user->PASSWORD);
             unset($user->PASSWORD);
             unset($user->TOKEN);
-            if($userHasLoggedIn == true) {
+            if ($userHasLoggedIn == true) {
                 $this->setSession('User', $user);
             } else {
                 // delay and log after failed login attempt

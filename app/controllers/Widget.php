@@ -2,7 +2,7 @@
 namespace app\controllers;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Widget extends \OhCrud\DB {
 
@@ -22,7 +22,7 @@ class Widget extends \OhCrud\DB {
 
     public function includeCSSFile($file, $priority = 100) {
 
-        if(isset($this->cssFiles[$file]) == false) {
+        if (isset($this->cssFiles[$file]) == false) {
             $this->cssFiles[$file] = $priority;
             asort($this->cssFiles);
         }
@@ -31,7 +31,7 @@ class Widget extends \OhCrud\DB {
 
     public function includeJSFile($file, $priority = 100) {
 
-        if(isset($this->jsFiles[$file]) == false) {
+        if (isset($this->jsFiles[$file]) == false) {
             $this->jsFiles[$file] = $priority;
             asort($this->jsFiles);
         }

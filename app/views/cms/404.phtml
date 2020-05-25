@@ -1,5 +1,5 @@
 <?php
-    if(isset($_SESSION['User']) == false) {
+    if (isset($_SESSION['User']) == false) {
         print("<a href=\"/login/?redirect=$path?action=edit\"><img src=\"/assets/images/ICON_EDIT.png\" id=\"OhCRUD_Page_Button_Action_Edit\" /></a>");
     } else {
         print("<a href=\"$path?action=edit\"><img src=\"/assets/images/ICON_EDIT.png\" id=\"OhCRUD_Page_Button_Action_Edit\" /></a>");

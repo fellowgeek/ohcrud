@@ -2,7 +2,7 @@
 namespace OhCrud;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class DB extends \OhCrud\Core {
 
@@ -32,7 +32,7 @@ class DB extends \OhCrud\Core {
                     $this->error('Unsuportted DB Driver! Check the configuration.');
                     $this->output();
             }
-            if(isset($connection) == true) {
+            if (isset($connection) == true) {
                 $this->db = new \PDO($connection, $this->config["USERNAME"], $this->config["PASSWORD"], $options);
             }
         } catch(\PDOException $e) {
@@ -44,12 +44,12 @@ class DB extends \OhCrud\Core {
     public function run($sql, $bind=array()) {
         $sql = trim($sql);
 
-        if(isset($this->db) == false) {
+        if (isset($this->db) == false) {
             $this->success = false;
             return $this->output();
         }
 
-        if(__OHCRUD_DEBUG_MODE__ == true) {
+        if (__OHCRUD_DEBUG_MODE__ == true) {
             $this->SQL = $sql;
         }
 
@@ -57,7 +57,7 @@ class DB extends \OhCrud\Core {
             $result = $this->db->prepare($sql);
             $this->success = $result->execute($bind);
 
-            if(preg_match("/^SELECT(.*?)/i", $sql) == 1) {
+            if (preg_match("/^SELECT(.*?)/i", $sql) == 1) {
                 $result->execute($bind);
                 $result->setFetchMode(\PDO::FETCH_ASSOC);
                 $rows = array();
@@ -78,7 +78,7 @@ class DB extends \OhCrud\Core {
     }
 
     public function create($table, $data=array()) {
-        if(__OHCRUD_DB_STAMP__ == true) {
+        if (__OHCRUD_DB_STAMP__ == true) {
             $data['CDATE'] = date('Y-m-d H:i:s');
             $data['CUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : 0;
         }
@@ -100,7 +100,7 @@ class DB extends \OhCrud\Core {
     public function read($table, $where="", $bind=array(), $fields="*") {
 
         $sql = "SELECT " . $fields . " FROM " . $table;
-        if(!empty($where))
+        if (!empty($where))
             $sql .= " WHERE " . $where;
         $sql .= ";";
 
@@ -108,7 +108,7 @@ class DB extends \OhCrud\Core {
     }
 
     public function update($table, $data, $where, $bind=array()) {
-        if(__OHCRUD_DB_STAMP__ == true) {
+        if (__OHCRUD_DB_STAMP__ == true) {
             $data['MDATE'] = date('Y-m-d H:i:s');
             $data['MUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : 0;
         }
@@ -117,7 +117,7 @@ class DB extends \OhCrud\Core {
         $fieldSize = sizeof($fields);
         $sql = "UPDATE " . $table . " SET ";
         for($f = 0; $f < $fieldSize; ++$f) {
-            if($f > 0)
+            if ($f > 0)
                 $sql .= ", ";
             $sql .= $fields[$f] . " = :update_" . $fields[$f];
         }
@@ -135,7 +135,7 @@ class DB extends \OhCrud\Core {
     }
 
     public function first() {
-        if(empty($this->data) == false && is_array($this->data) == true) {
+        if (empty($this->data) == false && is_array($this->data) == true) {
             return (object) $this->data[0];
         } else {
             return false;
@@ -146,10 +146,10 @@ class DB extends \OhCrud\Core {
         $fields = array();
         $filteredData = array();
 
-        if($this->config['DRIVER'] == 'SQLITE') {
+        if ($this->config['DRIVER'] == 'SQLITE') {
             $sql = "PRAGMA table_info('" . $table . "');";
             $key = "name";
-        } elseif($this->config['DRIVER'] == 'MYSQL') {
+        } elseif ($this->config['DRIVER'] == 'MYSQL') {
             $sql = "DESCRIBE " . $table . ";";
             $key = "Field";
         } else {
@@ -160,7 +160,7 @@ class DB extends \OhCrud\Core {
         try {
             $statement = $this->db->prepare($sql);
             $statement->execute();
-            if($statement !== false) {
+            if ($statement !== false) {
                 foreach($statement as $record) {
                     $fields[] = $record[$key];
                 }
@@ -170,46 +170,46 @@ class DB extends \OhCrud\Core {
             $this->error($e->getMessage());
         }
 
-        if(__OHCRUD_DB_STAMP__ == true && empty($fields) == false) {
+        if (__OHCRUD_DB_STAMP__ == true && empty($fields) == false) {
             try {
-                if(in_array('CDATE', $fields) == false) {
-                    if($this->config['DRIVER'] == 'SQLITE') {
+                if (in_array('CDATE', $fields) == false) {
+                    if ($this->config['DRIVER'] == 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` TEXT;");
                     }
-                    if($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] == 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` datetime DEFAULT NULL;");
                     }
-                    if($statement->execute() == true) { $fields[] = 'CDATE'; }
+                    if ($statement->execute() == true) { $fields[] = 'CDATE'; }
                 }
 
-                if(in_array('MDATE', $fields) == false) {
-                    if($this->config['DRIVER'] == 'SQLITE') {
+                if (in_array('MDATE', $fields) == false) {
+                    if ($this->config['DRIVER'] == 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` TEXT;");
                     }
-                    if($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] == 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` datetime DEFAULT NULL;");
                     }
-                    if($statement->execute() == true) { $fields[] = 'MDATE'; }
+                    if ($statement->execute() == true) { $fields[] = 'MDATE'; }
                 }
 
-                if(in_array('CUSER', $fields) == false) {
-                    if($this->config['DRIVER'] == 'SQLITE') {
+                if (in_array('CUSER', $fields) == false) {
+                    if ($this->config['DRIVER'] == 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` INTEGER;");
                     }
-                    if($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] == 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT '0';");
                     }
-                    if($statement->execute() == true) { $fields[] = 'CUSER'; }
+                    if ($statement->execute() == true) { $fields[] = 'CUSER'; }
                 }
 
-                if(in_array('MUSER', $fields) == false) {
-                    if($this->config['DRIVER'] == 'SQLITE') {
+                if (in_array('MUSER', $fields) == false) {
+                    if ($this->config['DRIVER'] == 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` INTEGER;");
                     }
-                    if($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] == 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT '0';");
                     }
-                    if($statement->execute() == true) { $fields[] = 'MUSER'; }
+                    if ($statement->execute() == true) { $fields[] = 'MUSER'; }
                 }
                 $filteredData = array_values(array_intersect($fields, array_keys($data)));
             } catch (\PDOException $e) {

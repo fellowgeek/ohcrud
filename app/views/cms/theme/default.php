@@ -11,8 +11,8 @@
 	<body>
 		<div class="container relative page">
 
-			<?php if(isset($_SESSION['User']) == true) { ?>
-				<?php if(isset($this->request['action']) == true && $this->request['action'] == 'edit') { ?>
+			<?php if (isset($_SESSION['User']) == true) { ?>
+				<?php if (isset($this->request['action']) == true && $this->request['action'] == 'edit') { ?>
 
 					<form id="OhCRUD_File_Upload" enctype="multipart/form-data">
 						<input type="file" id="OhCRUD_File" style="display: none;" />
@@ -28,7 +28,7 @@
 
 				<?php } else { ?>
 
-					<?php if($this->content->type == 'DB') { ?>
+					<?php if ($this->content->type == 'DB') { ?>
 						<a href="<?= $path ?>?action=edit"><img src="/assets/images/ICON_EDIT.png" id="OhCRUD_Page_Button_Action_Edit" /></a>
 					<?php } ?>
 					<?= $this->content->html ?>

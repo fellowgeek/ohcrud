@@ -5,7 +5,7 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Core {
 
@@ -23,7 +23,7 @@ class Core {
     }
 
     public function setOutputHeaders($outputHeaders = array()) {
-        if(is_array($outputHeaders) == true) {
+        if (is_array($outputHeaders) == true) {
             $this->outputHeaders = $outputHeaders;
         } else {
             $this->error('outputHeaders, must be an array.');
@@ -38,7 +38,7 @@ class Core {
 
     public function setSession($key, $value) {
         session_start();
-        if(isset($key) == true && isset($value) == true) {
+        if (isset($key) == true && isset($value) == true) {
             $_SESSION[$key] = $value;
         }
         session_write_close();
@@ -47,7 +47,7 @@ class Core {
 
     public function unsetSession($key) {
         session_start();
-        if(isset($key) == true) {
+        if (isset($key) == true) {
             unset($_SESSION[$key]);
         }
         session_write_close();
@@ -60,15 +60,15 @@ class Core {
 
         switch ($this->outputType) {
             case 'HTML':
-                if(is_string($this->data) == true) {
+                if (is_string($this->data) == true) {
                     $output = $this->data;
                 }
                 break;
             case 'JSON':
-                if(in_array('Content-Type: application/javascript', $this->outputHeaders) == false) {
+                if (in_array('Content-Type: application/javascript', $this->outputHeaders) == false) {
                     array_push($this->outputHeaders, 'Content-Type: application/javascript');
                 }
-                if(headers_sent() == false && $this->outputHeadersSent == false) {
+                if (headers_sent() == false && $this->outputHeadersSent == false) {
                     $json = clone $this;
                     unset($json->config);
                     unset($json->outputType);
@@ -76,7 +76,7 @@ class Core {
                     unset($json->outputHeadersSent);
                     unset($json->permissions);
                     unset($json->db);
-                    if(__OHCRUD_DEBUG_MODE__ == true) {
+                    if (__OHCRUD_DEBUG_MODE__ == true) {
                         $json->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
                     }
                     $output = json_encode($json, JSON_PRETTY_PRINT | JSON_NUMERIC_CHECK);
@@ -84,16 +84,16 @@ class Core {
                 break;
         }
 
-        if(__OHCRUD_DEBUG_MODE__ == true) {
+        if (__OHCRUD_DEBUG_MODE__ == true) {
             $this->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
         }
 
         $this->headers();
-        if(empty($output) == false) {
+        if (empty($output) == false) {
             print($output);
         }
 
-        if(PHP_SAPI == 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
+        if (PHP_SAPI == 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
             $this->debug();
         }
 
@@ -101,10 +101,10 @@ class Core {
     }
 
     public function headers() {
-        if($this->outputType == null) {
+        if ($this->outputType == null) {
             return $this;
         }
-        if(headers_sent() == false && $this->outputHeadersSent == false) {
+        if (headers_sent() == false && $this->outputHeadersSent == false) {
             $this->outputHeadersSent = true;
             http_response_code($this->outputStatusCode);
             foreach($this->outputHeaders as $outputHeader) {
@@ -127,7 +127,7 @@ class Core {
             $this->outputStatusCode = 500;
             $this->success = false;
             $this->errors[] = $e->getMessage();
-            if(__OHCRUD_DEBUG_MODE__ == true) {
+            if (__OHCRUD_DEBUG_MODE__ == true) {
                 $this->debug();
             }
         }
@@ -141,11 +141,11 @@ class Core {
         $this->success = false;
         $this->errors[] = $message;
 
-        if(__OHCRUD_DEBUG_MODE__ == true) {
+        if (__OHCRUD_DEBUG_MODE__ == true) {
             $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         }
 
-        if($outputStatusCode != 404) {
+        if ($outputStatusCode != 404) {
             $this->log('error', $message, $debug);
         }
 
@@ -153,7 +153,7 @@ class Core {
     }
 
     public function redirect($url) {
-        if(headers_sent() == false) {
+        if (headers_sent() == false) {
             header('Location: ' . $url);
             die();
         }
@@ -163,11 +163,11 @@ class Core {
     public function request($url, $method = 'GET', $data = '', array $headers = array()) {
 
         $response = '';
-        if(is_array($data) == true) {
+        if (is_array($data) == true) {
             $data_string = '';
             foreach($data as $key => $value) { $data_string .= $key . '=' . urlencode($value) . '&'; }
             rtrim($data_string, '&');
-            if($method == 'GET') { $url .= '?' . $data_string; }
+            if ($method == 'GET') { $url .= '?' . $data_string; }
         }
 
         try {
@@ -182,18 +182,18 @@ class Core {
             $this->responseInfo = curl_getinfo($ch);
             curl_close ($ch);
 
-            if(isset($this->responseInfo['http_code']) == true) {
+            if (isset($this->responseInfo['http_code']) == true) {
                 $this->outputStatusCode = $this->responseInfo['http_code'];
 
-                if(in_array($this->responseInfo['http_code'], [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]) == true) {
+                if (in_array($this->responseInfo['http_code'], [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]) == true) {
                     $this->data = json_decode($response);
-                    if(json_last_error() !== JSON_ERROR_NONE) {
+                    if (json_last_error() !== JSON_ERROR_NONE) {
                         $this->data = $response;
                     }
                 } else {
                     $this->success = false;
                     $this->errors = json_decode($response);
-                    if(json_last_error() !== JSON_ERROR_NONE) {
+                    if (json_last_error() !== JSON_ERROR_NONE) {
                         $this->error($response);
                     }
                 }
@@ -210,10 +210,10 @@ class Core {
         \ref::config('expLvl', __OHCRUD_DEBUG_EXPANDED_LEVEL__);
         \ref::config('shortcutFunc', ['debug', 'r', 'rt']);
 
-        if(isset($expression) == true) {
-            if(is_object($expression) == true) {
+        if (isset($expression) == true) {
+            if (is_object($expression) == true) {
                 $clone = clone $expression;
-                if(isset($clone->config) == true) {
+                if (isset($clone->config) == true) {
                     $clone->config = 'Redacted from debug.';
                 }
             } else {
@@ -222,7 +222,7 @@ class Core {
             r($clone);
         } else {
             $clone = clone $this;
-            if(isset($clone->config) == true) {
+            if (isset($clone->config) == true) {
                 $clone->config = 'Redacted from debug.';
             }
             r($clone);

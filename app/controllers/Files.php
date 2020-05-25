@@ -2,7 +2,7 @@
 namespace app\controllers;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Files extends \app\models\Files {
 
@@ -18,7 +18,7 @@ class Files extends \app\models\Files {
         $this->outputType = 'JSON';
 
         // validation
-        if(isset($_FILES[0]) == false) {
+        if (isset($_FILES[0]) == false) {
             $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.', 403);
             $this->output();
             return $this;
@@ -29,13 +29,13 @@ class Files extends \app\models\Files {
         $PATH = 'assets/files/' . md5($NAME . microtime()) . '.' . $TYPE;
 
         // validation
-        if(in_array($TYPE, $this->filesAllowed) == false) {
+        if (in_array($TYPE, $this->filesAllowed) == false) {
             $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.', 403);
             $this->output();
             return $this;
         }
 
-        if(move_uploaded_file($_FILES[0]['tmp_name'], __SELF__ . $PATH) == false) {
+        if (move_uploaded_file($_FILES[0]['tmp_name'], __SELF__ . $PATH) == false) {
             $this->error('Unable to move uploaded file.', 403);
             $this->output();
             return $this;
@@ -52,7 +52,7 @@ class Files extends \app\models\Files {
 
         $files = new \app\models\Files;
         $filesOutput = $files->create('Files', $filesParameters);
-        if(isset($filesOutput->data->lastInsertId) == true) {
+        if (isset($filesOutput->data->lastInsertId) == true) {
             $filesParameters['ID'] = $filesOutput->data->lastInsertId;
         }
 

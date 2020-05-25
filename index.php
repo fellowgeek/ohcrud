@@ -9,7 +9,7 @@
     require_once __DIR__ . '/vendor/autoload.php';
 
     // register whoops
-    if(__OHCRUD_DEBUG_MODE__ == true) {
+    if (__OHCRUD_DEBUG_MODE__ == true) {
         $whoops = new \Whoops\Run;
         $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
         $whoops->register();
@@ -20,7 +20,7 @@
     session_start();
     session_write_close();
 
-    if(PHP_SAPI == 'cli') {
+    if (PHP_SAPI == 'cli') {
         $GLOBALS['PATH_RAW'] = (isset($argv[1]) == true) ? $argv[1] : '';
     } else {
         $GLOBALS['PATH_RAW'] = $_SERVER['REQUEST_URI'];

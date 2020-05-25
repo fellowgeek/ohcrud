@@ -2,7 +2,7 @@
 namespace app\models;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Pages extends \OhCrud\DB {
 
@@ -12,7 +12,7 @@ class Pages extends \OhCrud\DB {
     function __construct() {
         parent::__construct();
 
-        if(__OHCRUD_DEBUG_MODE__ == true) {
+        if (__OHCRUD_DEBUG_MODE__ == true) {
 
             // variables
             $pagesTableExists = false;
@@ -20,7 +20,7 @@ class Pages extends \OhCrud\DB {
             switch($this->config["DRIVER"]) {
                 case "SQLITE":
                         $pagesTableExists = @$this->run("SELECT COUNT(*) AS Count FROM sqlite_master WHERE `name`='Pages';")->first()->Count;
-                        if($pagesTableExists == 0) {
+                        if ($pagesTableExists == 0) {
                             $sql = "CREATE TABLE `Pages` (
                                     `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
                                     `URL`	TEXT,
@@ -36,7 +36,7 @@ class Pages extends \OhCrud\DB {
                     break;
                 case "MYSQL":
                         $pagesTableExists = @$this->run("SELECT COUNT(*) AS Count FROM information_schema.tables WHERE `table_schema`='" . $this->config["MYSQL_DB"] . "' AND `table_name`= 'Pages';")->first()->Count;
-                        if($pagesTableExists == 0) {
+                        if ($pagesTableExists == 0) {
                             $sql = "CREATE TABLE `Pages` (
                                     `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
                                     `URL` varchar(256) NOT NULL DEFAULT '',

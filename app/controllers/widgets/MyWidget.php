@@ -2,7 +2,7 @@
 namespace app\controllers\Widgets;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class MyWidget extends \app\controllers\Widget {
 

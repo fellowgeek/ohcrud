@@ -5,7 +5,7 @@ use Parsedown;
 use HTMLPurifier;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class CMS extends \OhCrud\DB {
 
@@ -36,7 +36,7 @@ class CMS extends \OhCrud\DB {
         $this->path = \strtolower($path);
 
         // add assets for page editor if needed
-        if(isset($_SESSION['User']) == true && isset($this->request['action']) == true && $this->request['action'] == 'edit') {
+        if (isset($_SESSION['User']) == true && isset($this->request['action']) == true && $this->request['action'] == 'edit') {
             // CSS
             $this->includeCSSFile('font-awesome.min.css', 1);
             $this->includeCSSFile('simplemde.min.css', 2);
@@ -63,7 +63,7 @@ class CMS extends \OhCrud\DB {
     // include CSS file(s)
     public function includeCSSFile($file, $priority = 100) {
 
-        if(isset($this->cssFiles[$file]) == false) {
+        if (isset($this->cssFiles[$file]) == false) {
             $this->cssFiles[$file] = $priority;
             asort($this->cssFiles);
         }
@@ -83,7 +83,7 @@ class CMS extends \OhCrud\DB {
     // include Javascript file(s)
     public function includeJSFile($file, $priority = 100) {
 
-        if(isset($this->jsFiles[$file]) == false) {
+        if (isset($this->jsFiles[$file]) == false) {
             $this->jsFiles[$file] = $priority;
             asort($this->jsFiles);
         }
@@ -107,7 +107,7 @@ class CMS extends \OhCrud\DB {
         $content->theme = $this->content->theme;
 
         // try getting page content from file
-        if(\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
+        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
             $content = $this->getContentFromFile($path);
             return $content;
         }
@@ -122,11 +122,11 @@ class CMS extends \OhCrud\DB {
         )->first();
 
         // check if page exists
-        if($page == false) {
-            if($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
+        if ($page == false) {
+            if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
-            if(($this->request['action'] ?? '') != 'edit') {
+            if (($this->request['action'] ?? '') != 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
             $content->is404 = true;
@@ -138,7 +138,7 @@ class CMS extends \OhCrud\DB {
 
         // check if user has permission
         $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;
-        if($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions != false)) {
+        if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions != false)) {
             $content->text = $page->TEXT;
             $content->html = $this->purifier->purify($this->parsedown->text($page->TEXT));
         } else {
@@ -160,14 +160,14 @@ class CMS extends \OhCrud\DB {
         $widgetClass = key($widgetParameters);
 
         // check if widget exists
-        if(\file_exists(__SELF__ . 'app/controllers/widgets/' . $widgetClass . '.php') == true) {
+        if (\file_exists(__SELF__ . 'app/controllers/widgets/' . $widgetClass . '.php') == true) {
 
             $widgetClass = 'app\controllers\Widgets\\' . $widgetClass;
             $widget = new $widgetClass;
             $widget->output($widgetParameters);
             $content = $widget->content;
 
-            if(($this->request['action'] ?? '') != 'edit') {
+            if (($this->request['action'] ?? '') != 'edit') {
                 // get widget CSS assets
                 foreach($widget->cssFiles as $cssFile => $priority) {
                     $this->includeCSSFile($cssFile, $priority);
@@ -209,15 +209,15 @@ class CMS extends \OhCrud\DB {
         $matches = [];
         preg_match_all('/{{(.*?)}}/i', $this->content->text, $matches);
 
-        if(isset($matches[1]) == true) {
+        if (isset($matches[1]) == true) {
             foreach($matches[1] as $match) {
                 $embeddedContent = $this->getContent('/' . $match . '/', false);
 
-                if($embeddedContent->is404 == true) continue;
+                if ($embeddedContent->is404 == true) continue;
                 $this->content->html = str_ireplace('{{' . $match . '}}', $embeddedContent->html, $this->content->html);
 
                 // do not replace 'text' property if we are in edit mode
-                if(($this->request['action'] ?? '') != 'edit') {
+                if (($this->request['action'] ?? '') != 'edit') {
                     $this->content->text = str_ireplace('{{' . $match . '}}', $embeddedContent->text, $this->content->text);
                 }
             }
@@ -231,13 +231,13 @@ class CMS extends \OhCrud\DB {
         $matches = [];
         preg_match_all('/\[\[(.*?)\]\]/i', $this->content->text, $matches);
 
-        if(isset($matches[1]) == true) {
+        if (isset($matches[1]) == true) {
             foreach($matches[1] as $match) {
                 $embeddedContent = $this->getWidget(preg_replace('/\[|\]/', "", $match), false);
-                if($embeddedContent->is404 == true) continue;
+                if ($embeddedContent->is404 == true) continue;
                 $this->content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $this->content->html);
                 // do not replace 'text' property if we are in edit mode
-                if(($this->request['action'] ?? '') != 'edit') {
+                if (($this->request['action'] ?? '') != 'edit') {
                     $this->content->text = str_ireplace('[[' . $match . ']]', $embeddedContent->text, $this->content->text);
                 }
             }

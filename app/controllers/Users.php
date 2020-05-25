@@ -2,7 +2,7 @@
 namespace app\controllers;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Users extends \OhCrud\Core {
 
@@ -20,10 +20,10 @@ class Users extends \OhCrud\Core {
         $userHasLoggedIn = false;
 
         // validation
-        if(isset($request->payload) == false || empty($request->payload->USERNAME) == true || empty($request->payload->PASSWORD) == true)
+        if (isset($request->payload) == false || empty($request->payload->USERNAME) == true || empty($request->payload->PASSWORD) == true)
             $this->error('Missing or incomplete data.');
 
-        if($this->success == false) {
+        if ($this->success == false) {
             $this->output();
             return $this;
         }
@@ -31,7 +31,7 @@ class Users extends \OhCrud\Core {
         $Users = new \OhCrud\Users;
         $userHasLoggedIn = $Users->login($request->payload->USERNAME, \base64_decode($request->payload->PASSWORD));
 
-        if($userHasLoggedIn == false) {
+        if ($userHasLoggedIn == false) {
             $this->error('Unable to login, check your Username and Password.');
             $this->output();
             return $this;

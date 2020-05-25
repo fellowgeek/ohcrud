@@ -2,7 +2,7 @@
 namespace app\models;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Files extends \OhCrud\DB {
 
@@ -16,7 +16,7 @@ class Files extends \OhCrud\DB {
     function __construct() {
         parent::__construct();
 
-        if(__OHCRUD_DEBUG_MODE__ == true) {
+        if (__OHCRUD_DEBUG_MODE__ == true) {
 
             switch($this->config["DRIVER"]) {
                 case "SQLITE":

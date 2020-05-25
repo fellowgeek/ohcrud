@@ -4,7 +4,7 @@ namespace app\controllers;
 use HTMLPurifier;
 
 // prevent direct access
-if(isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Pages extends \app\models\Pages {
 
@@ -18,14 +18,14 @@ class Pages extends \app\models\Pages {
         $this->setOutputType('JSON');
 
         // validation
-        if(isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->NAME) == true || empty($request->payload->TEXT) == true)
+        if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->NAME) == true || empty($request->payload->TEXT) == true)
             $this->error('Missing or incomplete data.');
 
         // check if page is hard-coded as file
-        if(\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
             $this->error('You can\'t edit this page.');
 
-        if($this->success == false) {
+        if ($this->success == false) {
             $this->output();
             return $this;
         }
@@ -52,7 +52,7 @@ class Pages extends \app\models\Pages {
             ]
         )->first()->PageExists;
 
-        if($PageExists == false) {
+        if ($PageExists == false) {
             // create the record
             $this->create('Pages', [
                 'URL' => $request->payload->URL,
