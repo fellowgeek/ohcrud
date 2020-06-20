@@ -134,7 +134,7 @@ class CMS extends \OhCrud\DB {
         }
 
         $content->type = \app\models\Content::TYPE_DB;
-        $content->title = $page->NAME;
+        $content->title = $page->TITLE;
 
         // check if user has permission
         $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;

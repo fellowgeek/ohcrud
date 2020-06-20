@@ -40,8 +40,8 @@ class Router extends \OhCrud\Core {
 
             if (isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
                 $request = (object) \array_merge($_REQUEST, $_GET, $_POST);
-                if (empty($_GET) == false)  $request->GET = (object) $_GET;
-                if (empty($_POST) == false)  $request->POST = (object) $_POST;
+                if (empty($_GET) == false) $request->GET = (object) $_GET;
+                if (empty($_POST) == false) $request->POST = (object) $_POST;
 
                 $payload = file_get_contents('php://input');
                 if (empty($payload) == false)

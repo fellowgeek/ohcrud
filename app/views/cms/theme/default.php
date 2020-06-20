@@ -14,10 +14,7 @@
 			<?php if (isset($_SESSION['User']) == true) { ?>
 				<?php if (isset($this->request['action']) == true && $this->request['action'] == 'edit') { ?>
 
-					<form id="OhCRUD_File_Upload" enctype="multipart/form-data">
-						<input type="file" id="OhCRUD_File" style="display: none;" />
-						<input type="submit" id="OhCRUD_File_Submit" style="display: none;" />
-					</form>
+					<input type="file" id="OhCRUD_File" multiple style="display: none;" />
 					<div class="alert hidden"></div>
 					<form id="OhCRUD_Page_Editor">
 						<input type="hidden" id="OhCRUD_Page_URL" name="OhCRUD_Page_URL" value="<?= $path ?>" />
@@ -43,7 +40,7 @@
 
 		</div>
 		<footer class="footer">
-			<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; <?= date('Y') ?> - All rights reserved. Page generated in <?= microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]; ?> second(s).</p>
+			<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; <?= date('Y') ?> - All rights reserved. Page generated in <?= microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]; ?> second(s). | <a href="/login/">LOGIN</a></p>
 		</footer>
 
 		<?php print($this->content->javascript); ?>

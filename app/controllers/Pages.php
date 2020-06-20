@@ -18,7 +18,7 @@ class Pages extends \app\models\Pages {
         $this->setOutputType('JSON');
 
         // validation
-        if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->NAME) == true || empty($request->payload->TEXT) == true)
+        if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->TITLE) == true || empty($request->payload->TEXT) == true)
             $this->error('Missing or incomplete data.');
 
         // check if page is hard-coded as file
@@ -35,7 +35,7 @@ class Pages extends \app\models\Pages {
         $purifier->config->set('HTML.SafeIframe', true);
         $purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
 
-        $request->payload->NAME = $purifier->purify($request->payload->NAME);
+        $request->payload->TITLE = $purifier->purify($request->payload->TITLE);
         $request->payload->TEXT = $purifier->purify($request->payload->TEXT);
 
         // check if page exists
@@ -56,7 +56,7 @@ class Pages extends \app\models\Pages {
             // create the record
             $this->create('Pages', [
                 'URL' => $request->payload->URL,
-                'NAME' => $request->payload->NAME,
+                'TITLE' => $request->payload->TITLE,
                 'TEXT' => $request->payload->TEXT,
                 'STATUS' => \app\models\Pages::STATUS_ACTIVE
                 ]
@@ -65,7 +65,7 @@ class Pages extends \app\models\Pages {
             // update the record
             $this->update('Pages',
                 [
-                    'NAME' => $request->payload->NAME,
+                    'TITLE' => $request->payload->TITLE,
                     'TEXT' => $request->payload->TEXT,
                     'STATUS' => \app\models\Pages::STATUS_ACTIVE
                 ],
