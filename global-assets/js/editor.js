@@ -5,17 +5,24 @@ GLOBAL VARIABLES
 */
 
 // url
-var $url = document.querySelector('#OhCRUD_Page_URL').value;
+var $url = $$('#ohcrud-page-url').value;
+
+// themes & layouts
+var $themes = JSON.parse(window.atob($$('#ohcrud-themes').value));
+var $themeSelect = $$('#ohcrud-page-theme');
+var $layoutSelect = $$('#ohcrud-page-layout');
+var $currentTheme = $$('#ohcrud-page-current-theme').value;
+var $currentLayout = $$('#ohcrud-page-current-layout').value;
 
 // file
-var $file = document.querySelector('#OhCRUD_File');
+var $file = $$('#ohcrud-file');
 var $fileToUploadMode = '';
 
 // editor
 var $ohCrudEditor = {};
 
 // save
-var $OhCRUD_Page_Button_Save = document.querySelector('#OhCRUD_Page_Button_Save');
+var $editorSave = $$('#ohcrud-editor-save');
 
 /*
 ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
@@ -38,6 +45,30 @@ function insertCodeInEditor($editor, $text = '', $preText = '', $postText = '') 
     cm.focus();
 }
 
+function loadThemes() {
+    for (const $theme in $themes) {
+        var $option = document.createElement('option');
+        $option.value = $theme;
+        $option.innerHTML = $theme;
+        $themeSelect.appendChild($option);
+    }
+}
+
+function loadLayouts($theme) {
+    var $options = $layoutSelect.getElementsByTagName('option');
+    while($options.length > 0) {
+        $layoutSelect.remove(0);
+    }
+
+    for (const $layoutIndex in $themes[$theme]) {
+        var $layout = $themes[$theme][$layoutIndex];
+        var $option = document.createElement('option');
+        $option.value = $layout;
+        $option.innerHTML = $layout;
+        $layoutSelect.appendChild($option);
+    }
+}
+
 /*
 ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 STARTUP
@@ -46,10 +77,19 @@ STARTUP
 
 document.addEventListener('DOMContentLoaded', function () {
 
+    // themes and layouts
+    loadThemes();
+    loadLayouts($currentTheme);
+    $themeSelect.value = $currentTheme;
+    $layoutSelect.value = $currentLayout;
+    $themeSelect.addEventListener('change', function() {
+        loadLayouts($themeSelect.value);
+    });
+
     // editor
     $ohCrudEditor = new SimpleMDE(
         {
-            element: document.getElementById('OhCRUD_Page_Text'),
+            element: $$('#ohcrud-editor-text'),
             autofocus: true,
             autosave: {
                 enabled: true,
@@ -101,41 +141,41 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
     // save
-    if ($OhCRUD_Page_Button_Save != null) {
-        $OhCRUD_Page_Button_Save.addEventListener('click', function() {
+    $editorSave.addEventListener('click', function() {
 
-            var $data = {
-                URL: $url,
-                TITLE: $('#OhCRUD_Page_Title').value,
-                TEXT: $ohCrudEditor.value(),
-            };
+        var $data = {
+            URL: $url,
+            TITLE: $$('#ohcrud-page-title').value,
+            TEXT: $ohCrudEditor.value(),
+            THEME: $themeSelect.value,
+            LAYOUT: $layoutSelect.value
+        };
 
-            httpRequest('/api/pages/save/',
-                {
-                    method: 'POST',
-                    cache: 'no-cache',
-                    credentials: 'same-origin',
-                    body: JSON.stringify($data),
-                    headers: new Headers(
-                        {
-                            'Content-Type': 'application/json'
-                        }
-                    )
-                },
-                async function($response) {
-                    $('.alert').classList.add('hidden');
-                    window.location.href = $url;
-                },
-                async function($error) {
-                    const $json = await $error.json();
-                    $('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
-                    $('.alert').classList.add('alert-danger');
-                    $('.alert').classList.remove('hidden');
-                }
-            );
+        httpRequest('/api/pages/save/',
+            {
+                method: 'POST',
+                cache: 'no-cache',
+                credentials: 'same-origin',
+                body: JSON.stringify($data),
+                headers: new Headers(
+                    {
+                        'Content-Type': 'application/json'
+                    }
+                )
+            },
+            async function($response) {
+                $$('.alert').classList.add('hidden');
+                window.location.href = $url;
+            },
+            async function($error) {
+                const $json = await $error.json();
+                $$('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
+                $$('.alert').classList.add('alert-danger');
+                $$('.alert').classList.remove('hidden');
+            }
+        );
 
-        });
-    }
+    });
 
     // upload
     $file.addEventListener('change', function() {
@@ -145,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         $formData.append("0", $fileToUpload);
 
-        $(`.upload-${$fileToUploadMode}`).classList = `fa fa-cog fa-spin upload-${$fileToUploadMode}`;
+        $$(`.upload-${$fileToUploadMode}`).classList = `fa fa-cog fa-spin upload-${$fileToUploadMode}`;
 
         httpRequest('/api/files/upload/',
             {
@@ -155,23 +195,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: $formData
             },
             async function($response) {
-                $('.alert').classList.add('hidden');
+                $$('.alert').classList.add('hidden');
                 const $json = await $response.json();
 
                 if ($fileToUploadMode == 'image') {
                     const $alt = $json.data.NAME.replace(`.${$json.data.TYPE}`, '') ;
                     insertCodeInEditor($ohCrudEditor, `![${$alt}](${$json.data.PATH})`);
-                    $(`.upload-${$fileToUploadMode}`).classList = `fa fa-file-image-o upload-${$fileToUploadMode}`;
+                    $$(`.upload-${$fileToUploadMode}`).classList = `fa fa-file-image-o upload-${$fileToUploadMode}`;
                 } else {
                     insertCodeInEditor($ohCrudEditor, `[${$json.data.NAME}](${$json.data.PATH})`);
-                    $(`.upload-${$fileToUploadMode}`).classList = `fa fa-file upload-${$fileToUploadMode}`;
+                    $$(`.upload-${$fileToUploadMode}`).classList = `fa fa-file upload-${$fileToUploadMode}`;
                 }
             },
             async function($error) {
                 const $json = await $error.json();
-                $('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
-                $('.alert').classList.add('alert-danger');
-                $('.alert').classList.remove('hidden');
+                $$('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
+                $$('.alert').classList.add('alert-danger');
+                $$('.alert').classList.remove('hidden');
             }
         );
 

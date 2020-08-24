@@ -11,9 +11,12 @@ class CMS extends \OhCrud\DB {
 
     public $path;
     public $content;
-    public $theme = 'default.php';
+    public $theme = __OHCRUD_CMS_DEFAULT_THEME__;
+    public $layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
     public $jsFiles = [];
     public $cssFiles = [];
+    public $editMode = false;
+    public $loggedIn = false;
 
     public function __construct() {
 
@@ -21,6 +24,13 @@ class CMS extends \OhCrud\DB {
 
         $this->request = $_REQUEST;
         $this->content = new \app\models\Content;
+
+        // set login status
+        $this->loggedIn = isset($_SESSION['User']);
+        // set edit mode
+        if ($this->loggedIn == true && isset($this->request['action']) == true && $this->request['action'] == 'edit') {
+            $this->editMode = true;
+        }
 
         // setup markdown processor and HTML purifier
         $this->parsedown = new Parsedown();
@@ -33,27 +43,50 @@ class CMS extends \OhCrud\DB {
     // handler for all incoming requests
     public function defaultPathHandler($path, $pathArray) {
 
+        $this->outputType = 'HTML';
+
+        // normalize path
         $this->path = \strtolower($path);
 
-        // add assets for page editor if needed
-        if (isset($_SESSION['User']) == true && isset($this->request['action']) == true && $this->request['action'] == 'edit') {
-            // CSS
-            $this->includeCSSFile('font-awesome.min.css', 1);
-            $this->includeCSSFile('simplemde.min.css', 2);
-            // Javascript
-            $this->includeJSFile('simplemde.min.js', 1);
-            $this->includeJSFile('editor.js', 2);
+        // get cache
+        $cachedResponse = $this->getCache(__CLASS__ . __FUNCTION__ . $this->path, 3600);
+        if ($this->editMode == false && $cachedResponse != false) {
+            $this->data = $cachedResponse;
+            $this->output();
+            return;
+        } else {
+            $this->unsetCache(__CLASS__ . __FUNCTION__ . $this->path);
         }
 
-        $this->content = $this->getContent($path);
-        $this->processContent();
-        $this->processWidgets();
+        // include application javascript & css files
+        $this->includeJSFile('application.js', 1);
+        $this->includeCSSFile('styles.css', 2);
+
+        // add assets for page editor if needed
+        if ($this->editMode == true) {
+            $this->includeCSSFile('simplemde.min.css', 1);
+            $this->includeJSFile('simplemde.min.js', 2);
+            $this->includeJSFile('editor.js', 3);
+        }
+
+        // get content and set theme & layout form content
+        $this->content = $this->getContent($this->path);
+        $this->theme = $this->content->theme;
+        $this->layout = $this->content->layout;
+
+        // process embeded content & widgets
+        $this->content = $this->processContent($this->content);
+        $this->content = $this->processWidgets($this->content);
         $this->getCSSAssets();
         $this->getJSAssets();
 
-        ob_start();
-        include __SELF__ . 'app/views/cms/theme/' . $this->theme;
-		$this->data = ob_get_clean();
+        // process theme & layout
+        $this->processTheme();
+
+        // set cache
+        if ($this->editMode == false) {
+            $this->setCache(__CLASS__ . __FUNCTION__ . $this->path, $this->data);
+        }
 
         $this->outputType = 'HTML';
         $this->output();
@@ -70,12 +103,36 @@ class CMS extends \OhCrud\DB {
 
     }
 
+    // get themes and layouts
+    private function getThemes() {
+        $scan = glob('themes/*/*.html');
+
+        $themes = [];
+        foreach($scan as $layoutFile) {
+            $matches = [];
+            preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
+            if(isset($matches[1]) == true) {
+                $theme = $matches[1];
+            }
+
+            $matches = [];
+            preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
+            if(isset($matches[2]) == true) {
+                $layout = $matches[2];
+            }
+
+            $themes[$theme][] = $layout;
+        }
+
+        return \base64_encode(json_encode($themes));
+    }
+
     // get CSS assets
     private function getCSSAssets() {
 
         $this->content->stylesheet = '';
         foreach($this->cssFiles as $cssFile => $priority) {
-            $this->content->stylesheet .= '<link rel="stylesheet" href="/assets/css/' . $cssFile . '" media="all" />' . "\n";
+            $this->content->stylesheet .= '<link rel="stylesheet" href="/global-assets/css/' . $cssFile . '" media="all" />' . "\n";
         }
 
     }
@@ -95,7 +152,7 @@ class CMS extends \OhCrud\DB {
 
         $this->content->javascript = '';
         foreach($this->jsFiles as $jsFile => $priority) {
-            $this->content->javascript .= '<script src="/assets/js/' . $jsFile . '"></script>' . "\n";
+            $this->content->javascript .= '<script src="/global-assets/js/' . $jsFile . '"></script>' . "\n";
         }
 
     }
@@ -104,10 +161,9 @@ class CMS extends \OhCrud\DB {
     private function getContent($path, $shouldSetOutputStatusCode = true) {
 
         $content = new \app\models\Content;
-        $content->theme = $this->content->theme;
 
         // try getting page content from file
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
+        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true || $path == '/login/') {
             $content = $this->getContentFromFile($path);
             return $content;
         }
@@ -135,6 +191,8 @@ class CMS extends \OhCrud\DB {
 
         $content->type = \app\models\Content::TYPE_DB;
         $content->title = $page->TITLE;
+        $content->theme = $page->THEME;
+        $content->layout = $page->LAYOUT;
 
         // check if user has permission
         $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;
@@ -142,7 +200,7 @@ class CMS extends \OhCrud\DB {
             $content->text = $page->TEXT;
             $content->html = $this->purifier->purify($this->parsedown->text($page->TEXT));
         } else {
-            $content->html = '<mark>Oh CRUD! You are not allowed to see this.</mark>';;
+            $content->html = '<mark>Oh CRUD! You are not allowed to see this.</mark>';
         }
 
         return $content;
@@ -156,8 +214,8 @@ class CMS extends \OhCrud\DB {
         $widgetParameters = [];
 
         parse_str(str_replace('|', '&', $widgetString), $widgetParameters);
-        reset($widgetParameters);
         $widgetClass = key($widgetParameters);
+        array_shift($widgetParameters);
 
         // check if widget exists
         if (\file_exists(__SELF__ . 'app/controllers/widgets/' . $widgetClass . '.php') == true) {
@@ -167,15 +225,13 @@ class CMS extends \OhCrud\DB {
             $widget->output($widgetParameters);
             $content = $widget->content;
 
-            if (($this->request['action'] ?? '') != 'edit') {
-                // get widget CSS assets
-                foreach($widget->cssFiles as $cssFile => $priority) {
-                    $this->includeCSSFile($cssFile, $priority);
-                }
-                // get widget Javascript assets
-                foreach($widget->jsFiles as $jsFile => $priority) {
-                    $this->includeJSFile($jsFile, $priority);
-                }
+            // get widget CSS assets
+            foreach($widget->cssFiles as $cssFile => $priority) {
+                $this->includeCSSFile($cssFile, $priority);
+            }
+            // get widget Javascript assets
+            foreach($widget->jsFiles as $jsFile => $priority) {
+                $this->includeJSFile($jsFile, $priority);
             }
 
         } else {
@@ -187,15 +243,17 @@ class CMS extends \OhCrud\DB {
     }
 
     // load hard coded content
-    private function getContentFromFile($path, $is404 = false) {
+    private function getContentFromFile($path, $is404 = false, $isSystem = false) {
+
+        if ($is404 == true) $isSystem = true;
+        if ($path == '/login/') $isSystem = true;
 
         $content = new \app\models\Content;
-        $content->theme = $this->content->theme;
         $content->type = \app\models\Content::TYPE_FILE;
 
         $content->title = ucwords(trim($path, '/'));
         ob_start();
-        include(__SELF__ . 'app/views/cms/' . trim(($is404 ? '404' : $path), '/') . '.phtml');
+        include(__SELF__ . 'app/views/cms/' . ($isSystem ? 'system/' : '') . trim(($is404 ? '404' : $path), '/') . '.phtml');
         $content->text = ob_get_clean();
         $content->html = $content->text;
 
@@ -203,45 +261,101 @@ class CMS extends \OhCrud\DB {
 
     }
 
+    // process theme
+    private function processTheme() {
+
+        $output = '';
+
+        // fallback to default theme ans layout if file does not exist
+        if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false || $this->editMode == true) {
+            $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
+            $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
+        // load theme and layout
+        ob_start();
+        include __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
+        $output = ob_get_clean();
+
+        // process embeded content in theme
+        $themeContent = new \app\models\Content;
+        $themeContent->text = $output;
+        $themeContent->html = $output;
+        $themeContent = $this->processContent($themeContent);
+        $themeContent = $this->processWidgets($themeContent);
+        $output = $themeContent->html;
+
+        // process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
+        $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\Content::TYPE_DB) ? '<div id="ohcrud-editor-edit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
+
+        $output = preg_replace("@href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "href=\"" . "/themes/". $this->theme. "/$4\"", $output);
+        $output = preg_replace("@src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "src=\"" . "/themes/". $this->theme. "/$4\"", $output);
+
+        if ($this->editMode == true) {
+            $output = str_ireplace('{{CMS:CONTENT}}',   $this->getContentFromFile('cms', false, true)->html, $output);
+            $output = str_ireplace('{{CMS:THEMES}}',    $this->getThemes(), $output);
+            $output = str_ireplace('{{CMS:THEME}}',     $this->content->theme, $output);
+            $output = str_ireplace('{{CMS:LAYOUT}}',    $this->content->layout, $output);
+        }
+
+        $output = str_ireplace("{{CMS:PATH}}",          $this->path, $output);
+        $output = str_ireplace("{{CMS:TITLE}}",         $this->content->title, $output);
+        $output = str_ireplace("{{CMS:CONTENT}}",       $this->content->html . $editIconHTML, $output);
+        $output = str_ireplace("{{CMS:CONTENT-TEXT}}",  $this->content->text, $output);
+        $output = str_ireplace("{{CMS:STYLESHEET}}",    $this->content->stylesheet, $output);
+        $output = str_ireplace("{{CMS:JAVASCRIPT}}",    $this->content->javascript, $output);
+        $output = str_ireplace("{{CMS:OHCRUD}}",        '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). | <a href="/login/">LOGIN</a></p>', $output);
+
+        $this->data = $output;
+
+    }
+
     // process embedded content
-    private function processContent() {
+    private function processContent($content) {
+
+        // skip processing when in edit mode
+        if ($this->editMode == true) {
+            return $content;
+        }
 
         $matches = [];
-        preg_match_all('/{{(.*?)}}/i', $this->content->text, $matches);
+        preg_match_all('/{{(.*?)}}/i', $content->text, $matches);
 
         if (isset($matches[1]) == true) {
             foreach($matches[1] as $match) {
                 $embeddedContent = $this->getContent('/' . $match . '/', false);
 
                 if ($embeddedContent->is404 == true) continue;
-                $this->content->html = str_ireplace('{{' . $match . '}}', $embeddedContent->html, $this->content->html);
-
-                // do not replace 'text' property if we are in edit mode
-                if (($this->request['action'] ?? '') != 'edit') {
-                    $this->content->text = str_ireplace('{{' . $match . '}}', $embeddedContent->text, $this->content->text);
-                }
+                $content->html = str_ireplace('{{' . $match . '}}', $embeddedContent->html, $content->html);
+                $content->text = str_ireplace('{{' . $match . '}}', $embeddedContent->text, $content->text);
             }
         }
+
+        return $content;
 
     }
 
     // process widget(s)
-    private function processWidgets() {
+    private function processWidgets($content) {
+
+        // skip processing when in edit mode
+        if ($this->editMode == true) {
+            return $content;
+        }
 
         $matches = [];
-        preg_match_all('/\[\[(.*?)\]\]/i', $this->content->text, $matches);
+        preg_match_all('/\[\[(.*?)\]\]/i', $content->text, $matches);
 
         if (isset($matches[1]) == true) {
             foreach($matches[1] as $match) {
-                $embeddedContent = $this->getWidget(preg_replace('/\[|\]/', "", $match), false);
+                $embeddedContent = $this->getWidget($match, false);
                 if ($embeddedContent->is404 == true) continue;
-                $this->content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $this->content->html);
-                // do not replace 'text' property if we are in edit mode
-                if (($this->request['action'] ?? '') != 'edit') {
-                    $this->content->text = str_ireplace('[[' . $match . ']]', $embeddedContent->text, $this->content->text);
-                }
+                $content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $content->html);
+                $content->text = str_ireplace('[[' . $match . ']]', $embeddedContent->text, $content->text);
             }
         }
+
+        return $content;
 
     }
 

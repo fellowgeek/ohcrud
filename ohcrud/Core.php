@@ -16,6 +16,7 @@ class Core {
     public $outputHeaders = [];
     public $outputHeadersSent = false;
     public $outputStatusCode = 200;
+    public $className = '';
 
     public function setOutputType($outputType) {
         $this->outputType = $outputType;
@@ -112,6 +113,44 @@ class Core {
             }
         }
         return $this;
+    }
+
+    public function getCache($key, $duration = 3600) {
+
+        if (__OHCRUD_CACHE_ENABLED__ == false) {
+            return false;
+        }
+
+        $hash = md5($key) . '.cache';
+
+        if (file_exists(__OHCRUD_CACHE_PATH__ . $hash) == false) {
+            return false;
+        }
+
+        $age = time() - filemtime(__OHCRUD_CACHE_PATH__ . $hash);
+        if ($age >= $duration) {
+            return false;
+        }
+
+        $data = unserialize(file_get_contents(__OHCRUD_CACHE_PATH__ . $hash));
+        return $data;
+    }
+
+    public function setCache($key, $data) {
+
+        $hash = md5($key) . '.cache';
+        $data = serialize($data);
+        return file_put_contents(__OHCRUD_CACHE_PATH__ . $hash, $data);
+    }
+
+    public function unsetCache($key) {
+
+        $hash = md5($key) . '.cache';
+        if ( \file_exists(__OHCRUD_CACHE_PATH__ . $hash) == true) {
+            \unlink(__OHCRUD_CACHE_PATH__ . $hash);
+            return true;
+        }
+        return false;
     }
 
     public function log($level = 'debug', $message, array $context = array()) {

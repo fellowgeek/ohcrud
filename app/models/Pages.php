@@ -22,13 +22,15 @@ class Pages extends \OhCrud\DB {
                         $pagesTableExists = @$this->run("SELECT COUNT(*) AS Count FROM sqlite_master WHERE `name`='Pages';")->first()->Count;
                         if ($pagesTableExists == 0) {
                             $sql = "CREATE TABLE `Pages` (
-                                    `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-                                    `URL`	TEXT,
-                                    `NAME`	TEXT,
-                                    `TEXT`	TEXT,
-                                    `GROUP`	INTEGER,
-                                    `PERMISSIONS`	INTEGER DEFAULT -1,
-                                    `STATUS`	INTEGER
+                                    `ID` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+                                    `URL` TEXT,
+                                    `TITLE` TEXT,
+                                    `TEXT` TEXT,
+                                    `GROUP` INTEGER,
+                                    `PERMISSIONS` INTEGER DEFAULT -1,
+                                    `THEME` TEXT,
+                                    `LAYOUT` TEXT,
+                                    `STATUS` INTEGER
                                 );
                             ";
                             $this->run($sql);
@@ -40,12 +42,17 @@ class Pages extends \OhCrud\DB {
                             $sql = "CREATE TABLE `Pages` (
                                     `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
                                     `URL` varchar(256) NOT NULL DEFAULT '',
-                                    `NAME` varchar(256) NOT NULL DEFAULT '',
+                                    `TITLE` varchar(256) NOT NULL DEFAULT '',
                                     `TEXT` mediumtext NOT NULL,
                                     `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
                                     `PERMISSIONS` int(10) NOT NULL DEFAULT '-1',
+                                    `THEME` varchar(32) NOT NULL DEFAULT '',
+                                    `LAYOUT` varchar(32) NOT NULL DEFAULT '',
                                     `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
-                                    PRIMARY KEY (`ID`)
+                                    PRIMARY KEY (`ID`),
+                                    KEY `idx_URL` (`URL`) USING BTREE,
+                                    KEY `idx_GROUP` (`GROUP`) USING BTREE,
+                                    KEY `idx_STATUS` (`STATUS`) USING BTREE
                                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                             ";
                             $this->run($sql);

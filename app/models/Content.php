@@ -9,7 +9,8 @@ class Content {
     const TYPE_DB = 'DB';
     const TYPE_FILE = 'FILE';
 
-    public $theme = 'default.php';
+    public $theme = '';
+    public $layout = '';
     public $type = '';
     public $title = '';
     public $text = '';

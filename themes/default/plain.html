@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title><?php print($this->content->title); ?></title>
-		<meta charset='utf-8'>
+		<meta charset="utf-8">
+		<title>
+			{{CMS:TITLE}}
+		</title>
 		<link rel="stylesheet" href="/assets/css/styles.css" media="all" />
+		{{CMS:STYLESHEET}}
 		<link rel="icon" type="image/png" href="/assets/images/favicon.png" />
 	</head>
 	<body>
 		<div class="container relative">
-
-			<?php print($this->content->html); ?>
-
+			{{CMS:CONTENT}}
 		</div>
-
-		<script src="/assets/js/application.js"></script>
+		{{CMS:JAVASCRIPT}}
 	</body>
 </html>

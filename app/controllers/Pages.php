@@ -58,6 +58,8 @@ class Pages extends \app\models\Pages {
                 'URL' => $request->payload->URL,
                 'TITLE' => $request->payload->TITLE,
                 'TEXT' => $request->payload->TEXT,
+                'THEME' => $request->payload->THEME,
+                'LAYOUT' => $request->payload->LAYOUT,
                 'STATUS' => \app\models\Pages::STATUS_ACTIVE
                 ]
             );
@@ -67,6 +69,8 @@ class Pages extends \app\models\Pages {
                 [
                     'TITLE' => $request->payload->TITLE,
                     'TEXT' => $request->payload->TEXT,
+                    'THEME' => $request->payload->THEME,
+                    'LAYOUT' => $request->payload->LAYOUT,
                     'STATUS' => \app\models\Pages::STATUS_ACTIVE
                 ],
                 'URL = :URL',

@@ -42,6 +42,7 @@ class DB extends \OhCrud\Core {
     }
 
     public function run($sql, $bind=array()) {
+
         $sql = trim($sql);
 
         if (isset($this->db) == false) {

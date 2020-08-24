@@ -17,6 +17,10 @@ define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
 // log file path
 define('__OHCRUD_LOG_FILE__', __SELF__ . 'logs/app.log');
 
+// cache settings
+define('__OHCRUD_CACHE_ENABLED__', false);
+define('__OHCRUD_CACHE_PATH__', '/ramdisk/');
+
 // secret used for password hash ( should be unique for each application )
 define('__OHCRUD_SECRET__', 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -63,3 +67,6 @@ define('__OHCRUD_ENDPOINTS__', serialize([
 // WEB/CMS end point ( AKA default path handler )
 define('__OHCRUD_DEFAULT_PATH_HANDLER__', '\app\controllers\CMS');
 
+// CMS settings
+define('__OHCRUD_CMS_DEFAULT_THEME__', 'default');
+define('__OHCRUD_CMS_DEFAULT_LAYOUT__', 'index');

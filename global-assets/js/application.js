@@ -4,7 +4,7 @@ UTILITY FUNCTION
 ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 */
 
-var $ = function($queryString) {
+var $$ = function($queryString) {
 
     return document.querySelector($queryString);
 
@@ -42,14 +42,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('Ready.');
 
-    var $OhCRUD_Login_Button = $('#OhCRUD_Login_Button');
+    var $OhCRUD_Login_Button = $$('#ohcrud-login-login');
     if($OhCRUD_Login_Button != null) {
         $OhCRUD_Login_Button.addEventListener('click', function() {
 
             var $data = {
-                USERNAME: $('#OhCRUD_Login_Username').value,
-                PASSWORD: window.btoa($('#OhCRUD_Login_Password').value),
-                REDIRECT: $('#OhCRUD_Login_Redirect').value
+                USERNAME: $$('#ohcrud-login-username').value,
+                PASSWORD: window.btoa($$('#ohcrud-login-password').value),
+                REDIRECT: $$('#ohcrud-login-redirect').value
             };
 
             httpRequest('/api/users/login/',
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     )
                 },
                 async function($response) {
-                    $('.alert').classList.add('hidden');
+                    $$('.alert').classList.add('hidden');
                     if($data.REDIRECT != '') {
                         window.location.href = $data.REDIRECT;
                     } else {
@@ -74,11 +74,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 async function($error) {
                     const $json = await $error.json();
-                    $('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
-                    $('.alert').classList.add('alert-danger');
-                    $('.alert').classList.remove('hidden');
+                    $$('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
+                    $$('.alert').classList.add('alert-danger');
+                    $$('.alert').classList.remove('hidden');
                 }
             );
+        });
+    }
+
+    var $OhCRUD_Edit_Button = $$('#ohcrud-editor-edit');
+    if($OhCRUD_Edit_Button != null) {
+        $OhCRUD_Edit_Button.addEventListener('click', function() {
+            console.log('here');
+            window.location.href = this.dataset.url;
         });
     }
 

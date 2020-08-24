@@ -26,7 +26,7 @@ class Files extends \app\models\Files {
 
         $NAME = basename($_FILES[0]['name']);
         $TYPE = strtolower(pathinfo($NAME, PATHINFO_EXTENSION));
-        $PATH = 'assets/files/' . md5($NAME . microtime()) . '.' . $TYPE;
+        $PATH = 'global-assets/files/' . md5($NAME . microtime()) . '.' . $TYPE;
 
         // validation
         if (in_array($TYPE, $this->filesAllowed) == false) {
