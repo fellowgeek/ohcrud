@@ -24,6 +24,7 @@ class CMS extends \OhCrud\DB {
 
         $this->request = $_REQUEST;
         $this->content = new \app\models\Content;
+        $this->pages = new \app\models\Pages;
 
         // set login status
         $this->loggedIn = isset($_SESSION['User']);
@@ -288,8 +289,8 @@ class CMS extends \OhCrud\DB {
         // process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
         $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\Content::TYPE_DB) ? '<div id="ohcrud-editor-edit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
 
-        $output = preg_replace("@href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "href=\"" . "/themes/". $this->theme. "/$4\"", $output);
-        $output = preg_replace("@src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "src=\"" . "/themes/". $this->theme. "/$4\"", $output);
+        $output = preg_replace("@(script|link)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
+        $output = preg_replace("@(script|link|img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
 
         if ($this->editMode == true) {
             $output = str_ireplace('{{CMS:CONTENT}}',   $this->getContentFromFile('cms', false, true)->html, $output);
