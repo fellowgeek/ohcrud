@@ -66,8 +66,8 @@ class Core {
                 }
                 break;
             case 'JSON':
-                if (in_array('Content-Type: application/javascript', $this->outputHeaders) == false) {
-                    array_push($this->outputHeaders, 'Content-Type: application/javascript');
+                if (in_array('Content-Type: application/json', $this->outputHeaders) == false) {
+                    array_push($this->outputHeaders, 'Content-Type: application/json');
                 }
                 if (headers_sent() == false && $this->outputHeadersSent == false) {
                     $json = clone $this;

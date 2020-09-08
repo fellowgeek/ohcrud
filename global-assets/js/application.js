@@ -42,9 +42,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('Ready.');
 
-    var $OhCRUD_Login_Button = $$('#ohcrud-login-login');
-    if($OhCRUD_Login_Button != null) {
-        $OhCRUD_Login_Button.addEventListener('click', function() {
+    var $loginForm = $$('#ohcrud-login');
+    if($loginForm != null) {
+        $loginForm.addEventListener('submit', function($event) {
+            $event.preventDefault();
+        });
+    }
+
+    var $loginButton = $$('#ohcrud-login-login');
+    if($loginButton != null) {
+        $loginButton.addEventListener('click', function() {
+            var $this = this;
+            $this.disabled = true;
+            $this.classList.add('btn-disabled');
+            $this.innerHTML = `<img class="ohcrud-loader" src="/global-assets/images/loader.svg" />`;
 
             var $data = {
                 USERNAME: $$('#ohcrud-login-username').value,
@@ -77,15 +88,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     $$('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
                     $$('.alert').classList.add('alert-danger');
                     $$('.alert').classList.remove('hidden');
+                    $this.disabled = false;
+                    $this.classList.remove('btn-disabled');
+                    $this.innerHTML = `Login`;
                 }
             );
         });
     }
 
-    var $OhCRUD_Edit_Button = $$('#ohcrud-editor-edit');
-    if($OhCRUD_Edit_Button != null) {
-        $OhCRUD_Edit_Button.addEventListener('click', function() {
-            console.log('here');
+    var $editButton = $$('#ohcrud-editor-edit');
+    if($editButton != null) {
+        $editButton.addEventListener('click', function() {
             window.location.href = this.dataset.url;
         });
     }

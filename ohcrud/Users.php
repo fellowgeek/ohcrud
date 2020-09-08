@@ -94,12 +94,14 @@ class Users extends \OhCrud\DB {
             unset($user->TOKEN);
             if ($userHasLoggedIn == true) {
                 $this->setSession('User', $user);
-            } else {
-                // delay and log after failed login attempt
-                $this->log('warning', 'Login attempt was not successful', (array) $user);
-                sleep(1);
             }
         }
+
+        if ($userHasLoggedIn == false) {
+            $this->log('warning', 'Login attempt was not successful', [$username]);
+            sleep(1);
+        }
+
         return $userHasLoggedIn;
     }
 

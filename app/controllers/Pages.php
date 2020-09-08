@@ -10,8 +10,57 @@ class Pages extends \app\models\Pages {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
-        'save' => 1
+        'save' => 1,
+        'restoreDeletePage' => 1
     ];
+
+    public function restoreDeletePage($request) {
+
+        $this->setOutputType('JSON');
+
+        // validation
+        if (isset($request->payload) == false || empty($request->payload->URL) == true)
+            $this->error('Missing or incomplete data.');
+
+        // check if page is hard-coded as file
+        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+            $this->error('You can\'t delete hard coded page.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // check if page exists
+        $page = $this->run(
+            "SELECT
+                *
+            FROM
+                Pages
+            WHERE
+                URL = :URL
+            ",
+            [
+                ':URL' => $request->payload->URL
+            ]
+        )->first();
+
+        if ($page != false) {
+            // update the record
+            $this->update('Pages',
+                [
+                    'STATUS' => ($page->STATUS == \app\models\Pages::STATUS_ACTIVE) ? \app\models\Pages::STATUS_INACTIVE : \app\models\Pages::STATUS_ACTIVE
+                ],
+                'URL = :URL',
+                [
+                    ':URL' => $request->payload->URL
+                ]
+            );
+        }
+
+        $this->output();
+
+    }
 
     public function save($request) {
 

@@ -51,7 +51,7 @@ class CMS extends \OhCrud\DB {
 
         // get cache
         $cachedResponse = $this->getCache(__CLASS__ . __FUNCTION__ . $this->path, 3600);
-        if ($this->editMode == false && $cachedResponse != false) {
+        if ($this->loggedIn == false && $cachedResponse != false) {
             $this->data = $cachedResponse;
             $this->output();
             return;
@@ -172,24 +172,28 @@ class CMS extends \OhCrud\DB {
         // try getting page content from database
         $page = $this->read(
             'Pages',
-            'URL = :URL AND STATUS = ' . \app\models\Pages::STATUS_ACTIVE,
+            'URL = :URL',
             [
                 ':URL' =>  $path
             ]
         )->first();
 
-        // check if page exists
-        if ($page == false) {
+        // check if page does not exists
+        if ($page == false || $page->STATUS != \app\models\Pages::STATUS_ACTIVE) {
             if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
             if (($this->request['action'] ?? '') != 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
+            if (($page->STATUS ?? -1) == \app\models\Pages::STATUS_INACTIVE) {
+                $content->isDeleted = true;
+            }
             $content->is404 = true;
             return $content;
         }
 
+        // get page content from database
         $content->type = \app\models\Content::TYPE_DB;
         $content->title = $page->TITLE;
         $content->theme = $page->THEME;
@@ -255,6 +259,7 @@ class CMS extends \OhCrud\DB {
         $content->title = ucwords(trim($path, '/'));
         ob_start();
         include(__SELF__ . 'app/views/cms/' . ($isSystem ? 'system/' : '') . trim(($is404 ? '404' : $path), '/') . '.phtml');
+
         $content->text = ob_get_clean();
         $content->html = $content->text;
 
@@ -293,19 +298,20 @@ class CMS extends \OhCrud\DB {
         $output = preg_replace("@(script|link|img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
 
         if ($this->editMode == true) {
-            $output = str_ireplace('{{CMS:CONTENT}}',   $this->getContentFromFile('cms', false, true)->html, $output);
-            $output = str_ireplace('{{CMS:THEMES}}',    $this->getThemes(), $output);
-            $output = str_ireplace('{{CMS:THEME}}',     $this->content->theme, $output);
-            $output = str_ireplace('{{CMS:LAYOUT}}',    $this->content->layout, $output);
+            $output = str_ireplace('{{CMS:CONTENT}}',       $this->getContentFromFile('cms', false, true)->html, $output);
+            $output = str_ireplace('{{CMS:THEMES}}',        $this->getThemes(), $output);
+            $output = str_ireplace('{{CMS:THEME}}',         $this->content->theme, $output);
+            $output = str_ireplace('{{CMS:LAYOUT}}',        $this->content->layout, $output);
+            $output = str_ireplace('{{CMS-IS-DELETED}}',    $this->content->isDeleted, $output);
         }
 
-        $output = str_ireplace("{{CMS:PATH}}",          $this->path, $output);
-        $output = str_ireplace("{{CMS:TITLE}}",         $this->content->title, $output);
-        $output = str_ireplace("{{CMS:CONTENT}}",       $this->content->html . $editIconHTML, $output);
-        $output = str_ireplace("{{CMS:CONTENT-TEXT}}",  $this->content->text, $output);
-        $output = str_ireplace("{{CMS:STYLESHEET}}",    $this->content->stylesheet, $output);
-        $output = str_ireplace("{{CMS:JAVASCRIPT}}",    $this->content->javascript, $output);
-        $output = str_ireplace("{{CMS:OHCRUD}}",        '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). | <a href="/login/">LOGIN</a></p>', $output);
+        $output = str_ireplace("{{CMS:PATH}}",              $this->path, $output);
+        $output = str_ireplace("{{CMS:TITLE}}",             $this->content->title, $output);
+        $output = str_ireplace("{{CMS:CONTENT}}",           $this->content->html . $editIconHTML, $output);
+        $output = str_ireplace("{{CMS:CONTENT-TEXT}}",      $this->content->text, $output);
+        $output = str_ireplace("{{CMS:STYLESHEET}}",        $this->content->stylesheet, $output);
+        $output = str_ireplace("{{CMS:JAVASCRIPT}}",        $this->content->javascript, $output);
+        $output = str_ireplace("{{CMS:OHCRUD}}",            '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). | <a href="/login/">LOGIN</a></p>', $output);
 
         $this->data = $output;
 

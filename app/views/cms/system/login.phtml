@@ -1,6 +1,6 @@
 <?php
-    $this->theme = 'default';
-    $this->layout = 'plain';
+    $content->theme = 'default';
+    $content->layout = 'plain';
 ?>
 <div class="col col-30 page center-vh">
 
@@ -12,7 +12,7 @@
         <input type="password" placeholder="Password" id="ohcrud-login-password" name="ohcrud-login-password">
         <input type="hidden" id="ohcrud-login-redirect" name="ohcrud-login-redirect" value="<?= $_REQUEST['redirect'] ?? '' ?>">
         <br>
-        <a class="btn btn-primary" id="ohcrud-login-login">Login</a>
+        <button type="submit" class="btn btn-primary" id="ohcrud-login-login">Login</button>
     </form>
 
 </div>

@@ -40,6 +40,12 @@ h1, h2, h3, h4, h5, h6 {
 	color: var(--color-black);
 }
 
+hr {
+	border: none;
+	border-bottom: 1px dashed var(--color-light-gray);
+	margin-bottom: 20px;
+}
+
 p {
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 16px;
@@ -84,6 +90,14 @@ HELPER CLASSES
 
 .hidden {
 	display: none;
+}
+
+.float-right {
+	float: right;
+}
+
+.float-left {
+	float: left;
 }
 
 .center-vh {
@@ -144,7 +158,15 @@ UI
 	background-color: var(--color-white);
 	text-decoration: none;
 	cursor: pointer;
+	width: 120px;
+}
+
+a.btn {
 	width: 100px;
+}
+
+.btn-disabled, .btn-disabled:visited, .btn-disabled:hover {
+	opacity: .5;
 }
 
 .btn-primary, .btn-primary:visited, .btn-primary:hover {
@@ -156,6 +178,12 @@ UI
 .btn-secondary, .btn-secondary:visited, .btn-secondary:hover {
 	border: 1px solid var(--color-secondary);
 	background-color: var(--color-secondary);
+	color: var(--color-white);
+}
+
+.btn-danger, .btn-danger:visited, .btn-danger:hover {
+	border: 1px solid var(--color-danger);
+	background-color: var(--color-danger);
 	color: var(--color-white);
 }
 
@@ -176,6 +204,12 @@ UI
 
 .alert p {
 	color: var(--color-white);
+}
+
+.fa-spin, .fa-spin:focus {
+	outline: none;
+	border: none !important;
+	background: transparent !important;
 }
 
 /*

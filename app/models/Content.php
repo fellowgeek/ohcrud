@@ -9,12 +9,13 @@ class Content {
     const TYPE_DB = 'DB';
     const TYPE_FILE = 'FILE';
 
-    public $theme = '';
-    public $layout = '';
+    public $theme = __OHCRUD_CMS_DEFAULT_THEME__;
+    public $layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
     public $type = '';
     public $title = '';
     public $text = '';
     public $html = '';
     public $is404 = false;
+    public $isDeleted = false;
 
 }

@@ -24,6 +24,13 @@ var $ohCrudEditor = {};
 // save
 var $editorSave = $$('#ohcrud-editor-save');
 
+// cancel
+var $editorCancel = $$('#ohcrud-editor-cancel');
+
+// delete / restore
+var $editorDeleteRestore = $$('#ohcrud-editor-delete-restore');
+$editorDeleteRestore.innerHTML = $editorDeleteRestore.dataset['is-deleted'] == '1' ? 'Restore' : 'Delete';
+
 /*
 ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 UTILITY FUNCTIONS
@@ -143,6 +150,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // save
     $editorSave.addEventListener('click', function() {
 
+        var $this = this;
+        $this.disabled = true;
+        $this.classList.add('btn-disabled');
+        $this.innerHTML = `<img class="ohcrud-loader" src="/global-assets/images/loader.svg" />`;
+
         var $data = {
             URL: $url,
             TITLE: $$('#ohcrud-page-title').value,
@@ -172,6 +184,55 @@ document.addEventListener('DOMContentLoaded', function () {
                 $$('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
                 $$('.alert').classList.add('alert-danger');
                 $$('.alert').classList.remove('hidden');
+                $this.disabled = false;
+                $this.classList.remove('btn-disabled');
+                $this.innerHTML = `Save`;
+            }
+        );
+
+    });
+
+    // cancel
+    $editorCancel.addEventListener('click', function() {
+        window.location.href = $url;
+    });
+
+    // delete
+    $editorDeleteRestore.addEventListener('click', function() {
+
+        var $this = this;
+        $this.disabled = true;
+        $this.classList.add('btn-disabled');
+        $this.innerHTML = `<img class="ohcrud-loader" src="/global-assets/images/loader.svg" />`;
+
+        var $data = {
+            URL: $url,
+        };
+
+        httpRequest('/api/pages/restoreDeletePage/',
+            {
+                method: 'POST',
+                cache: 'no-cache',
+                credentials: 'same-origin',
+                body: JSON.stringify($data),
+                headers: new Headers(
+                    {
+                        'Content-Type': 'application/json'
+                    }
+                )
+            },
+            async function($response) {
+                $$('.alert').classList.add('hidden');
+                window.location.href = $url;
+            },
+            async function($error) {
+                const $json = await $error.json();
+                $$('.alert').innerHTML = `<p>${$json.errors.join()}</p>`;
+                $$('.alert').classList.add('alert-danger');
+                $$('.alert').classList.remove('hidden');
+                $this.disabled = false;
+                $this.classList.remove('btn-disabled');
+                $editorDeleteRestore.innerHTML = $editorDeleteRestore.dataset['is-deleted'] == '1' ? 'Restore' : 'Delete';
             }
         );
 
