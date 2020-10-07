@@ -219,13 +219,13 @@ class CMS extends \OhCrud\DB {
         $widgetParameters = [];
 
         parse_str(str_replace('|', '&', $widgetString), $widgetParameters);
-        $widgetClass = key($widgetParameters);
+        $widgetClassFile = key($widgetParameters);
+        $widgetClass = '\app\controllers\Widgets\\' . str_replace('/', '\\', $widgetClassFile);
         array_shift($widgetParameters);
 
         // check if widget exists
-        if (\file_exists(__SELF__ . 'app/controllers/widgets/' . $widgetClass . '.php') == true) {
+        if (\file_exists(__SELF__ . 'app/controllers/widgets/' . $widgetClassFile . '.php') == true && class_exists($widgetClass) == true) {
 
-            $widgetClass = 'app\controllers\Widgets\\' . $widgetClass;
             $widget = new $widgetClass;
             $widget->output($widgetParameters);
             $content = $widget->content;
@@ -294,8 +294,8 @@ class CMS extends \OhCrud\DB {
         // process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
         $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\Content::TYPE_DB) ? '<div id="ohcrud-editor-edit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
 
-        $output = preg_replace("@(script|link)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
-        $output = preg_replace("@(script|link|img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
+        $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
+        $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
 
         if ($this->editMode == true) {
             $output = str_ireplace('{{CMS:CONTENT}}',       $this->getContentFromFile('cms', false, true)->html, $output);

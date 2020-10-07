@@ -10,6 +10,7 @@ class Widget extends \OhCrud\DB {
     public $content;
     public $jsFiles = [];
     public $cssFiles = [];
+    public $variables = [];
 
     public function __construct() {
 
@@ -35,6 +36,20 @@ class Widget extends \OhCrud\DB {
             $this->jsFiles[$file] = $priority;
             asort($this->jsFiles);
         }
+
+    }
+
+    public function loadView($fileName) {
+
+        if (empty($this->variables) == false) {
+            extract($this->variables);
+        }
+
+        ob_start();
+        include(__SELF__ . 'app/views/' . $fileName);
+        $output = \ob_get_clean();
+
+        return $output;
 
     }
 

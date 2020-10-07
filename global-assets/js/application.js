@@ -40,8 +40,6 @@ STARTUP
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    console.log('Ready.');
-
     var $loginForm = $$('#ohcrud-login');
     if($loginForm != null) {
         $loginForm.addEventListener('submit', function($event) {

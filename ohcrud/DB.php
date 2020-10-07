@@ -63,7 +63,7 @@ class DB extends \OhCrud\Core {
                 $result->setFetchMode(\PDO::FETCH_ASSOC);
                 $rows = array();
                 while($row = $result->fetch()) {
-                    $rows[] = $row;
+                    $rows[] = (object) $row;
                 }
                 $this->data = $rows;
                 return $this;

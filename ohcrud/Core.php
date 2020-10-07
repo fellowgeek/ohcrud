@@ -16,7 +16,6 @@ class Core {
     public $outputHeaders = [];
     public $outputHeadersSent = false;
     public $outputStatusCode = 200;
-    public $className = '';
 
     public function setOutputType($outputType) {
         $this->outputType = $outputType;
@@ -115,6 +114,51 @@ class Core {
         return $this;
     }
 
+    public function request($url, $method = 'GET', $data = '', array $headers = array()) {
+
+        $response = '';
+        if (is_array($data) == true) {
+            $data_string = '';
+            foreach($data as $key => $value) { $data_string .= $key . '=' . urlencode($value) . '&'; }
+            rtrim($data_string, '&');
+            if ($method == 'GET') { $url .= '?' . $data_string; }
+        }
+
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, (isset($data_string) == true) ? $data_string : $data);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+            $response = curl_exec($ch);
+            $this->responseInfo = curl_getinfo($ch);
+            curl_close ($ch);
+
+            if (isset($this->responseInfo['http_code']) == true) {
+                $this->outputStatusCode = $this->responseInfo['http_code'];
+
+                if (in_array($this->responseInfo['http_code'], [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]) == true) {
+                    $this->data = json_decode($response);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        $this->data = $response;
+                    }
+                } else {
+                    $this->success = false;
+                    $this->errors = json_decode($response);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        $this->error($response);
+                    }
+                }
+                return $this->output();
+            }
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+            return $this->output();
+        }
+    }
+
     public function getCache($key, $duration = 3600) {
 
         if (__OHCRUD_CACHE_ENABLED__ == false) {
@@ -137,6 +181,10 @@ class Core {
     }
 
     public function setCache($key, $data) {
+
+        if (__OHCRUD_CACHE_ENABLED__ == false) {
+            return false;
+        }
 
         $hash = md5($key) . '.cache';
         $data = serialize($data);
@@ -199,49 +247,33 @@ class Core {
         return false;
     }
 
-    public function request($url, $method = 'GET', $data = '', array $headers = array()) {
+    public function console($message = '', $color = 'WHT') {
 
-        $response = '';
-        if (is_array($data) == true) {
-            $data_string = '';
-            foreach($data as $key => $value) { $data_string .= $key . '=' . urlencode($value) . '&'; }
-            rtrim($data_string, '&');
-            if ($method == 'GET') { $url .= '?' . $data_string; }
+        if ( PHP_SAPI != 'cli') {
+            return false;
         }
 
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, (isset($data_string) == true) ? $data_string : $data);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $colors = [
+            "BLK" =>    "\033[30m",
+            "RED" =>    "\033[31m",
+            "GRN" =>    "\033[32m",
+            "YEL" =>    "\033[33m",
+            "BLU" =>    "\033[34m",
+            "PUR" =>    "\033[35m",
+            "CYN" =>    "\033[36m",
+            "WHT" =>    "\033[37m",
+            "RED+" =>   "\033[1;31m",
+            "GRN+" =>   "\033[1;32m",
+            "YEL+" =>   "\033[1;33m",
+            "BLU+" =>   "\033[1;34m",
+            "PUR+" =>   "\033[1;35m",
+            "CYN+" =>   "\033[1;36m",
+            "WHT+" =>   "\033[1;37m",
+            "RST" =>    "\033[0m"
+        ];
 
-            $response = curl_exec($ch);
-            $this->responseInfo = curl_getinfo($ch);
-            curl_close ($ch);
+        print(($colors[$color] ?? $colors['WHT']) . $message . $colors['RST'] . "\n");
 
-            if (isset($this->responseInfo['http_code']) == true) {
-                $this->outputStatusCode = $this->responseInfo['http_code'];
-
-                if (in_array($this->responseInfo['http_code'], [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]) == true) {
-                    $this->data = json_decode($response);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        $this->data = $response;
-                    }
-                } else {
-                    $this->success = false;
-                    $this->errors = json_decode($response);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        $this->error($response);
-                    }
-                }
-                return $this->output();
-            }
-        } catch (\Exception $e) {
-            $this->error($e->getMessage());
-            return $this->output();
-        }
     }
 
     public function debug($expression = null) {

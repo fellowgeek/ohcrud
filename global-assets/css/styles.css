@@ -52,7 +52,7 @@ UI
 
 #ohcrud-editor-edit {
     position: fixed;
-    top: 15px;
+    bottom: 15px;
 	right: 15px;
     border-radius: 6px;
     border: 2px solid var(--color-light-gray);
@@ -64,7 +64,7 @@ UI
     cursor: pointer;
     width: 40px;
     height: 40px;
-    z-index: 999;
+    z-index: 9999;
 }
 
 #ohcrud-page-theme, #ohcrud-page-layout {
