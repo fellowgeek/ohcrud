@@ -37,17 +37,21 @@ class Users extends \OhCrud\DB {
                         $usersTableExists = @$this->run("SELECT COUNT(*) AS Count FROM information_schema.tables WHERE `table_schema`='" . $this->config["MYSQL_DB"] . "' AND `table_name`= 'Users';")->first()->Count;
                         if ($usersTableExists == 0) {
                             $sql = "CREATE TABLE `Users` (
-                                    `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
-                                    `USERNAME` varchar(128) NOT NULL DEFAULT '',
-                                    `PASSWORD` varchar(256) NOT NULL DEFAULT '',
-                                    `FIRSTNAME` varchar(64) NOT NULL DEFAULT '',
-                                    `LASTNAME` varchar(64) NOT NULL DEFAULT '',
-                                    `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
-                                    `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
-                                    `TOKEN` varchar(256) NOT NULL DEFAULT '',
-                                    `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
-                                    PRIMARY KEY (`ID`)
-                                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+                                `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
+                                `USERNAME` varchar(128) NOT NULL DEFAULT '',
+                                `PASSWORD` varchar(256) NOT NULL DEFAULT '',
+                                `FIRSTNAME` varchar(64) NOT NULL DEFAULT '',
+                                `LASTNAME` varchar(64) NOT NULL DEFAULT '',
+                                `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
+                                `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
+                                `TOKEN` varchar(256) NOT NULL DEFAULT '',
+                                `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                                PRIMARY KEY (`ID`),
+                                KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
+                                KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
+                                KEY `idx_GROUP` (`GROUP`) USING BTREE,
+                                KEY `idx_STATUS` (`STATUS`) USING BTREE
+                              ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                             ";
                             $this->run($sql);
                         }

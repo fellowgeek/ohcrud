@@ -81,7 +81,7 @@ class DB extends \OhCrud\Core {
     public function create($table, $data=array()) {
         if (__OHCRUD_DB_STAMP__ == true) {
             $data['CDATE'] = date('Y-m-d H:i:s');
-            $data['CUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : 0;
+            $data['CUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : NULL;
         }
 
         $fields = $this->filter($table, $data);
@@ -111,7 +111,7 @@ class DB extends \OhCrud\Core {
     public function update($table, $data, $where, $bind=array()) {
         if (__OHCRUD_DB_STAMP__ == true) {
             $data['MDATE'] = date('Y-m-d H:i:s');
-            $data['MUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : 0;
+            $data['MUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : NULL;
         }
 
         $fields = $this->filter($table, $data);
@@ -198,7 +198,7 @@ class DB extends \OhCrud\Core {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` INTEGER;");
                     }
                     if ($this->config['DRIVER'] == 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT '0';");
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT NULL;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'CUSER'; }
                 }
@@ -208,7 +208,7 @@ class DB extends \OhCrud\Core {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` INTEGER;");
                     }
                     if ($this->config['DRIVER'] == 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT '0';");
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT NULL;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'MUSER'; }
                 }
