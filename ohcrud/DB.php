@@ -39,6 +39,14 @@ class DB extends \OhCrud\Core {
             $this->error($e->getMessage());
             $this->output();
         }
+
+        unset(
+            $this->config['PERSISTENT_CONNECTION'],
+            $this->config['SQLITE_DB'],
+            $this->config['MYSQL_HOST'],
+            $this->config['USERNAME'],
+            $this->config['PASSWORD']
+        );
     }
 
     public function run($sql, $bind=array()) {
@@ -73,6 +81,7 @@ class DB extends \OhCrud\Core {
                 return $this;
             }
         } catch (\PDOException $e) {
+            $this->data = false;
             $this->error($e->getMessage());
             return $this->output();
         }
@@ -87,12 +96,12 @@ class DB extends \OhCrud\Core {
         $fields = $this->filter($table, $data);
 
         $fieldNames = "";
-        foreach($fields as $field)
+        foreach ($fields as $field)
             $fieldNames .= "`" . $field . "`,";
 
         $sql = "INSERT INTO " . $table . " (" . trim($fieldNames, ",") . ") VALUES (:" . implode($fields, ", :") . ");";
         $bind = array();
-        foreach($fields as $field)
+        foreach ($fields as $field)
             $bind[":$field"] = $data[$field];
 
         return $this->run($sql, $bind);
@@ -124,7 +133,7 @@ class DB extends \OhCrud\Core {
         }
         $sql .= " WHERE " . $where . ";";
 
-        foreach($fields as $field)
+        foreach ($fields as $field)
             $bind[":update_$field"] = $data[$field];
 
         return $this->run($sql, $bind);
@@ -162,7 +171,7 @@ class DB extends \OhCrud\Core {
             $statement = $this->db->prepare($sql);
             $statement->execute();
             if ($statement !== false) {
-                foreach($statement as $record) {
+                foreach ($statement as $record) {
                     $fields[] = $record[$key];
                 }
                 $filteredData = array_values(array_intersect($fields, array_keys($data)));

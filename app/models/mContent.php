@@ -4,7 +4,7 @@ namespace app\models;
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Content {
+class mContent {
 
     const TYPE_DB = 'DB';
     const TYPE_FILE = 'FILE';

@@ -6,7 +6,7 @@
 define('__SELF__', '/' . trim(dirname(__FILE__) . '/', '/') . '/');
 
 // application url
-define('__SITE__', $_SERVER['SERVER_NAME']);
+define('__SITE__', $_SERVER['SERVER_NAME'] ?? '');
 
 // debug mode ( set to false for production )
 define('__OHCRUD_DEBUG_MODE__', true);
@@ -14,7 +14,8 @@ define('__OHCRUD_DEBUG_MODE__', true);
 // debug method initially expanded levels (for HTML mode only)
 define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
 
-// log file path
+// logs
+define('__OHCRUD_LOG_ENABLED__', true);
 define('__OHCRUD_LOG_FILE__', __SELF__ . 'logs/app.log');
 
 // cache settings
@@ -45,27 +46,24 @@ define('__OHCRUD_DB_CONFIG__', serialize([
 
 // API end points
 define('__OHCRUD_ENDPOINTS__', serialize([
-        '/api/pages/' => 'app\controllers\Pages',
-        '/api/users/' => 'app\controllers\Users',
-        '/api/files/' => 'app\controllers\Files',
-        '/example/' => 'app\models\Example'
-
+        '/api/pages/' => 'app\controllers\cPages',
+        '/api/users/' => 'app\controllers\cUsers',
+        '/api/files/' => 'app\controllers\cFiles',
+        '/example/' => 'app\controllers\cExample'
         /*
         map URL paths to objects (controllers, models, etc...)
-        '/example2/' => 'app\models\TestModel1',
-        '/example1/' => 'app\models\TestModel2',
-        '/example3/' => 'app\models\TestModel3',
+        '/example1/' => 'app\models\mTestModel',
+        '/example2/' => 'app\controllers\cTestController',
         .
         .
         .
         */
-
         ]
     )
 );
 
 // WEB/CMS end point ( AKA default path handler )
-define('__OHCRUD_DEFAULT_PATH_HANDLER__', '\app\controllers\CMS');
+define('__OHCRUD_DEFAULT_PATH_HANDLER__', '\app\controllers\cCMS');
 
 // CMS settings
 define('__OHCRUD_CMS_DEFAULT_THEME__', 'default');

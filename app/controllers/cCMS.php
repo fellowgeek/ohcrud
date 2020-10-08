@@ -7,7 +7,7 @@ use HTMLPurifier;
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class CMS extends \OhCrud\DB {
+class cCMS extends \OhCrud\Controller {
 
     public $path;
     public $content;
@@ -23,8 +23,8 @@ class CMS extends \OhCrud\DB {
         parent::__construct();
 
         $this->request = $_REQUEST;
-        $this->content = new \app\models\Content;
-        $this->pages = new \app\models\Pages;
+        $this->content = new \app\models\mContent;
+        $this->pages = new \app\models\mPages;
 
         // set login status
         $this->loggedIn = isset($_SESSION['User']);
@@ -75,9 +75,9 @@ class CMS extends \OhCrud\DB {
         $this->theme = $this->content->theme;
         $this->layout = $this->content->layout;
 
-        // process embeded content & widgets
+        // process embeded content & components
         $this->content = $this->processContent($this->content);
-        $this->content = $this->processWidgets($this->content);
+        $this->content = $this->processComponents($this->content);
         $this->getCSSAssets();
         $this->getJSAssets();
 
@@ -109,16 +109,16 @@ class CMS extends \OhCrud\DB {
         $scan = glob('themes/*/*.html');
 
         $themes = [];
-        foreach($scan as $layoutFile) {
+        foreach ($scan as $layoutFile) {
             $matches = [];
             preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
-            if(isset($matches[1]) == true) {
+            if (isset($matches[1]) == true) {
                 $theme = $matches[1];
             }
 
             $matches = [];
             preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
-            if(isset($matches[2]) == true) {
+            if (isset($matches[2]) == true) {
                 $layout = $matches[2];
             }
 
@@ -132,7 +132,7 @@ class CMS extends \OhCrud\DB {
     private function getCSSAssets() {
 
         $this->content->stylesheet = '';
-        foreach($this->cssFiles as $cssFile => $priority) {
+        foreach ($this->cssFiles as $cssFile => $priority) {
             $this->content->stylesheet .= '<link rel="stylesheet" href="/global-assets/css/' . $cssFile . '" media="all" />' . "\n";
         }
 
@@ -152,7 +152,7 @@ class CMS extends \OhCrud\DB {
     private function getJSAssets() {
 
         $this->content->javascript = '';
-        foreach($this->jsFiles as $jsFile => $priority) {
+        foreach ($this->jsFiles as $jsFile => $priority) {
             $this->content->javascript .= '<script src="/global-assets/js/' . $jsFile . '"></script>' . "\n";
         }
 
@@ -161,7 +161,7 @@ class CMS extends \OhCrud\DB {
     // load content
     private function getContent($path, $shouldSetOutputStatusCode = true) {
 
-        $content = new \app\models\Content;
+        $content = new \app\models\mContent;
 
         // try getting page content from file
         if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true || $path == '/login/') {
@@ -179,14 +179,14 @@ class CMS extends \OhCrud\DB {
         )->first();
 
         // check if page does not exists
-        if ($page == false || $page->STATUS != \app\models\Pages::STATUS_ACTIVE) {
+        if ($page == false || $page->STATUS != \app\models\mPages::STATUS_ACTIVE) {
             if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
             if (($this->request['action'] ?? '') != 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
-            if (($page->STATUS ?? -1) == \app\models\Pages::STATUS_INACTIVE) {
+            if (($page->STATUS ?? -1) == \app\models\mPages::STATUS_INACTIVE) {
                 $content->isDeleted = true;
             }
             $content->is404 = true;
@@ -194,7 +194,7 @@ class CMS extends \OhCrud\DB {
         }
 
         // get page content from database
-        $content->type = \app\models\Content::TYPE_DB;
+        $content->type = \app\models\mContent::TYPE_DB;
         $content->title = $page->TITLE;
         $content->theme = $page->THEME;
         $content->layout = $page->LAYOUT;
@@ -212,35 +212,35 @@ class CMS extends \OhCrud\DB {
 
     }
 
-    // load widget(s)
-    private function getWidget($widgetString, $shouldSetOutputStatusCode = true) {
+    // load component(s)
+    private function getComponent($componentString, $shouldSetOutputStatusCode = true) {
 
-        $content = new \app\models\Content;
-        $widgetParameters = [];
+        $content = new \app\models\mContent;
+        $componentParameters = [];
 
-        parse_str(str_replace('|', '&', $widgetString), $widgetParameters);
-        $widgetClassFile = key($widgetParameters);
-        $widgetClass = '\app\controllers\Widgets\\' . str_replace('/', '\\', $widgetClassFile);
-        array_shift($widgetParameters);
+        parse_str(str_replace('|', '&', $componentString), $componentParameters);
+        $componentClassFile = key($componentParameters);
+        $componentClass = '\app\components\\' . str_replace('/', '\\', $componentClassFile);
+        array_shift($componentParameters);
 
-        // check if widget exists
-        if (\file_exists(__SELF__ . 'app/controllers/widgets/' . $widgetClassFile . '.php') == true && class_exists($widgetClass) == true) {
+        // check if component exists
+        if (\file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
 
-            $widget = new $widgetClass;
-            $widget->output($widgetParameters);
-            $content = $widget->content;
+            $component = new $componentClass;
+            $component->output($componentParameters);
+            $content = $component->content;
 
-            // get widget CSS assets
-            foreach($widget->cssFiles as $cssFile => $priority) {
+            // get component CSS assets
+            foreach ($component->cssFiles as $cssFile => $priority) {
                 $this->includeCSSFile($cssFile, $priority);
             }
-            // get widget Javascript assets
-            foreach($widget->jsFiles as $jsFile => $priority) {
+            // get component Javascript assets
+            foreach ($component->jsFiles as $jsFile => $priority) {
                 $this->includeJSFile($jsFile, $priority);
             }
 
         } else {
-            $content->html = '<mark>Oh CRUD! Widget not found.</mark>';
+            $content->html = '<mark>Oh CRUD! Component not found.</mark>';
         }
 
         return $content;
@@ -253,8 +253,8 @@ class CMS extends \OhCrud\DB {
         if ($is404 == true) $isSystem = true;
         if ($path == '/login/') $isSystem = true;
 
-        $content = new \app\models\Content;
-        $content->type = \app\models\Content::TYPE_FILE;
+        $content = new \app\models\mContent;
+        $content->type = \app\models\mContent::TYPE_FILE;
 
         $content->title = ucwords(trim($path, '/'));
         ob_start();
@@ -284,15 +284,15 @@ class CMS extends \OhCrud\DB {
         $output = ob_get_clean();
 
         // process embeded content in theme
-        $themeContent = new \app\models\Content;
+        $themeContent = new \app\models\mContent;
         $themeContent->text = $output;
         $themeContent->html = $output;
         $themeContent = $this->processContent($themeContent);
-        $themeContent = $this->processWidgets($themeContent);
+        $themeContent = $this->processComponents($themeContent);
         $output = $themeContent->html;
 
         // process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
-        $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\Content::TYPE_DB) ? '<div id="ohcrud-editor-edit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
+        $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\mContent::TYPE_DB) ? '<div id="ohcrud-editor-edit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
 
         $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
         $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
@@ -329,7 +329,7 @@ class CMS extends \OhCrud\DB {
         preg_match_all('/{{(.*?)}}/i', $content->text, $matches);
 
         if (isset($matches[1]) == true) {
-            foreach($matches[1] as $match) {
+            foreach ($matches[1] as $match) {
                 $embeddedContent = $this->getContent('/' . $match . '/', false);
 
                 if ($embeddedContent->is404 == true) continue;
@@ -342,8 +342,8 @@ class CMS extends \OhCrud\DB {
 
     }
 
-    // process widget(s)
-    private function processWidgets($content) {
+    // process component(s)
+    private function processComponents($content) {
 
         // skip processing when in edit mode
         if ($this->editMode == true) {
@@ -354,8 +354,8 @@ class CMS extends \OhCrud\DB {
         preg_match_all('/\[\[(.*?)\]\]/i', $content->text, $matches);
 
         if (isset($matches[1]) == true) {
-            foreach($matches[1] as $match) {
-                $embeddedContent = $this->getWidget($match, false);
+            foreach ($matches[1] as $match) {
+                $embeddedContent = $this->getComponent($match, false);
                 if ($embeddedContent->is404 == true) continue;
                 $content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $content->html);
                 $content->text = str_ireplace('[[' . $match . ']]', $embeddedContent->text, $content->text);

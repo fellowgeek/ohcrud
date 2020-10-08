@@ -1,10 +1,10 @@
 <?php
-namespace app\controllers;
+namespace app\components;
 
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Widget extends \OhCrud\DB {
+class Component extends \OhCrud\DB {
 
     public $path;
     public $content;
@@ -17,7 +17,7 @@ class Widget extends \OhCrud\DB {
         parent::__construct();
 
         $this->request = $_REQUEST;
-        $this->content = new \app\models\Content;
+        $this->content = new \app\models\mContent;
 
     }
 

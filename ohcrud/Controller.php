@@ -14,7 +14,7 @@ class Controller extends \OhCrud\DB {
             return (__OHCRUD_DEBUG_MODE__ == false ? false : true);
         } else if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) == true) { return false; }
 
-        // search user token
+        // search for user token
         $tokenExists = $this->read(
             'Users',
             'TOKEN = :TOKEN',

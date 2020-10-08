@@ -12,53 +12,50 @@ class Users extends \OhCrud\DB {
         if (__OHCRUD_DEBUG_MODE__ == true) {
 
             // variables
-            $usersTableExists = false;
+            $tableExists = false;
 
             switch($this->config["DRIVER"]) {
                 case "SQLITE":
-                        $usersTableExists = @$this->run("SELECT COUNT(*) AS Count FROM sqlite_master WHERE `name`='Users';")->first()->Count;
-                        if ($usersTableExists == 0) {
-                            $sql = "CREATE TABLE `Users` (
-                                    `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-                                    `USERNAME`	TEXT,
-                                    `PASSWORD`	TEXT,
-                                    `FIRSTNAME`	TEXT,
-                                    `LASTNAME`	TEXT,
-                                    `GROUP`	INTEGER,
-                                    `PERMISSIONS`	INTEGER,
-                                    `TOKEN`	TEXT,
-                                    `STATUS`	INTEGER
-                                );
-                            ";
-                            $this->run($sql);
-                        }
+                    $tableExists = $this->run("SELECT * FROM sqlite_master WHERE `name`='Users';")->first() ?? false;
+                    $sql = "CREATE TABLE IF NOT EXISTS `Users` (
+                            `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+                            `USERNAME`	TEXT,
+                            `PASSWORD`	TEXT,
+                            `FIRSTNAME`	TEXT,
+                            `LASTNAME`	TEXT,
+                            `GROUP`	INTEGER,
+                            `PERMISSIONS`	INTEGER,
+                            `TOKEN`	TEXT,
+                            `STATUS`	INTEGER
+                        );
+                    ";
+                    $this->run($sql);
                     break;
+
                 case "MYSQL":
-                        $usersTableExists = @$this->run("SELECT COUNT(*) AS Count FROM information_schema.tables WHERE `table_schema`='" . $this->config["MYSQL_DB"] . "' AND `table_name`= 'Users';")->first()->Count;
-                        if ($usersTableExists == 0) {
-                            $sql = "CREATE TABLE `Users` (
-                                `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
-                                `USERNAME` varchar(128) NOT NULL DEFAULT '',
-                                `PASSWORD` varchar(256) NOT NULL DEFAULT '',
-                                `FIRSTNAME` varchar(64) NOT NULL DEFAULT '',
-                                `LASTNAME` varchar(64) NOT NULL DEFAULT '',
-                                `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
-                                `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
-                                `TOKEN` varchar(256) NOT NULL DEFAULT '',
-                                `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
-                                PRIMARY KEY (`ID`),
-                                KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
-                                KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
-                                KEY `idx_GROUP` (`GROUP`) USING BTREE,
-                                KEY `idx_STATUS` (`STATUS`) USING BTREE
-                              ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-                            ";
-                            $this->run($sql);
-                        }
+                    $tableExists = $this->run("SELECT * FROM information_schema.tables WHERE `table_schema`='" . $this->config["MYSQL_DB"] . "' AND `table_name`= 'Users';")->first() ?? false;
+                    $sql = "CREATE TABLE IF NOT EXISTS `Users` (
+                        `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
+                        `USERNAME` varchar(128) NOT NULL DEFAULT '',
+                        `PASSWORD` varchar(256) NOT NULL DEFAULT '',
+                        `FIRSTNAME` varchar(64) NOT NULL DEFAULT '',
+                        `LASTNAME` varchar(64) NOT NULL DEFAULT '',
+                        `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
+                        `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
+                        `TOKEN` varchar(256) NOT NULL DEFAULT '',
+                        `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                        PRIMARY KEY (`ID`),
+                        KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
+                        KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
+                        KEY `idx_GROUP` (`GROUP`) USING BTREE,
+                        KEY `idx_STATUS` (`STATUS`) USING BTREE
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+                    ";
+                    $this->run($sql);
                     break;
             }
 
-            if ($usersTableExists == 0 && $this->success == true) {
+            if ($tableExists == false && $this->success == true) {
                 $this->create('Users', [
                     'USERNAME' => 'admin',
                     'PASSWORD' => password_hash(
@@ -120,7 +117,7 @@ class Users extends \OhCrud\DB {
         for($i = 0; $i < 32; $i++) {
             $randomString .= $characters[rand(0, strlen($characters) - 1)];
         }
-        return hash('sha256', __OHCRUD_SECRET__ . (isset($_SERVER["SERVER_NAME"]) ? $_SERVER["SERVER_NAME"] : PHP_SAPI) . $username . $randomString) . '>' . hash('sha256', time());
+        return hash('sha256', __OHCRUD_SECRET__ . (isset($_SERVER["SERVER_NAME"]) ? $_SERVER["SERVER_NAME"] : PHP_SAPI) . $username . $randomString . time());
     }
 
 }

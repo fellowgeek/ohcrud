@@ -9,6 +9,10 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Core {
 
+    const OUTPUT_NULL = null;
+    const OUTPUT_HTML = 'HTML';
+    const OUTPUT_JSON = 'JSON';
+
     public $data = [];
     public $errors = [];
     public $success = true;
@@ -107,7 +111,7 @@ class Core {
         if (headers_sent() == false && $this->outputHeadersSent == false) {
             $this->outputHeadersSent = true;
             http_response_code($this->outputStatusCode);
-            foreach($this->outputHeaders as $outputHeader) {
+            foreach ($this->outputHeaders as $outputHeader) {
                 header($outputHeader);
             }
         }
@@ -119,7 +123,7 @@ class Core {
         $response = '';
         if (is_array($data) == true) {
             $data_string = '';
-            foreach($data as $key => $value) { $data_string .= $key . '=' . urlencode($value) . '&'; }
+            foreach ($data as $key => $value) { $data_string .= $key . '=' . urlencode($value) . '&'; }
             rtrim($data_string, '&');
             if ($method == 'GET') { $url .= '?' . $data_string; }
         }
@@ -203,6 +207,10 @@ class Core {
 
     public function log($level = 'debug', $message, array $context = array()) {
 
+        if (__OHCRUD_LOG_ENABLED__ == false) {
+            return $this;
+        }
+
         $logger = new Logger('OHCRUD');
         $stream = new StreamHandler(__OHCRUD_LOG_FILE__, Logger::DEBUG);
         $stream->setFormatter(new \Monolog\Formatter\LineFormatter("[%datetime%] %channel%.%level_name%:\n%message%\n%context%\n%extra%\n----------------------------------------\n", "Y-m-d H:i:s"));
@@ -247,7 +255,7 @@ class Core {
         return false;
     }
 
-    public function console($message = '', $color = 'WHT') {
+    public function console($message = '', $color = 'WHT', $shouldAddNewLine = true) {
 
         if ( PHP_SAPI != 'cli') {
             return false;
@@ -272,7 +280,7 @@ class Core {
             "RST" =>    "\033[0m"
         ];
 
-        print(($colors[$color] ?? $colors['WHT']) . $message . $colors['RST'] . "\n");
+        print(($colors[$color] ?? $colors['WHT']) . $message . $colors['RST'] . ($shouldAddNewLine ? "\n" : ''));
 
     }
 

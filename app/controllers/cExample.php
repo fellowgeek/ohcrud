@@ -4,7 +4,7 @@ namespace app\models;
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Example extends \OhCrud\DB {
+class cExample extends \OhCrud\Controller {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
@@ -29,7 +29,7 @@ class Example extends \OhCrud\DB {
 
     public function publicEndPoint($request) {
 
-        $this->setOutputType('HTML');
+        $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
         $this->debug($request);
 
     }

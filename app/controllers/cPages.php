@@ -6,7 +6,7 @@ use HTMLPurifier;
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Pages extends \app\models\Pages {
+class cPages extends \app\models\mPages {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
@@ -49,7 +49,7 @@ class Pages extends \app\models\Pages {
             // update the record
             $this->update('Pages',
                 [
-                    'STATUS' => ($page->STATUS == \app\models\Pages::STATUS_ACTIVE) ? \app\models\Pages::STATUS_INACTIVE : \app\models\Pages::STATUS_ACTIVE
+                    'STATUS' => ($page->STATUS == \app\models\mPages::STATUS_ACTIVE) ? \app\models\mPages::STATUS_INACTIVE : \app\models\mPages::STATUS_ACTIVE
                 ],
                 'URL = :URL',
                 [
@@ -109,7 +109,7 @@ class Pages extends \app\models\Pages {
                 'TEXT' => $request->payload->TEXT,
                 'THEME' => $request->payload->THEME,
                 'LAYOUT' => $request->payload->LAYOUT,
-                'STATUS' => \app\models\Pages::STATUS_ACTIVE
+                'STATUS' => \app\models\mPages::STATUS_ACTIVE
                 ]
             );
         } else {
@@ -120,7 +120,7 @@ class Pages extends \app\models\Pages {
                     'TEXT' => $request->payload->TEXT,
                     'THEME' => $request->payload->THEME,
                     'LAYOUT' => $request->payload->LAYOUT,
-                    'STATUS' => \app\models\Pages::STATUS_ACTIVE
+                    'STATUS' => \app\models\mPages::STATUS_ACTIVE
                 ],
                 'URL = :URL',
                 [

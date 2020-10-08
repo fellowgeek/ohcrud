@@ -4,7 +4,7 @@ namespace app\controllers;
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Users extends \OhCrud\Core {
+class cUsers extends \OhCrud\Core {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
