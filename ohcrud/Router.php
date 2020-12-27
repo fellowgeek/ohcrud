@@ -6,17 +6,38 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Router extends \OhCrud\Core {
 
+    private $request;
+    private $count = 0;
     public function __construct($rawPath = null) {
 
         // global variables
         $GLOBALS['PATH'] = rtrim(parse_url($rawPath, PHP_URL_PATH), '/') . '/';
         $GLOBALS['PATH_ARRAY'] = preg_split('[/]', $GLOBALS['PATH'], NULL, PREG_SPLIT_NO_EMPTY);
 
+        $this->route($rawPath);
+    }
+
+    public function route($rawPath = null) {
+
         // variables
         $path = $GLOBALS['PATH'];
         $pathArray = $GLOBALS['PATH_ARRAY'];
         $method = '';
         $ohcrudEndPoints = unserialize(__OHCRUD_ENDPOINTS__);
+
+        // process cli parameters
+        if (PHP_SAPI == 'cli') {
+            $parameters = [];
+            parse_str(parse_url($rawPath, PHP_URL_QUERY), $parameters);
+            $this->request = (object) $parameters;
+        } else {
+            // process api parameters
+            $this->request = (object) \array_merge($_REQUEST, $_GET, $_POST);
+            $payload = file_get_contents('php://input');
+            if (empty($payload) == false) {
+                if ($_SERVER['CONTENT_TYPE'] == 'application/json') $this->request->payload = \json_decode($payload); else $this->request->payload = $payload;
+            }
+        }
 
         // try to create the object first
         if (array_key_exists($path, $ohcrudEndPoints) == true) {
@@ -39,14 +60,7 @@ class Router extends \OhCrud\Core {
             $object = new $objectName;
 
             if (isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
-                $request = (object) \array_merge($_REQUEST, $_GET, $_POST);
-                if (empty($_GET) == false) $request->GET = (object) $_GET;
-                if (empty($_POST) == false) $request->POST = (object) $_POST;
-
-                $payload = file_get_contents('php://input');
-                if (empty($payload) == false)
-                    if ($_SERVER['CONTENT_TYPE'] == 'application/json') $request->payload = \json_decode($payload); else $request->payload = $payload;
-                $object->$method($request);
+                $object->$method($this->request);
             } else {
                 if (isset($_SESSION['User']) == false) $this->authorize(); else $this->forbidden();
             }
@@ -71,7 +85,7 @@ class Router extends \OhCrud\Core {
 
     private function checkPermissions($expression, $method = null) {
 
-        // grand permission if script is called from command line interface
+        // grant permission if script is called from command line interface
         if (PHP_SAPI == 'cli') return true;
 
         // variables
@@ -98,33 +112,29 @@ class Router extends \OhCrud\Core {
 
     private function authorize() {
 
-        if (isset($_SESSION['User']) == false) {
-            if (isset($_SERVER['PHP_AUTH_USER']) == true && isset($_SERVER['PHP_AUTH_PW']) == true) {
-                // authenticate user
-                $user = new \OhCrud\Users;
-                $userHasLoggedIn = $user->login($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
+        // variables
+        $users = new \OhCrud\Users;
+        $httpHeaders = getallheaders();
+        $userHasLoggedIn = false;
 
-                if ($userHasLoggedIn == false) {
-                    header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
-                    header('HTTP/1.0 401 Unauthorized');
-                } else {
-                    // if user logged in, redirect to URL
-                    $this->redirect($_SERVER['REQUEST_URI']);
-                }
-            } else {
-                header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
-                header('HTTP/1.0 401 Unauthorized');
-            }
+        // authenticate user
+        if (isset($_SERVER['PHP_AUTH_USER']) == true || isset($_SERVER['PHP_AUTH_PW']) == true || isset($httpHeaders['Token']) == true) {
+            $userHasLoggedIn = $users->login($_SERVER['PHP_AUTH_USER'] ?? null, $_SERVER['PHP_AUTH_PW'] ?? null, $httpHeaders['Token'] ?? null);
+        }
+
+        if ($userHasLoggedIn == true) {
+            $this->route();
         } else {
-            // display error message if user is logged in but does not have enough permissions
-            $this->forbidden();
+            // unauthorized access
+            header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
+            header('HTTP/1.0 401 Unauthorized');
         }
     }
 
     private function forbidden() {
 
         $this->outputType = 'JSON';
-        $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.', 403);
+        $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that...', 403);
         $this->output();
     }
 

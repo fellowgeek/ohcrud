@@ -6,6 +6,9 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Users extends \OhCrud\DB {
 
+    const STATUS_ACTIVE = 1;
+    const STATUS_INACTIVE = 0;
+
     function __construct() {
         parent::__construct();
 
@@ -68,39 +71,59 @@ class Users extends \OhCrud\DB {
                     'GROUP' => 1,
                     'PERMISSIONS' => 1,
                     'TOKEN' => $this->generateToken('admin'),
-                    'STATUS' => 1
+                    'STATUS' => $this::STATUS_ACTIVE
                     ]
                 );
             }
         }
     }
 
-    public function login($username, $password) {
+    public function login($username, $password, $token = null) {
 
         // variables
         $userHasLoggedIn = false;
 
-        $user = $this->read(
-            'Users',
-            'USERNAME = :USERNAME AND STATUS = :STATUS',
-            array(
-                'USERNAME' => $username,
-                'STATUS' => 1
-            )
-        )->first();
-
-        if ($user != false) {
-            $userHasLoggedIn = password_verify($password, $user->PASSWORD);
-            unset($user->PASSWORD);
-            unset($user->TOKEN);
-            if ($userHasLoggedIn == true) {
+        // get user based on username or token
+        if (isset($token) == true) {
+            $user = $this->read(
+                'Users',
+                'TOKEN = :TOKEN AND STATUS = :STATUS',
+                [
+                    ':TOKEN' => $token,
+                    ':STATUS' => $this::STATUS_ACTIVE
+                ]
+            )->first();
+            if ($user != false) {
+                $userHasLoggedIn = true;
                 $this->setSession('User', $user);
             }
-        }
-
-        if ($userHasLoggedIn == false) {
-            $this->log('warning', 'Login attempt was not successful', [$username]);
-            sleep(1);
+            if ($userHasLoggedIn == false) {
+                $this->log('warning', 'Invalid token', [$token]);
+                // delay brute force attacks
+                sleep(1);
+            }
+        } else {
+            $user = $this->read(
+                'Users',
+                'USERNAME = :USERNAME AND STATUS = :STATUS',
+                [
+                    ':USERNAME' => $username,
+                    ':STATUS' => $this::STATUS_ACTIVE
+                ]
+            )->first();
+            if ($user != false) {
+                $userHasLoggedIn = password_verify($password, $user->PASSWORD);
+                unset($user->PASSWORD);
+                unset($user->TOKEN);
+                if ($userHasLoggedIn == true) {
+                    $this->setSession('User', $user);
+                }
+            }
+            if ($userHasLoggedIn == false) {
+                $this->log('warning', 'Login attempt was not successful', [$username]);
+                // delay brute force attacks
+                sleep(1);
+            }
         }
 
         return $userHasLoggedIn;

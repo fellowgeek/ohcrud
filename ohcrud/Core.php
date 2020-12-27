@@ -118,51 +118,6 @@ class Core {
         return $this;
     }
 
-    public function request($url, $method = 'GET', $data = '', array $headers = array()) {
-
-        $response = '';
-        if (is_array($data) == true) {
-            $data_string = '';
-            foreach ($data as $key => $value) { $data_string .= $key . '=' . urlencode($value) . '&'; }
-            rtrim($data_string, '&');
-            if ($method == 'GET') { $url .= '?' . $data_string; }
-        }
-
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, (isset($data_string) == true) ? $data_string : $data);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-            $response = curl_exec($ch);
-            $this->responseInfo = curl_getinfo($ch);
-            curl_close ($ch);
-
-            if (isset($this->responseInfo['http_code']) == true) {
-                $this->outputStatusCode = $this->responseInfo['http_code'];
-
-                if (in_array($this->responseInfo['http_code'], [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]) == true) {
-                    $this->data = json_decode($response);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        $this->data = $response;
-                    }
-                } else {
-                    $this->success = false;
-                    $this->errors = json_decode($response);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        $this->error($response);
-                    }
-                }
-                return $this->output();
-            }
-        } catch (\Exception $e) {
-            $this->error($e->getMessage());
-            return $this->output();
-        }
-    }
-
     public function getCache($key, $duration = 3600) {
 
         if (__OHCRUD_CACHE_ENABLED__ == false) {
