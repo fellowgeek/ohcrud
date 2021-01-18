@@ -13,20 +13,20 @@ var $$ = function($queryString) {
 // perform ajax call using fetch API
 async function httpRequest($url, $options, $successCallback, $errorCallback) {
 
-    if(typeof $options == 'undefined')
+    if (typeof $options == 'undefined')
         $options = {};
     try {
         const $fetchResult = fetch($url, $options);
         const $response = await $fetchResult;
         if ($response.ok) {
-            if(typeof $successCallback != 'undefined')
+            if (typeof $successCallback != 'undefined')
                 $successCallback($response);
         } else {
-            if(typeof $errorCallback != 'undefined')
+            if (typeof $errorCallback != 'undefined')
                 $errorCallback($response);
         }
     } catch ($error) {
-        if(typeof $errorCallback != 'undefined')
+        if (typeof $errorCallback != 'undefined')
             $errorCallback($error);
     }
 
@@ -41,14 +41,14 @@ STARTUP
 document.addEventListener('DOMContentLoaded', function () {
 
     var $loginForm = $$('#ohcrud-login');
-    if($loginForm != null) {
+    if ($loginForm != null) {
         $loginForm.addEventListener('submit', function($event) {
             $event.preventDefault();
         });
     }
 
     var $loginButton = $$('#ohcrud-login-login');
-    if($loginButton != null) {
+    if ($loginButton != null) {
         $loginButton.addEventListener('click', function() {
             var $this = this;
             $this.disabled = true;
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 async function($response) {
                     $$('.alert').classList.add('hidden');
-                    if($data.REDIRECT != '') {
+                    if ($data.REDIRECT != '') {
                         window.location.href = $data.REDIRECT;
                     } else {
                         window.location.href = '/';
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var $editButton = $$('#ohcrud-editor-edit');
-    if($editButton != null) {
+    if ($editButton != null) {
         $editButton.addEventListener('click', function() {
             window.location.href = this.dataset.url;
         });
