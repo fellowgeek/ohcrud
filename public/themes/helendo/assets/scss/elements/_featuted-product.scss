@@ -1,0 +1,41 @@
+
+/*======================================
+=        16. Featuted Product Css
+=======================================*/
+
+.images-text-bg img {
+    max-width: 650px;
+    max-height: 121px;
+}
+
+
+.featuted-product-one {
+     & .product-thumbnail {
+          a {
+               display: block;
+          }
+          @media #{$tablet-device,$large-mobile} {
+               margin-bottom: 30px;
+          }
+     }
+     &:hover {
+          & .product-thumbnail {
+               a {
+                    img {
+                         transform: scale(1.05)
+                    }
+               }
+          }
+     }
+}
+
+.featured-pice {
+     margin-top: 15px;
+     font-size: 16px;
+     color: #999;
+     span {
+          color: #666;
+          font-size: 24px;
+          font-weight: 500;
+     }
+}

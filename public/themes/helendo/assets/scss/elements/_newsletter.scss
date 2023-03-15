@@ -1,0 +1,99 @@
+/*======================================
+=         22. Newsletter Css            =
+=======================================*/
+.newsletter {
+     &--one {
+          .input-box {
+               border: none;
+               background: #f4f5f7;
+               width: 100%;
+               height: 54px;
+               padding: 10px 170px 10px 20px;
+          }
+          .submit-btn {
+               position: absolute;
+               top: 0;
+               right: 15px;
+               font-size: 16px;
+               opacity: 1;
+               padding: 0 40px;
+               border: none;
+               height: 54px;
+               background: $black;
+               color: $white;
+          }
+     }
+     &--box {
+          background: #f4f5f7;
+          padding: 50px 70px;
+          @media #{$tablet-device,$large-mobile}{
+               padding: 50px 15px;
+          }
+     }
+     &--two {
+          position: relative;
+          .input-box {
+               border: none;
+               background: #fff;
+               width: 100%;
+               height: 54px;
+               padding: 10px 70px 10px 20px;
+          }
+          .submit-btn {
+               position: absolute;
+               top: 0;
+               right: 15px;
+               font-size: 16px;
+               opacity: 1;
+               padding: 0 30px;
+               border: none;
+               height: 54px;
+               background: transparent;
+               color: $black;
+          }
+          &.max-420 {
+               max-width: 420px;
+          }
+     }
+     &--three {
+          .input-box {
+               border: none;
+               background: #fff;
+               width: 100%;
+               height: 60px;
+               padding: 10px 70px 10px 20px;
+               color: $black;
+               &::placeholder {
+                    color: $black;
+               }
+          }
+          .submit-btn {
+               position: absolute;
+               top: 0;
+               right: 15px;
+               font-size: 16px;
+               opacity: 1;
+               padding: 0 30px;
+               border: none;
+               height: 60px;
+               background: transparent;
+               color: $black;
+          }
+     }
+     &--four {
+          .input-box {
+               width: 100%;
+               border: none;
+               border-bottom: 1px solid #ddd;
+               background: transparent;
+               height: 40px;
+               padding: 10px 50px 10px 0;
+          }
+          .submit-button {
+               background: transparent;
+               position: absolute;
+               right: 15px;
+               border: none;
+          }
+     }
+}

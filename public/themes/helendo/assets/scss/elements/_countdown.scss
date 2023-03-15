@@ -1,0 +1,149 @@
+/*======================================
+=         20. Countdown Css            =
+=======================================*/
+
+
+.countdown-deals{
+     display: flex;
+     justify-self: start;
+     &.counter-style {
+          &--one {
+               & .single-countdown {
+                    display: inline-block;
+                    margin-right: 80px;
+                    position: relative;
+                    @media #{$tablet-device}{
+                         margin-right: 40px;
+                    }
+                    @media #{$large-mobile}{
+                         margin-right: 30px;
+                    }
+                    &::after {
+                         position: absolute;
+                         content: ":";
+                         right: -40px;
+                         top: 25%;
+                         -webkit-transform: translateY(-50%);
+                         -ms-transform: translateY(-50%);
+                         transform: translateY(-50%);
+                         font-size: 40px;
+                         color: $black;
+                         @media #{$tablet-device}{
+                              font-size: 36px;
+                              right: -28px;
+                         }
+                         @media #{$large-mobile}{
+                              font-size: 26px;
+                              right: -20px;
+                         }
+                    }
+                    &:last-child {
+                         &::after {
+                              display: none;
+                         }
+                    }
+                    & .single-countdown__time {
+                         display: block;
+                         font-family: $font-family-two;
+                         font-size: 48px;
+                         font-weight: 400;
+                         line-height: 1;
+                         color: $black;
+                         margin-bottom: 0px;
+                         @media #{$tablet-device}{
+                              font-size: 36px;
+                         }
+                         @media #{$large-mobile}{
+                              font-size: 28px;
+                         }
+
+                    }
+                    & .single-countdown__text {
+                         margin-top: 10px;
+                         display: block;
+                         color: $black;
+                         font-size: 18px;
+                         text-transform: uppercase;
+                         font-weight: 500;
+                         @media #{$tablet-device,$large-mobile}{
+                              font-size: 16px;
+                              margin-top: 0px;
+                         }
+                    }
+               }
+          }    
+          &--two {
+               & .single-countdown {
+                    display: inline-block;
+                    margin-right: 30px;
+                    position: relative;
+                    color: $theme-color--default;
+                    &::after {
+                         position: absolute;
+                         content: ":";
+                         right: -20px;
+                         top: 25%;
+                         -webkit-transform: translateY(-50%);
+                         -ms-transform: translateY(-50%);
+                         transform: translateY(-50%);
+                         font-size: 20px;
+                         color: $theme-color--default;
+                    }
+                    &:last-child {
+                         &::after {
+                              display: none;
+                         }
+                    }
+                    & .single-countdown__time {
+                         display: block;
+                         font-size: 20px;
+                         font-weight: 400;
+                         line-height: 1;
+                         color: $theme-color--default;
+                         margin-bottom: 0px;
+
+                    }
+                    & .single-countdown__text {
+                         color: $theme-color--default;
+                         font-size: 14px;
+                         font-weight: 400;
+                         @media #{$tablet-device,$large-mobile}{
+                              font-size: 14px;
+                              margin-top: 0px;
+                         }
+                    }
+               }
+          }    
+          &--three {
+               & .single-countdown {
+                    display: inline-block;
+                    margin-right: 40px;
+                    position: relative;
+                    color: $theme-color--default;
+                    @media #{$tablet-device,$large-mobile}{
+                         margin-right: 20px;
+                    }
+                    & .single-countdown__time {
+                         display: block;
+                         font-size: 48px;
+                         font-weight: 400;
+                         line-height: 1;
+                         color: $theme-color--default;
+                         margin-bottom: 0px;
+                         @media #{$tablet-device,$large-mobile}{
+                              font-size: 30px;
+                         }
+                    }
+                    & .single-countdown__text {
+                         color: $black;
+                         font-size: 16px;
+                         font-weight: 400;
+                         @media #{$tablet-device,$large-mobile}{
+                              font-size: 16px;
+                              margin-top: 0px;
+                         }
+                    }
+               }
+          }    
+     }
+}

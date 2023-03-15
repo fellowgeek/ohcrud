@@ -1,0 +1,113 @@
+
+/*=========================================
+=               06. Footer Css            =
+===========================================*/
+.reveal-footer{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: -1;
+
+    @media #{ $tablet-device, $large-mobile}{
+        position: static;
+    }
+}
+.footer-widget-wrapper{
+    margin-bottom: -35px;
+}
+.footer-widget{
+    margin-bottom: 30px;
+    &__title{
+        margin-top: -3px;
+        color: $theme-color--black;
+    }
+
+    &__list{
+        li{
+            margin-bottom: 4px;
+            & i {
+                margin-right: 10px;
+            }
+            &:last-child{
+                margin-bottom: 0;
+            }
+            & .image_btn {
+                border-radius: 5px;
+                box-shadow: 0 0 20px rgba(51,51,51,.1);
+                overflow: hidden;
+            }
+        }
+    }
+    &__newsletter {
+        input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            background: transparent;
+            padding: 0 40px 0 0;
+        }
+        .submit-button {
+            background: transparent;
+            position: absolute;
+            right: 15px;
+            border: none;
+        }
+    }
+    &__footer-menu {
+        @media #{$large-mobile}{
+            margin-bottom: 20px;
+        }
+        li {
+            display: inline-block;
+            margin-right: 27px;
+            &:last-child {
+                margin-right: 0;
+            }
+        }
+    }
+}
+.footer-social-networks {
+    .item {
+        display: inline-block;
+        margin-right: 20px;
+        &:last-child {
+            margin-right: 0;
+        }
+    }
+}
+.footer-bottom-social {
+    display: flex;
+    justify-content: flex-end;
+    
+    @media #{$large-mobile}{
+        justify-content: center;
+        margin: 20px 0 0 0;
+    }
+    & .title {
+        margin-right: 60px;
+        font-size: 16px;
+        
+        @media #{$desktop-device}{
+            margin-right: 30px;
+        }
+        @media #{$tablet-device,$large-mobile}{
+            margin-right: 20px;
+        }
+    }
+}
+.instagram_gallery {
+    a {
+        width: 80px;
+        margin: 5px;
+        img {
+            width: 80px;
+        }
+    }
+}
+
+.copyright-text{
+    display: block;
+}
+
+/*=====  End of footer ======*/

@@ -1,0 +1,71 @@
+/*==============================================
+=         13. Contact Us Pages Css          =
+================================================*/
+.single-contact-info-item {
+     margin-top: 30px;
+     .icon {
+          float: left;
+          margin-right: 26px;
+          i {
+               line-height: 1;
+               font-size: 36px;
+               color: #000;
+          }
+     }
+     .iconbox-desc {
+          display: inline-block;
+     }
+}
+
+.contact-input {
+  margin: 0 -10px;
+}
+
+.contact-input .contact-inner {
+  float: left;
+  margin: 0 0 20px;
+  padding: 0 10px;
+  width: 50%;
+}
+
+@media only screen and (max-width: 575px) {
+  .contact-input .contact-inner {
+    width: 100%;
+  }
+}
+
+.contact-inner {
+  margin: 0 0 20px;
+}
+
+.contact-inner {
+    margin: 0 0 20px;
+    & input , textarea {
+          border: 1px solid #e8e8e8;
+          height: 50px;
+          background-color: transparent;
+          padding: 2px 20px;
+          color: #777;
+          width: 100%;
+          &:focus {
+               border: 1px solid #262626;
+          }
+    }
+    &  textarea {
+        height: 150px;
+        padding: 15px;
+    }
+    & select {
+        color: #777;
+    }
+}
+
+.googleMap-1 {
+    height: 800px;
+    @media #{$tablet-device} {
+      height: 300px;
+    }
+    @media #{$large-moible} {
+      height: 300px;
+    }
+}

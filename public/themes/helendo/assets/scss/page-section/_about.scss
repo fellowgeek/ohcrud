@@ -1,0 +1,253 @@
+
+/*=======================================
+=          09. About Us Css           =
+=========================================*/
+
+
+.hero-about-us-content {
+     p {
+          font-size: 20px;
+          font-family: $font-family-three;
+          font-weight: 500;
+     }
+}
+
+.about-us-content-4 {
+     height: 100%;
+     padding: 50px;
+}
+
+.elendo-video-box {
+     background: url(../images/banners/video-banner.jpg);
+     min-height: 450px;
+     -webkit-transition: .5s;
+     transition: .5s;
+     -webkit-background-size: cover;
+     background-size: cover;
+     background-position: center;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     position: relative;
+     overflow: hidden;
+     
+    
+     .video-icon {
+          a {
+               display: block;
+               position: absolute;
+               left: 50%;
+               transform: translateX(-25px);
+          } 
+          &::before {
+               position: absolute;
+               left: 0;
+               top: 0;
+               width: 100%;
+               height: 100%;
+               background: rgba(0,0,0,0.4);
+               content: '';
+               opacity: 0;
+               transition: all 0.3s ease-in-out;
+          }
+          
+     }
+     &:hover {
+          transform: scale(1.02);
+          .video-icon {
+               
+               &::before {
+                    opacity: 1;
+               }
+               
+          }
+     }
+     .linear-ic-play {
+          font-size: 62px;
+          line-height: 60px;
+          font-style: normal;
+          &::before {
+               content: "I";
+               font-family: "ElegantIcons";
+               position: absolute;
+               top: 0;
+               left: 0;
+               color: #fff;
+          }
+     }
+}
+
+
+.banner-video-box {
+     position: relative;
+     overflow: hidden;
+     &::after {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.4);
+          content: '';
+          opacity: 0;
+          transition: all 0.3s ease-in-out;
+     }
+
+     .video-icon {
+          a {
+               z-index: 3;
+               display: block;
+               position: absolute;
+               left: 50%;
+               top: 40%;
+               transform: translate(-50%, -50%);
+               i {         
+                    font-size: 62px;
+                    line-height: 60px;
+               }
+          } 
+          
+     }
+     
+     &:hover {
+          img {
+               transform: scale(1.02);
+          }
+          &::after {
+               opacity: 1;
+          }
+     }
+
+     .linear-ic-play {
+          font-style: normal;
+          &::before {
+               content: "I";
+               font-family: "ElegantIcons";
+               position: absolute;
+               top: 0;
+               left: 0;
+               color: #fff;
+          }
+     }
+
+}
+
+.about-us-content_6 {
+     h2 {
+          font-size: 60px;
+          font-family: 'Mr De Haviland', cursive;
+          margin-bottom: 20px;
+     }
+     p {
+          max-width: 780px;
+          margin: auto;
+     }
+}
+
+.single-support-item {
+     margin-top: 50px;
+     .header-support {
+          display: flex;
+          align-items: center;
+          .icon {
+               line-height: 1;
+               font-size: 36px;
+               color: #000;
+               margin-right: 20px;
+          }
+     }
+     .iconbox-desc {
+          margin-top: 20px;
+     }
+}
+
+.progress-charts{
+    overflow: hidden;
+    h6{
+        &.heading{
+            margin-bottom: 13px;
+            text-transform: uppercase;
+            span{
+                &.percent-label{
+                    color: #222;
+                    font-weight: 600;
+                }
+            }
+        }
+        &.custom-color--2{
+            color: #000;
+        }
+
+        &.custom-color--3{
+            color: #66a7e8;
+        }
+
+        &.custom-color--4{
+            color: #f10;
+        }
+
+        &.custom-color--5{
+            color: #23a455;
+        }
+
+        &.custom-color--6 {
+            color: #a0a0a0;
+        }
+
+        &.custom-color--7 {
+            color: #000;
+        }
+
+        &.custom-color--8 {
+            color: #7971ea;
+         }
+    }
+     .progress{
+          height: 3px;
+          overflow: visible;
+          font-size: 14px;
+          background-color: #eee;
+          border-radius: 0;
+          .progress-bar{
+               overflow: visible;
+               position: relative;
+               background: $theme-color--default;
+               &.custom-color--2 { 
+                    background-color: #000;
+               }
+               span{
+                    &.percent-label{
+                    position: absolute;
+                    color: #222;
+                    right: -7px;
+                    top: -35px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    }
+               }
+          }
+    }
+}
+
+.prog-title {
+     font-size: 14px;
+     margin-bottom: 10px;
+}
+.progress-charts {
+     margin-bottom: 20px;
+}
+.radial-progress-single{
+    &.progress-flex {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        align-items: center;
+        
+        @media #{$large-mobile} {
+            display: block;
+        }
+    }
+}
+
+

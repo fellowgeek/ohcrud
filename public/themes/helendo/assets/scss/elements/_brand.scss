@@ -1,0 +1,48 @@
+/*======================================
+=         24. Brand Css            =
+=======================================*/
+
+.single-brand-item {
+     text-align: center;
+     a {
+          display: block;
+          img {
+               opacity: .35;
+               -webkit-transition: .5s;
+               transition: .5s;
+          }
+          &:hover {
+               img {
+                    opacity: 1;
+               }
+          }
+     }
+}
+
+.brand-slider-active {
+    
+     .slick-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          left: -10px;
+          z-index: 3;
+          font-size: 24px;
+          cursor: pointer;
+          color: #666;
+          transition: all 0.3s ease-in-out;
+          &.arrow-next {
+               right: -10px;
+               left: auto;
+          }
+          @media #{$desktop-device,$tablet-device,$large-mobile}{
+              left: 0;
+              &.arrow-next {
+                    right: 0px;
+                    left: auto;
+               }
+          }
+         
+     }
+      
+}

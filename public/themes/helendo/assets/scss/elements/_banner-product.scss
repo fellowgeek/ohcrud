@@ -1,0 +1,168 @@
+/*======================================
+=         23. Banner Product Css            =
+=======================================*/
+
+
+.banner-product-image {
+     position: relative;
+     overflow: hidden;
+     & a {
+          display: block;
+          & img {
+               width: 100%;
+          }
+          &:hover {
+               transform: scale(1.05);
+          }
+     }
+     .product-banner-title {
+          position: absolute;
+          z-index: 99;
+          top: 60px;
+          left: 90px;
+          @media #{$desktop-device}{
+               left: 40px;
+               top: 40px;
+          }
+          @media #{$tablet-device,$large-mobile}{
+               left: 30px;
+               top: 30px;
+          }
+     }
+}
+.banner-images-one {
+     overflow: hidden;
+     .thumbnail {
+          display: block;
+          
+     }
+     .banner-title {
+          position: absolute;
+          z-index: 99;
+          top: 60px;
+          left: 50px;
+          
+          @media #{$tablet-device,$large-mobile}{
+               top: 40px;
+               left: 30px;
+          }
+     }
+     &:hover {
+        .thumbnail {
+              img {
+                   transform: scale(1.04);
+              }
+          }  
+          .banner-title {
+               .text-btn-normal {
+                    color: #999;
+               }
+          }
+     }
+     .text-btn-normal {
+          &:hover {
+               color: #999;
+          }
+     }
+}
+
+
+.banner-area-box {
+     .banner-inner-box {
+          margin-top: -135px;
+          background: #fff;
+          padding: 0 15px;
+          position: relative;
+          @media #{$tablet-device}{
+              margin-top: 35px;
+          }
+          @media #{$large-mobile}{
+               margin-top: 35px;
+          }
+     }
+}
+
+
+.mt-130 {
+     margin-top: 130px;
+     @media #{$tablet-device,$large-mobile}{
+          margin-top: 60px;
+     }
+}
+.mt-180 {
+     margin-top: 180px;
+     @media #{$tablet-device,$large-mobile}{
+          margin-top: 60px;
+     }
+}
+
+.single-arival-product {
+     &> a {
+          display: block;
+          overflow: hidden;
+          img {
+
+          }
+          @media #{$small-mobile} {
+               img {
+                    width: 100%;
+               }
+          }
+          &:hover {
+               img {
+                    transform: scale(1.02);
+               }
+          }
+     }
+     .product-content {
+          margin-top: 30px;
+          .product-price {
+               margin-top: 10px;
+               color: #666;
+               font-size: 18px;
+               line-height: 30px;
+          }
+     }
+}
+.d-item {
+    display: flex;
+    flex-direction: column;
+}
+.single-product--03 {
+     &> a {
+          display: block;
+          overflow: hidden;
+          &:hover {
+               img {
+                    transform: scale(1.02);
+               }
+          }
+     }
+     
+     .product-content {
+          margin-top: -79px;
+          margin-left: 80px;
+          z-index: 33;
+          position: relative;
+          .product-price {
+               margin-top: 10px;
+               color: #666;
+               font-size: 18px;
+               line-height: 30px;
+          }
+          &.top--content {
+               margin-bottom: -79px;
+               @media #{$tablet-device}{
+                    margin-bottom: 30px;
+               }
+          }
+          @media #{$large-mobile}{
+               margin-left: 20px;
+               margin-top: 30px;
+               &.top--content {
+                    margin-bottom: 0px;
+               }
+          }
+     }
+     
+}

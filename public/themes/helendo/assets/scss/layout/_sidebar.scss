@@ -1,0 +1,89 @@
+/*=======================================
+=            07. Sidebar Css           =
+=========================================*/
+
+.shop-widget {
+     border-bottom: 1px solid #ddd;
+     margin-bottom: 40px;
+     padding-bottom: 40px;
+     &:last-child {
+          border-bottom: none;
+          margin-bottom: 0;
+          padding-bottom: 0;
+     }
+}
+
+.widget-shop-categories, .widget-size, .widget-price {
+     .widget-nav-list {
+          li {
+               margin-bottom: 6px;
+               &:last-child {
+                    margin-bottom: 0;
+               }
+               a {
+                    display: flex;
+                    justify-content: space-between;
+               }
+          }
+     }
+}
+
+.widget-color{
+     .widget-nav-list {
+          li {
+               display: inline-block;
+               margin-bottom: 6px;
+               margin-right: 20px;
+               &:last-child {
+                    margin-bottom: 0;
+               }
+               
+          }
+     }
+}
+.tagcloud a::after {
+    content: ",";
+}
+.tagcloud a {
+    font-size: 16px;
+    padding-right: 5px;
+}
+
+.page-pagination {
+     li {
+          text-align: center;
+          padding: 0 5px;
+          .page-numbers {
+               height: 34px;
+               padding: 0 13px;
+               border-radius: 0;
+               text-align: center;
+               position: relative;
+               color: #000;
+               background-color: #f5f5f5;
+               display: -webkit-box;
+               display: -webkit-flex;
+               display: -moz-box;
+               display: -ms-flexbox;
+               display: flex;
+               -webkit-box-align: center;
+               -webkit-align-items: center;
+               -moz-box-align: center;
+               -ms-flex-align: center;
+               align-items: center;
+               font-weight: 500;
+               font-size: 12px;
+               justify-content: center;
+               &.current {
+                    background-color: #dcb14a;
+               }
+               i {
+                    font-size: 12px;
+                    padding-left: 8px;
+               }
+          }
+     }
+}
+
+
+/*=====  End of Sidebar  ======*/

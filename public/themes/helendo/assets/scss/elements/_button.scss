@@ -1,0 +1,96 @@
+/*======================================
+=        15. Button Css
+=======================================*/
+
+.btn {
+     border-radius: 0;
+     font-size: 15px;
+     font-weight: 500;
+     height: 50px;
+     line-height: 38px;
+     transition: $transition--default;
+     border: transparent;
+     &--sm {
+          line-height: 38px;
+          padding: 0 22px;
+          height: 40px;
+     }
+     &--md {
+          line-height: 38px;
+          padding: 0 32px;
+          height: 40px;
+     }
+     &--lg {
+          line-height: 44px;
+          padding: 0 42px;
+          height: 46px;
+     }
+     &--black {
+          background: $black;
+          color: $white;
+          &:hover , 
+          &:focus {
+               background: #222;
+               color: $white;
+          }
+     }
+     &--border_1 {
+          border: 1px solid #222;
+          &:hover {
+               border: 1px solid #222;
+               background: #222;
+               color: $white;
+          }
+     }
+     &--full {
+          width: 100%;
+     }
+     &--icon {
+          border: 1px solid #222;
+          text-align: center;
+          height: 46px;
+          line-height: 44px;
+          padding: 0 22px;
+          &:hover {
+               border: 1px solid #222;
+               background: #222;
+               color: $white;
+          }
+     }
+     &--text-icon {
+          font-size: 18px;
+          font-weight: 500;
+          & i {
+               margin-right: 10px;
+          }
+     }
+     &--border-bottom {
+          font-size: 18px;
+          text-decoration: underline;
+          font-weight: 500;
+          line-height: 1;
+          &:hover {
+               text-decoration: underline;
+          }
+     }
+}
+
+.tf-btn {
+     font-size: 18px;
+     display: inline-block;
+     height: 50px;
+     line-height: 50px;
+     padding: 0 28px;
+     font-weight: 700 !important;
+     text-align: center;
+     background-color: #7baa0b;
+     color: #fff;
+     &:hover,
+     &:focus {
+          color: $white;
+     }
+     @media #{$small-mobile}{
+          padding: 0 10px;
+          font-size: 12px;
+     }
+}
