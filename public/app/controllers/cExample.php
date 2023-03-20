@@ -32,6 +32,23 @@ class cExample extends \OhCrud\Controller {
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
         $this->debug($request);
 
+        $this->create('Users', [
+            'USERNAME' => 'admin',
+            'PASSWORD' => password_hash(
+                'admin', PASSWORD_BCRYPT, [
+                    'cost' => 10
+                    ]
+                ),
+            'FIRSTNAME' => 'admin',
+            'LASTNAME' => 'admin',
+            'GROUP' => 1,
+            'PERMISSIONS' => 1,
+            // 'TOKEN' => $this->generateToken('admin'),
+            'STATUS' => 1
+            ]
+        );
+
+
     }
 
 }

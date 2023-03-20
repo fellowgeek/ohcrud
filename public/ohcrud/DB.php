@@ -102,7 +102,7 @@ class DB extends \OhCrud\Core {
         foreach ($fields as $field)
             $fieldNames .= "`" . $field . "`,";
 
-        $sql = "INSERT INTO " . $table . " (" . trim($fieldNames, ",") . ") VALUES (:" . implode($fields, ", :") . ");";
+        $sql = "INSERT INTO " . $table . " (" . trim($fieldNames, ",") . ") VALUES (:" . implode(", :", $fields) . ");";
         $bind = array();
         foreach ($fields as $field)
             $bind[":$field"] = $data[$field];

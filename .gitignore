@@ -1,6 +1,6 @@
 *.DS_Store
 ._*
-logs/
+logs/app.log
 vendor/
 settings.php
 .vscode/
@@ -9,3 +9,4 @@ composer.phar
 composer.lock
 /assets/db/data.db
 /assets/files
+public/logs/app.log
