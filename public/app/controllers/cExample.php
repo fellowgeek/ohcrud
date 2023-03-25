@@ -25,6 +25,8 @@ class cExample extends \OhCrud\Controller {
             'ID, USERNAME, FIRSTNAME, LASTNAME'
         );
 
+        $this->debug();
+
     }
 
     public function publicEndPoint($request) {
