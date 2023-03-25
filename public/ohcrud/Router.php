@@ -125,9 +125,12 @@ class Router extends \OhCrud\Core {
         if ($userHasLoggedIn == true) {
             $this->route();
         } else {
-            // unauthorized access
-            header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
-            header('HTTP/1.0 401 Unauthorized');
+            if(headers_sent() == false) {
+                // unauthorized access
+                header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
+                header('HTTP/1.0 401 Unauthorized');
+            }
+            die();
         }
     }
 

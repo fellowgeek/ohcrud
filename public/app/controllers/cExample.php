@@ -14,7 +14,7 @@ class cExample extends \OhCrud\Controller {
 
     public function protectedEndPoint($request) {
 
-        $this->setOutputType('JSON');
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         $this->read(
             'Users',
@@ -25,7 +25,9 @@ class cExample extends \OhCrud\Controller {
             'ID, USERNAME, FIRSTNAME, LASTNAME'
         );
 
-        $this->debug();
+        $this->output();
+        // $this->debug($_SESSION);
+        // $this->debug();
 
     }
 

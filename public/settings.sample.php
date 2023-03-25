@@ -3,7 +3,7 @@
 // OhCRUD settings
 
 // path to application (normalized for nginx and apache)
-define('__SELF__', '/' . trim(dirname(__FILE__) . '/', '/') . '/');
+define('__SELF__', __DIR__ . '/');
 
 // application url
 define('__SITE__', $_SERVER['SERVER_NAME'] ?? '');
@@ -16,7 +16,7 @@ define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
 
 // logs
 define('__OHCRUD_LOG_ENABLED__', true);
-define('__OHCRUD_LOG_FILE__', __SELF__ . 'logs/app.log');
+define('__OHCRUD_LOG_FILE__', __DIR__ . '/app.log');
 
 // cache settings
 define('__OHCRUD_CACHE_ENABLED__', false);
@@ -35,11 +35,11 @@ define('__OHCRUD_DB_STAMP__', true);
 define('__OHCRUD_DB_CONFIG__', serialize([
         'DRIVER' => 'MYSQL',
         'PERSISTENT_CONNECTION' => false,
-        'SQLITE_DB' 	=> __SELF__ . 'assets/db/data.db',
-        'MYSQL_HOST' 	=> 'localhost',
-        'MYSQL_DB' 		=> 'database',
-        'USERNAME' 		=> 'username',
-        'PASSWORD' 		=> 'password'
+        'SQLITE_DB'     => __DIR__ . '/data.db',
+        'MYSQL_HOST'    => 'localhost',
+        'MYSQL_DB'      => 'database',
+        'USERNAME'      => 'username',
+        'PASSWORD'      => 'password'
         ]
     )
 );
