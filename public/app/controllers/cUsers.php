@@ -20,6 +20,9 @@ class cUsers extends \OhCrud\Core {
         $userHasLoggedIn = false;
 
         // validation
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
         if (isset($request->payload) == false || empty($request->payload->USERNAME) == true || empty($request->payload->PASSWORD) == true)
             $this->error('Missing or incomplete data.');
 

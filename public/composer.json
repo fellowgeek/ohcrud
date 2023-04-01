@@ -14,7 +14,8 @@
     },
     "autoload": {
         "files": [
-            "settings.php"
+            "settings.php",
+            "routes.php"
             ],
 	    "psr-4": {
             "app\\": "app/",

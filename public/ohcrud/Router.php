@@ -23,7 +23,6 @@ class Router extends \OhCrud\Core {
         $path = $GLOBALS['PATH'];
         $pathArray = $GLOBALS['PATH_ARRAY'];
         $method = '';
-        $ohcrudEndPoints = unserialize(__OHCRUD_ENDPOINTS__);
 
         // process cli parameters
         if (PHP_SAPI == 'cli') {
@@ -40,8 +39,8 @@ class Router extends \OhCrud\Core {
         }
 
         // try to create the object first
-        if (array_key_exists($path, $ohcrudEndPoints) == true) {
-            $objectName = $ohcrudEndPoints[$path];
+        if (array_key_exists($path, __OHCRUD_ENDPOINTS__) == true) {
+            $objectName = __OHCRUD_ENDPOINTS__[$path];
             $object = new $objectName;
 
             if (isset($object->permissions) == true && $this->checkPermissions($object->permissions) == false) {
@@ -55,8 +54,15 @@ class Router extends \OhCrud\Core {
         $method = array_pop($pathArray);
         $path = '/' . implode('/', $pathArray) . '/';
 
-        if (array_key_exists($path, $ohcrudEndPoints) == true) {
-            $objectName = $ohcrudEndPoints[$path];
+        if (array_key_exists($path, __OHCRUD_ENDPOINTS__) == true) {
+
+            // handle CORS
+            if ($this->handleCORS() == false) {
+                $this->forbidden();
+                return $this;
+            }
+
+            $objectName = __OHCRUD_ENDPOINTS__[$path];
             $object = new $objectName;
 
             if (isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
@@ -77,7 +83,7 @@ class Router extends \OhCrud\Core {
             }
         }
 
-        $this->outputType = 'JSON';
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
         $this->error('Oh CRUD! You just got 404\'d.', 404);
         $this->output();
 
@@ -125,18 +131,47 @@ class Router extends \OhCrud\Core {
         if ($userHasLoggedIn == true) {
             $this->route();
         } else {
-            if(headers_sent() == false) {
-                // unauthorized access
-                header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
-                header('HTTP/1.0 401 Unauthorized');
+            if (isset($httpHeaders['Token']) == true) {
+                $this->forbidden();
+            } else {
+                if(headers_sent() == false) {
+                    // unauthorized access
+                    header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
+                    header('HTTP/1.0 401 Unauthorized');
+                }
+                die();
             }
-            die();
+        }
+    }
+
+    private function handleCORS() {
+
+        // handle CLI mode
+        if (PHP_SAPI == 'cli' || isset($_SERVER['HTTP_ORIGIN']) == false) return true;
+
+        // handle same origin requests
+        $origin = strtolower($_SERVER['HTTP_ORIGIN'] ?? '');
+        if ($origin == ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
+
+        // handle cross origin requests
+        if (in_array($origin, __OHCRUD_ALLOWED_DOMAINS__) == true) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+            header('Access-Control-Max-Age: 86400');
+            if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+                header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+                header("Access-Control-Allow-Headers: token, Content-Type, Accept, Origin");
+                exit(0);
+            }
+            return true;
+        } else {
+            return false;
         }
     }
 
     private function forbidden() {
 
-        $this->outputType = 'JSON';
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
         $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that...', 403);
         $this->output();
     }

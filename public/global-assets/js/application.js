@@ -55,11 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
             $this.classList.add('btn-disabled');
             $this.innerHTML = `<img class="ohcrud-loader" src="/global-assets/images/loader.svg" />`;
 
-            var $data = {
-                USERNAME: $$('#ohcrud-login-username').value,
-                PASSWORD: window.btoa($$('#ohcrud-login-password').value),
-                REDIRECT: $$('#ohcrud-login-redirect').value
-            };
+            var $data = Object.fromEntries(new FormData($loginForm).entries());
 
             httpRequest('/api/users/login/',
                 {

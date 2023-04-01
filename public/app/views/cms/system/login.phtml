@@ -8,9 +8,10 @@
         <h2>Please sign in</h2>
         <br>
         <div class="alert hidden"></div>
-        <input type="text" placeholder="Username" id="ohcrud-login-username" name="ohcrud-login-username">
-        <input type="password" placeholder="Password" id="ohcrud-login-password" name="ohcrud-login-password">
-        <input type="hidden" id="ohcrud-login-redirect" name="ohcrud-login-redirect" value="<?= $_REQUEST['redirect'] ?? '' ?>">
+        <input type="text" placeholder="Username" name="USERNAME">
+        <input type="password" placeholder="Password" name="PASSWORD">
+        <input type="hidden" name="REDIRECT" value="<?= $_REQUEST['redirect'] ?? '' ?>">
+        <input type="hidden" name="CSRF" value="<?= $this->CSRF() ?>">
         <br>
         <button type="submit" class="btn btn-primary" id="ohcrud-login-login">Login</button>
     </form>

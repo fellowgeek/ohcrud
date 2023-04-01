@@ -1,24 +1,24 @@
 <input type="file" id="ohcrud-file" multiple style="display: none;" />
 <div class="alert hidden"></div>
 <form id="ohcrud-editor">
-    <input type="hidden" id="ohcrud-page-url" name="ohcrud-page-url" value="{{CMS:PATH}}" />
-    <input type="hidden" id="ohcrud-themes" name="ohcrud-themes" value="{{CMS:THEMES}}" />
-    <input type="hidden" id="ohcrud-page-current-theme" name="ohcrud-page-current-theme" value="{{CMS:THEME}}" />
-    <input type="hidden" id="ohcrud-page-current-layout" name="ohcrud-page-current-layout" value="{{CMS:LAYOUT}}" />
+    <input type="hidden" id="url" name="URL" value="{{CMS:PATH}}" />
+    <input type="hidden" id="current-theme" value="{{CMS:THEME}}" />
+    <input type="hidden" id="current-layout" value="{{CMS:LAYOUT}}" />
+    <input type="hidden" name="CSRF" value="<?= $this->CSRF() ?>">
 
     <div class="ohcrud-100">
         <div class="ohcrud-50">
-            <input type="text" id="ohcrud-page-title" name="ohcrud-page-text" value="{{CMS:TITLE}}" />
+            <input type="text" id="title" name="TITLE" value="{{CMS:TITLE}}" />
         </div>
         <div class="ohcrud-25 padding-left">
-            <select name="ohcrud-page-theme" id="ohcrud-page-theme"></select>
+            <select id="theme" name="THEME"></select>
         </div>
         <div class="ohcrud-25 padding-left">
-            <select name="ohcrud-page-layout" id="ohcrud-page-layout"></select>
+            <select id="layout" name="LAYOUT"></select>
         </div>
     </div>
 
-    <textarea id="ohcrud-editor-text" name="ohcrud-editor-text">{{CMS:CONTENT-TEXT}}</textarea>
+    <textarea id="editor-text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea>
     <hr/>
     <button type="button" class="btn btn-primary" id="ohcrud-editor-save">Save</button>
     <button type="button" class="btn btn-secondary" id="ohcrud-editor-cancel">Cancel</button>

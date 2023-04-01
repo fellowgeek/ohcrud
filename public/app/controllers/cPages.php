@@ -16,7 +16,7 @@ class cPages extends \app\models\mPages {
 
     public function restoreDeletePage($request) {
 
-        $this->setOutputType('JSON');
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         // validation
         if (isset($request->payload) == false || empty($request->payload->URL) == true)
@@ -64,7 +64,7 @@ class cPages extends \app\models\mPages {
 
     public function save($request) {
 
-        $this->setOutputType('JSON');
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         // validation
         if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->TITLE) == true || empty($request->payload->TEXT) == true)

@@ -59,6 +59,17 @@ class Core {
         return $this;
     }
 
+    public function CSRF() {
+        if (empty($_SESSION['CSRF'])) {
+            $this->setSession('CSRF', bin2hex(random_bytes(32)));
+        }
+        return $_SESSION['CSRF'];
+    }
+
+    public function checkCSRF($token) {
+        return hash_equals($_SESSION['CSRF'] ?? '', $token);
+    }
+
     public function output() {
 
         $output = '';
@@ -237,7 +248,6 @@ class Core {
         ];
 
         print(($colors[$color] ?? $colors['WHT']) . $message . $colors['RST'] . ($shouldAddNewLine ? "\n" : ''));
-
     }
 
     public function debug($expression = null) {

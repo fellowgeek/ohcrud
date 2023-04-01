@@ -48,7 +48,7 @@ class cCMS extends \OhCrud\Controller {
     // handler for all incoming requests
     public function defaultPathHandler($path, $pathArray) {
 
-        $this->outputType = 'HTML';
+        $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
 
         // normalize path
         $this->path = \strtolower($path);
@@ -93,7 +93,6 @@ class cCMS extends \OhCrud\Controller {
             $this->setCache(__CLASS__ . __FUNCTION__ . $this->path, $this->data);
         }
 
-        $this->outputType = 'HTML';
         $this->output();
 
     }

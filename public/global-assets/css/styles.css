@@ -67,7 +67,7 @@ UI
     z-index: 9999;
 }
 
-#ohcrud-page-theme, #ohcrud-page-layout {
+#theme, #layout {
 	display: block;
 	margin-bottom: 10px;
 	padding: 5px 10px;

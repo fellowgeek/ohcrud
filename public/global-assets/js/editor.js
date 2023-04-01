@@ -5,14 +5,14 @@ GLOBAL VARIABLES
 */
 
 // url
-var $url = $$('#ohcrud-page-url').value;
+var $url = $$('#url').value;
 
 // themes & layouts
-var $themes = JSON.parse(window.atob($$('#ohcrud-themes').value));
-var $themeSelect = $$('#ohcrud-page-theme');
-var $layoutSelect = $$('#ohcrud-page-layout');
-var $currentTheme = $$('#ohcrud-page-current-theme').value;
-var $currentLayout = $$('#ohcrud-page-current-layout').value;
+var $themes = {};
+var $themeSelect = $$('#theme');
+var $layoutSelect = $$('#layout');
+var $currentTheme = $$('#current-theme').value;
+var $currentLayout = $$('#current-layout').value;
 
 // file
 var $file = $$('#ohcrud-file');
@@ -53,12 +53,34 @@ function insertCodeInEditor($editor, $text = '', $preText = '', $postText = '') 
 }
 
 function loadThemes() {
-    for (const $theme in $themes) {
-        var $option = document.createElement('option');
-        $option.value = $theme;
-        $option.innerHTML = $theme;
-        $themeSelect.appendChild($option);
-    }
+
+    httpRequest('/api/themes/getThemes/',
+    {
+        method: 'POST',
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        headers: new Headers(
+            {
+                'Content-Type': 'application/json'
+            }
+        )
+    },
+    async function($response) {
+        const $json = await $response.json();
+        $themes = $json.data;
+        for (const $theme in $themes) {
+            var $option = document.createElement('option');
+            $option.value = $theme;
+            $option.innerHTML = $theme;
+            $themeSelect.appendChild($option);
+        }
+        loadLayouts($currentTheme);
+        $themeSelect.value = $currentTheme;
+        $layoutSelect.value = $currentLayout;
+        $themeSelect.addEventListener('change', function() {
+            loadLayouts($themeSelect.value);
+        });
+    });
 }
 
 function loadLayouts($theme) {
@@ -86,17 +108,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // themes and layouts
     loadThemes();
-    loadLayouts($currentTheme);
-    $themeSelect.value = $currentTheme;
-    $layoutSelect.value = $currentLayout;
-    $themeSelect.addEventListener('change', function() {
-        loadLayouts($themeSelect.value);
-    });
 
     // editor
     $ohCrudEditor = new SimpleMDE(
         {
-            element: $$('#ohcrud-editor-text'),
+            element: $$('#editor-text'),
             autofocus: true,
             autosave: {
                 enabled: true,
@@ -155,13 +171,8 @@ document.addEventListener('DOMContentLoaded', function () {
         $this.classList.add('btn-disabled');
         $this.innerHTML = `<img class="ohcrud-loader" src="/global-assets/images/loader.svg" />`;
 
-        var $data = {
-            URL: $url,
-            TITLE: $$('#ohcrud-page-title').value,
-            TEXT: $ohCrudEditor.value(),
-            THEME: $themeSelect.value,
-            LAYOUT: $layoutSelect.value
-        };
+        var $data = Object.fromEntries(new FormData(document.getElementById('ohcrud-editor')).entries());
+        $data.TEXT = $ohCrudEditor.value();
 
         httpRequest('/api/pages/save/',
             {
