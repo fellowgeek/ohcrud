@@ -3,6 +3,7 @@
 // allowed domains
 define('__OHCRUD_ALLOWED_DOMAINS__', [
         'http://localhost',
+        'http://ohcrud.local',
     ]
 );
 

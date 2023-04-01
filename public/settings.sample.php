@@ -44,26 +44,8 @@ define('__OHCRUD_DB_CONFIG__', serialize([
     )
 );
 
-// API end points
-define('__OHCRUD_ENDPOINTS__', serialize([
-        '/api/pages/' => 'app\controllers\cPages',
-        '/api/users/' => 'app\controllers\cUsers',
-        '/api/files/' => 'app\controllers\cFiles',
-        '/example/' => 'app\controllers\cExample'
-        /*
-        map URL paths to objects (controllers, models, etc...)
-        '/example1/' => 'app\models\mTestModel',
-        '/example2/' => 'app\controllers\cTestController',
-        .
-        .
-        .
-        */
-        ]
-    )
-);
-
-// WEB/CMS end point ( AKA default path handler )
-define('__OHCRUD_DEFAULT_PATH_HANDLER__', '\app\controllers\cCMS');
+// IMPORTANT
+// API end points defined in routes.php
 
 // CMS settings
 define('__OHCRUD_CMS_DEFAULT_THEME__', 'default');
