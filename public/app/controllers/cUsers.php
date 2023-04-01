@@ -14,7 +14,7 @@ class cUsers extends \OhCrud\Core {
 
     public function login($request) {
 
-        $this->setOutputType('JSON');
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         // variables
         $userHasLoggedIn = false;
@@ -32,7 +32,7 @@ class cUsers extends \OhCrud\Core {
         }
 
         $Users = new \OhCrud\Users;
-        $userHasLoggedIn = $Users->login($request->payload->USERNAME, \base64_decode($request->payload->PASSWORD));
+        $userHasLoggedIn = $Users->login($request->payload->USERNAME, $request->payload->PASSWORD);
 
         if ($userHasLoggedIn == false) {
             $this->error('Unable to login, check your Username and Password.');
@@ -46,7 +46,7 @@ class cUsers extends \OhCrud\Core {
 
     public function logout($request) {
 
-        $this->setOutputType('JSON');
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         $Users = new \OhCrud\Users;
         $userHasLoggedIn = $Users->logout();
