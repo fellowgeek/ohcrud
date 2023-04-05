@@ -11,11 +11,11 @@ class cFiles extends \app\models\mFiles {
         'upload' => 1
     ];
 
-    private $filesAllowed = ['jpg','png', 'webp','csv','txt','pdf','xml','json','zip'];
+    private $filesAllowed = ['jpg', 'png', 'webp', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip'];
 
     public function upload($request) {
 
-        $this->outputType = 'JSON';
+        $this->outputType = \OhCrud\Core::OUTPUT_JSON;
 
         // validation
         if (isset($_FILES[0]) == false) {
