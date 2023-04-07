@@ -1,0 +1,72 @@
+To write tests for the given code, you can use the PHPUnit testing framework. First, install PHPUnit using Composer and create a phpunit.xml configuration file. Then, create a new test class file named DBTest.php.
+
+In DBTest.php, add the following test cases:
+<?php
+use PHPUnit\Framework\TestCase;
+use OhCrud\DB;
+
+class DBTest extends TestCase
+{
+    protected $db;
+
+    protected function setUp(): void
+    {
+        // Set up your database configuration here
+        define('__OHCRUD_DB_CONFIG__', serialize([
+            'DRIVER' => 'MYSQL',
+            'MYSQL_HOST' => 'localhost',
+            'MYSQL_DB' => 'test_db',
+            'USERNAME' => 'username',
+            'PASSWORD' => 'password',
+            'PERSISTENT_CONNECTION' => false
+        ]));
+
+        define('__OHCRUD_DEBUG_MODE__', false);
+        define('__OHCRUD_DB_STAMP__', true);
+
+        $this->db = new DB();
+    }
+
+    public function testCreate()
+    {
+        $data = [
+            'title' => 'Test Title',
+            'content' => 'Test Content'
+        ];
+        $result = $this->db->create('test_table', $data);
+        $this->assertTrue($result->success);
+        $this->assertGreaterThan(0, $result->data->lastInsertId);
+    }
+
+    public function testRead()
+    {
+        $result = $this->db->read('test_table');
+        $this->assertTrue($result->success);
+        $this->assertNotEmpty($result->data);
+    }
+
+    public function testUpdate()
+    {
+        $data = [
+            'title' => 'Updated Title',
+            'content' => 'Updated Content'
+        ];
+        $result = $this->db->update('test_table', $data, 'id = :id', [':id' => 1]);
+        $this->assertTrue($result->success);
+    }
+
+    public function testDelete()
+    {
+        $result = $this->db->delete('test_table', 'id = :id', [':id' => 1]);
+        $this->assertTrue($result->success);
+    }
+
+    public function testFirst()
+    {
+        $result = $this->db->read('test_table');
+        $firstResult = $result->first();
+        $this->assertNotEmpty($firstResult);
+    }
+}
+?>
+These tests cover the main CRUD operations of the DB class. You may need to adjust the database configuration and table names to match your own environment. To run the tests, execute the phpunit command in the terminal.

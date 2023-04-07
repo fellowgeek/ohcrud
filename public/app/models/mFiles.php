@@ -32,7 +32,7 @@ class mFiles extends \OhCrud\DB {
                             `SIZE`	INTEGER,
                             `TYPE`	TEXT,
                             `IP`	TEXT,
-                            `STATUS`	INTEGER
+                            `STATUS`    INTEGER
                         );
                     ";
                     $this->run($sql);
@@ -49,7 +49,8 @@ class mFiles extends \OhCrud\DB {
                             `TYPE` varchar(32) NOT NULL DEFAULT '',
                             `IP` varchar(32) NOT NULL DEFAULT '',
                             `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
-                            PRIMARY KEY (`ID`)
+                            PRIMARY KEY (`ID`),
+                            KEY `idx_NAME` (`NAME`) USING BTREE,
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                     ";
                     $this->run($sql);
@@ -61,7 +62,6 @@ class mFiles extends \OhCrud\DB {
                 $this->create(
                     'Files',
                     [
-                        'URL' => '/',
                         'NAME' => uniqid()
                     ]
                 );
