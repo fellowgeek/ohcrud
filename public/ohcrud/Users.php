@@ -1,13 +1,12 @@
 <?php
 namespace OhCrud;
 
+use OTPHP\TOTP;
+
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Users extends \OhCrud\DB {
-
-    const STATUS_ACTIVE = 1;
-    const STATUS_INACTIVE = 0;
 
     function __construct() {
         parent::__construct();
@@ -29,7 +28,9 @@ class Users extends \OhCrud\DB {
                             `GROUP`	INTEGER,
                             `PERMISSIONS`	INTEGER,
                             `TOKEN`	TEXT,
-                            `STATUS`	INTEGER
+                            `OTP_SECRET`	TEXT,
+                            `STATUS`	INTEGER,
+                            `TOTP`	INTEGER,
                         );
                     ";
                     $this->run($sql);
@@ -46,7 +47,9 @@ class Users extends \OhCrud\DB {
                         `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
                         `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOKEN` varchar(256) NOT NULL DEFAULT '',
+                        `OTP_SECRET` varchar(256) NOT NULL DEFAULT '',
                         `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                        `TOTP` int(10) unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`ID`),
                         KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
                         KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
@@ -61,23 +64,71 @@ class Users extends \OhCrud\DB {
             if ($tableExists == false && $this->success == true) {
                 $this->create('Users', [
                     'USERNAME' => 'admin',
-                    'PASSWORD' => password_hash(
-                        'admin', PASSWORD_BCRYPT, [
-                            'cost' => 10
-                            ]
-                        ),
+                    'PASSWORD' => 'admin',
                     'FIRSTNAME' => 'admin',
                     'LASTNAME' => 'admin',
                     'GROUP' => 1,
                     'PERMISSIONS' => 1,
-                    'TOKEN' => $this->generateToken('admin'),
-                    'STATUS' => $this::STATUS_ACTIVE
+                    'STATUS' => $this::ACTIVE,
+                    'TOTP' => $this::INACTIVE
                     ]
                 );
             }
         }
     }
 
+    // overwrite create function to include TOKEN and PASSWORD
+    public function create($table, $data=array()) {
+        // create hash from password
+        if (isset($data['PASSWORD']) == true) {
+            $data['PASSWORD'] = password_hash(
+                $data['PASSWORD'], PASSWORD_BCRYPT, [
+                    'cost' => 10
+                ]
+            );
+        }
+
+        // set API access token
+        if (isset($data['USERNAME']) == true) {
+            $data['TOKEN'] = $this->generateToken($data['USERNAME']);
+        }
+
+        return parent::create($table, $data);
+    }
+
+    // enable/re-generate OTP login
+    public function enableOTP($id) {
+        $user = $this->READ(
+            'Users',
+            'ID = :ID AND STATUS = :STATUS',
+            [
+                ':ID' => $id,
+                ':STATUS' => $this::ACTIVE
+            ]
+        )->first();
+
+        if ($user != false) {
+            $otp = TOTP::generate();
+
+            $output = $this->Update(
+                'Users',
+                [
+                    'TOTP' => $this::ACTIVE,
+                    'OTP_SECRET' => $otp->getSecret()
+                ],
+                'ID = :ID',
+                [
+                    ':ID' => $id
+                ]
+            )->success;
+
+            return $output;
+        } else {
+            return false;
+        }
+    }
+
+    // method to provide authentication
     public function login($username, $password, $token = null) {
 
         // variables
@@ -90,7 +141,7 @@ class Users extends \OhCrud\DB {
                 'TOKEN = :TOKEN AND STATUS = :STATUS',
                 [
                     ':TOKEN' => $token,
-                    ':STATUS' => $this::STATUS_ACTIVE
+                    ':STATUS' => $this::ACTIVE
                 ]
             )->first();
             if ($user != false) {
@@ -108,13 +159,14 @@ class Users extends \OhCrud\DB {
                 'USERNAME = :USERNAME AND STATUS = :STATUS',
                 [
                     ':USERNAME' => $username,
-                    ':STATUS' => $this::STATUS_ACTIVE
+                    ':STATUS' => $this::ACTIVE
                 ]
             )->first();
             if ($user != false) {
                 $userHasLoggedIn = password_verify($password, $user->PASSWORD);
                 unset($user->PASSWORD);
                 unset($user->TOKEN);
+                unset($user->OTP_SECRET);
                 if ($userHasLoggedIn == true) {
                     $this->setSession('User', $user);
                 }
@@ -129,11 +181,13 @@ class Users extends \OhCrud\DB {
         return $userHasLoggedIn;
     }
 
+    // logout user by terminating the session
     public function logout() {
         $this->unsetSession('User');
         return true;
     }
 
+    // generate a randomized API token based on username
     private function generateToken($username) {
         $randomString = '';
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';

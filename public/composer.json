@@ -10,7 +10,8 @@
         "fellowgeek/php-ref": "dev-master",
         "erusev/parsedown": "^1.7",
         "ezyang/htmlpurifier": "^4.10",
-        "filp/whoops": "^2.3"
+        "filp/whoops": "^2.3",
+        "spomky-labs/otphp": "^11.2.0"
     },
     "autoload": {
         "files": [

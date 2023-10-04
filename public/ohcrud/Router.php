@@ -11,7 +11,7 @@ class Router extends \OhCrud\Core {
     public function __construct($rawPath = null) {
 
         // global variables
-        $GLOBALS['PATH'] = rtrim(parse_url($rawPath, PHP_URL_PATH), '/') . '/';
+        $GLOBALS['PATH'] = rtrim(parse_url($rawPath, PHP_URL_PATH) ?? '', '/') . '/';
         $GLOBALS['PATH_ARRAY'] = preg_split('[/]', $GLOBALS['PATH'], 0, PREG_SPLIT_NO_EMPTY);
 
         $this->route($rawPath);

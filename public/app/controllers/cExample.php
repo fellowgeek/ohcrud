@@ -1,6 +1,8 @@
 <?php
 namespace app\controllers;
 
+use OTPHP\TOTP;
+
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
@@ -22,12 +24,10 @@ class cExample extends \OhCrud\Controller {
             [
                 ':ID' => 1
             ],
-            'ID, USERNAME, FIRSTNAME, LASTNAME'
+            'ID, USERNAME, FIRSTNAME, LASTNAME, TOTP, STATUS'
         );
 
         $this->output();
-        // $this->debug($_SESSION);
-        // $this->debug();
 
     }
 
@@ -35,23 +35,6 @@ class cExample extends \OhCrud\Controller {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
         $this->debug($request);
-
-        $this->create('Users', [
-            'USERNAME' => 'admin',
-            'PASSWORD' => password_hash(
-                'admin', PASSWORD_BCRYPT, [
-                    'cost' => 10
-                    ]
-                ),
-            'FIRSTNAME' => 'admin',
-            'LASTNAME' => 'admin',
-            'GROUP' => 1,
-            'PERMISSIONS' => 1,
-            // 'TOKEN' => $this->generateToken('admin'),
-            'STATUS' => 1
-            ]
-        );
-
 
     }
 

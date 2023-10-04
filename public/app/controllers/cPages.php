@@ -49,7 +49,7 @@ class cPages extends \app\models\mPages {
             // update the record
             $this->update('Pages',
                 [
-                    'STATUS' => ($page->STATUS == \app\models\mPages::STATUS_ACTIVE) ? \app\models\mPages::STATUS_INACTIVE : \app\models\mPages::STATUS_ACTIVE
+                    'STATUS' => ($page->STATUS == \app\models\mPages::ACTIVE) ? \app\models\mPages::INACTIVE : \app\models\mPages::ACTIVE
                 ],
                 'URL = :URL',
                 [
@@ -109,7 +109,7 @@ class cPages extends \app\models\mPages {
                 'TEXT' => $request->payload->TEXT,
                 'THEME' => $request->payload->THEME,
                 'LAYOUT' => $request->payload->LAYOUT,
-                'STATUS' => \app\models\mPages::STATUS_ACTIVE
+                'STATUS' => \app\models\mPages::ACTIVE
                 ]
             );
         } else {
@@ -120,7 +120,7 @@ class cPages extends \app\models\mPages {
                     'TEXT' => $request->payload->TEXT,
                     'THEME' => $request->payload->THEME,
                     'LAYOUT' => $request->payload->LAYOUT,
-                    'STATUS' => \app\models\mPages::STATUS_ACTIVE
+                    'STATUS' => \app\models\mPages::ACTIVE
                 ],
                 'URL = :URL',
                 [

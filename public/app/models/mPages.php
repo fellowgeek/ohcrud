@@ -6,9 +6,6 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class mPages extends \OhCrud\DB {
 
-    const STATUS_ACTIVE = 1;
-    const STATUS_INACTIVE = 0;
-
     function __construct() {
         parent::__construct();
 
@@ -65,7 +62,7 @@ class mPages extends \OhCrud\DB {
                         'URL' => '/',
                         'TITLE' => 'Home',
                         'TEXT' => 'This is home.',
-                        'STATUS' => $this::STATUS_ACTIVE
+                        'STATUS' => $this::ACTIVE
                     ]
                 );
             }

@@ -47,7 +47,7 @@ class cFiles extends \app\models\mFiles {
             'SIZE'      => $_FILES[0]['size'] ?? 0,
             'TYPE'      => $TYPE,
             'IP'        => $_SERVER['REMOTE_ADDR'] ?? '',
-            'STATUS'    => 1
+            'STATUS'    => $this::ACTIVE
         ];
 
         $files = new \app\models\mFiles;

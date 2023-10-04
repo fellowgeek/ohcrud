@@ -6,9 +6,6 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class mFiles extends \OhCrud\DB {
 
-    const STATUS_ACTIVE = 1;
-    const STATUS_INACTIVE = 0;
-
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__
     ];
@@ -50,7 +47,7 @@ class mFiles extends \OhCrud\DB {
                             `IP` varchar(32) NOT NULL DEFAULT '',
                             `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
                             PRIMARY KEY (`ID`),
-                            KEY `idx_NAME` (`NAME`) USING BTREE,
+                            KEY `idx_NAME` (`NAME`) USING BTREE
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                     ";
                     $this->run($sql);

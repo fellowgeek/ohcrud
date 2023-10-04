@@ -53,7 +53,7 @@ class cCMS extends \OhCrud\Controller {
         // normalize path
         $this->path = \strtolower($path);
 
-        // get cache
+        // get cache (if any)
         $cachedResponse = $this->getCache(__CLASS__ . __FUNCTION__ . $this->path, 3600);
         if ($this->loggedIn == false && $cachedResponse != false) {
             $this->data = $cachedResponse;
@@ -182,14 +182,14 @@ class cCMS extends \OhCrud\Controller {
         )->first();
 
         // check if page does not exists
-        if ($page == false || $page->STATUS != \app\models\mPages::STATUS_ACTIVE) {
+        if ($page == false || $page->STATUS != \app\models\mPages::ACTIVE) {
             if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
             if (($this->request['action'] ?? '') != 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
-            if (($page->STATUS ?? -1) == \app\models\mPages::STATUS_INACTIVE) {
+            if (($page->STATUS ?? -1) == \app\models\mPages::INACTIVE) {
                 $content->isDeleted = true;
             }
             $content->is404 = true;
