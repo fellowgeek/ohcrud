@@ -134,7 +134,7 @@ class Users extends \OhCrud\DB {
         // variables
         $userHasLoggedIn = false;
 
-        // get user based on username or token
+        // handle API token based logins
         if (isset($token) == true) {
             $user = $this->read(
                 'Users',
@@ -153,29 +153,37 @@ class Users extends \OhCrud\DB {
                 // delay brute force attacks
                 sleep(1);
             }
-        } else {
-            $user = $this->read(
-                'Users',
-                'USERNAME = :USERNAME AND STATUS = :STATUS',
-                [
-                    ':USERNAME' => $username,
-                    ':STATUS' => $this::ACTIVE
-                ]
-            )->first();
-            if ($user != false) {
-                $userHasLoggedIn = password_verify($password, $user->PASSWORD);
-                unset($user->PASSWORD);
-                unset($user->TOKEN);
-                unset($user->OTP_SECRET);
-                if ($userHasLoggedIn == true) {
-                    $this->setSession('User', $user);
-                }
+
+            return $userHasLoggedIn;
+        }
+
+        // handle password based logins
+        $user = $this->read(
+            'Users',
+            'USERNAME = :USERNAME AND STATUS = :STATUS',
+            [
+                ':USERNAME' => $username,
+                ':STATUS' => $this::ACTIVE
+            ]
+        )->first();
+
+        if ($user != false) {
+            $userHasLoggedIn = password_verify($password, $user->PASSWORD);
+            if ($user->TOTP == $this::ACTIVE) {
+                $user->OTPVerified = false;
             }
-            if ($userHasLoggedIn == false) {
-                $this->log('warning', 'Login attempt was not successful', [$username]);
-                // delay brute force attacks
-                sleep(1);
+            unset($user->PASSWORD);
+            unset($user->TOKEN);
+            unset($user->OTP_SECRET);
+            if ($userHasLoggedIn == true) {
+                $this->setSession('User', $user);
             }
+        }
+
+        if ($userHasLoggedIn == false) {
+            $this->log('warning', 'Login attempt was not successful', [$username]);
+            // delay brute force attacks
+            sleep(1);
         }
 
         return $userHasLoggedIn;

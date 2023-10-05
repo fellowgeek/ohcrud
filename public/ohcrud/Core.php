@@ -205,10 +205,6 @@ class Core {
 
         if (__OHCRUD_DEBUG_MODE__ == true) {
             $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-            if (isset($this->SQL) == true) {
-                $debug['SQL'] = $this->SQL;
-                $debug['SQLParameters'] = $this->SQLParameters ?? '';
-            }
         }
 
         if ($outputStatusCode != 404) {

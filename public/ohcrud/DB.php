@@ -18,7 +18,6 @@ class DB extends \OhCrud\Core {
     public $config = [];
     public $db;
     public $SQL;
-    public $SQLParameters;
 
     public function __construct() {
         $this->config = unserialize(__OHCRUD_DB_CONFIG__);
@@ -67,7 +66,6 @@ class DB extends \OhCrud\Core {
 
         if (__OHCRUD_DEBUG_MODE__ == true) {
             $this->SQL = $sql;
-            $this->SQLParameters = $bind;
         }
 
         try {

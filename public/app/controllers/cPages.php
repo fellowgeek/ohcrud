@@ -109,7 +109,7 @@ class cPages extends \app\models\mPages {
                 'TEXT' => $request->payload->TEXT,
                 'THEME' => $request->payload->THEME,
                 'LAYOUT' => $request->payload->LAYOUT,
-                'STATUS' => \app\models\mPages::ACTIVE
+                'STATUS' => $this::ACTIVE
                 ]
             );
         } else {
@@ -120,7 +120,7 @@ class cPages extends \app\models\mPages {
                     'TEXT' => $request->payload->TEXT,
                     'THEME' => $request->payload->THEME,
                     'LAYOUT' => $request->payload->LAYOUT,
-                    'STATUS' => \app\models\mPages::ACTIVE
+                    'STATUS' => $this::ACTIVE
                 ],
                 'URL = :URL',
                 [

@@ -189,7 +189,7 @@ class cCMS extends \OhCrud\Controller {
             if (($this->request['action'] ?? '') != 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
-            if (($page->STATUS ?? -1) == \app\models\mPages::INACTIVE) {
+            if (($page->STATUS ?? -1) == $this::INACTIVE) {
                 $content->isDeleted = true;
             }
             $content->is404 = true;

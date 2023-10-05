@@ -2,12 +2,32 @@
     $content->theme = 'default';
     $content->layout = 'plain';
 ?>
-<h1>This page is hard coded</p>
+<br/>
+<h1>Understanding Hard-Coded Web Pages</h1>
 
-<p>It's been six hours. Dreams move one... one-hundredth the speed of reality, and dog time is one-seventh human time. So y'know, every day here is like a minute. It's like Inception, Morty, so if it's confusing and stupid, then so is everyone's favorite movie. Nothing you do matters, your existence is a lie! It's fine, everythings is fine. theres an infinite number of realities Morty, and in a few dozens of those i got lucky and turned everything back to normal. Nice, Mrs Pancakes. Real nice.</p>
+<p>In the ever-evolving landscape of web development, creating dynamic and interactive web pages has become the norm. However, not all web pages are created equal. Some websites still rely on a more traditional approach, where content is hard-coded directly into the page. In this article, we'll explore what it means for a web page to be hard-coded.</p>
 
-<p>I don't know man, Italy, Greece, Argentina... I mean, why would a poptart want to live inside a toaster, Rick? I mean, that would be like the scariest place for them to live. You know what I mean? I dunno, some people would pay top dollar for that kind of breakthrough. Cool. Just stay in the driveway; the kill-bots are live, and I took you off the whitelist.</p>
+<h2>What is a Hard-Coded Web Page?</h2>
+
+<p>A hard-coded web page is essentially a static web page that has its content manually written into the HTML markup. Unlike dynamic websites that rely on databases, server-side scripting languages, and content management systems (CMS), hard-coded pages do not fetch or generate content on the fly. Instead, all text, images, links, and other elements are embedded directly into the HTML source code.</p>
+
+<h2>Advantages of Hard-Coded Web Pages:</h2>
+
+<ol>
+    <li><strong>Simplicity:</strong> Hard-coded pages are straightforward to create and maintain. There's no need for a backend server or database to manage content.</li>
+    <li><strong>Speed:</strong> Since content is embedded directly into the HTML, these pages load quickly as there's no need for database queries or server-side processing.</li>
+    <li><strong>Security:</strong> With fewer components and server interactions, the attack surface is reduced, making it harder for malicious actors to exploit vulnerabilities.</li>
+</ol>
+
+<h2>Below you can view the contents of the user's PHP session:</h2>
+
+<pre><code>
+    // Display user session information using $this->debug($_SESSION);
+    $this->debug($_SESSION);
+</code></pre>
+
+<p>This code will display the contents of the <code>$_SESSION</code> superglobal, which stores user-specific data for the current session. It can include information like user IDs, preferences, or authentication status.</p>
 
 <?php
-    print(uniqid());
+    $this->debug($_SESSION);
 ?>
