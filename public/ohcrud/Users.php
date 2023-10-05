@@ -128,8 +128,8 @@ class Users extends \OhCrud\DB {
         }
     }
 
-    // method to provide authentication
-    public function login($username, $password, $token = null) {
+    // method to provide authentication and check if user has TOTP enabled
+    public function login($username, $password, $token = null, $totp = null) {
 
         // variables
         $userHasLoggedIn = false;

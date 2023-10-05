@@ -6,8 +6,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class DB extends \OhCrud\Core {
 
-    const ACTIVE = true;
-    const INACTIVE = false;
+    const ACTIVE = 1;
+    const INACTIVE = 0;
 
     public $data = [];
     public $errors = [];
@@ -18,6 +18,7 @@ class DB extends \OhCrud\Core {
     public $config = [];
     public $db;
     public $SQL;
+    public $SQLParameters;
 
     public function __construct() {
         $this->config = unserialize(__OHCRUD_DB_CONFIG__);
@@ -66,10 +67,12 @@ class DB extends \OhCrud\Core {
 
         if (__OHCRUD_DEBUG_MODE__ == true) {
             $this->SQL = $sql;
+            $this->SQLParameters = $bind;
         }
 
         try {
             $result = $this->db->prepare($sql);
+
             $this->success = $result->execute($bind);
 
             if (preg_match("/^SELECT(.*?)/i", $sql) == 1) {

@@ -180,7 +180,7 @@ class Core {
 
         $logger = new Logger('OHCRUD');
         $stream = new StreamHandler(__OHCRUD_LOG_FILE__, Logger::DEBUG);
-        $stream->setFormatter(new \Monolog\Formatter\LineFormatter("[%datetime%] %channel%.%level_name%:\n%message%\n%context%\n%extra%\n----------------------------------------\n", "Y-m-d H:i:s"));
+        $stream->setFormatter(new \Monolog\Formatter\LineFormatter("[%datetime%] %channel%.%level_name%:\n%message%\n%context%\n----------------------------------------\n", "Y-m-d H:i:s"));
         $logger->pushHandler($stream);
 
         try {
@@ -205,6 +205,10 @@ class Core {
 
         if (__OHCRUD_DEBUG_MODE__ == true) {
             $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+            if (isset($this->SQL) == true) {
+                $debug['SQL'] = $this->SQL;
+                $debug['SQLParameters'] = $this->SQLParameters ?? '';
+            }
         }
 
         if ($outputStatusCode != 404) {

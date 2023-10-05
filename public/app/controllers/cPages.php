@@ -49,7 +49,7 @@ class cPages extends \app\models\mPages {
             // update the record
             $this->update('Pages',
                 [
-                    'STATUS' => ($page->STATUS == \app\models\mPages::ACTIVE) ? \app\models\mPages::INACTIVE : \app\models\mPages::ACTIVE
+                    'STATUS' => ($page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
                 ],
                 'URL = :URL',
                 [

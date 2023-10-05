@@ -13,7 +13,6 @@ define('__OHCRUD_ENDPOINTS__', [
     '/api/pages/' => 'app\controllers\cPages',
     '/api/users/' => 'app\controllers\cUsers',
     '/api/files/' => 'app\controllers\cFiles',
-    '/sandbox/' => 'app\controllers\cSandbox',
     '/example/' => 'app\controllers\cExample'
 
     /*
