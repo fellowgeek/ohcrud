@@ -123,12 +123,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/fellowgeek/php-ref.git",
-                "reference": "6a09e8577f6b749b11dfb226d0bddec6b9a1bac7"
+                "reference": "a42462d8b3aee08bd5f15e650ee2bf1b45be81ea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fellowgeek/php-ref/zipball/6a09e8577f6b749b11dfb226d0bddec6b9a1bac7",
-                "reference": "6a09e8577f6b749b11dfb226d0bddec6b9a1bac7",
+                "url": "https://api.github.com/repos/fellowgeek/php-ref/zipball/a42462d8b3aee08bd5f15e650ee2bf1b45be81ea",
+                "reference": "a42462d8b3aee08bd5f15e650ee2bf1b45be81ea",
                 "shasum": ""
             },
             "require": {
@@ -155,7 +155,7 @@
                 "issues": "https://github.com/fellowgeek/php-ref/issues",
                 "source": "https://github.com/fellowgeek/php-ref/tree/master"
             },
-            "time": "2023-10-05T22:16:07+00:00"
+            "time": "2023-10-06T17:48:21+00:00"
         },
         {
             "name": "filp/whoops",

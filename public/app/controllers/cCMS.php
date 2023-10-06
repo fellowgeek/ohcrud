@@ -254,7 +254,11 @@ class cCMS extends \OhCrud\Controller {
     private function getContentFromFile($path, $is404 = false, $isSystem = false) {
 
         if ($is404 == true) $isSystem = true;
-        if ($path == '/login/') $isSystem = true;
+        if ($path == '/login/') {
+            $isSystem = true;
+            // terminate user session
+            $this->unsetSession('User');
+        }
 
         $content = new \app\models\mContent;
         $content->type = \app\models\mContent::TYPE_FILE;

@@ -18,6 +18,7 @@ class cUsers extends \OhCrud\Core {
 
         // variables
         $userHasLoggedIn = false;
+        $Users = new \OhCrud\Users;
 
         // validation
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
@@ -31,10 +32,17 @@ class cUsers extends \OhCrud\Core {
             return $this;
         }
 
-        $Users = new \OhCrud\Users;
-        $userHasLoggedIn = $Users->login($request->payload->USERNAME, $request->payload->PASSWORD);
 
-        if ($userHasLoggedIn == false) {
+        $response = $Users->login($request->payload->USERNAME, $request->payload->PASSWORD);
+
+        if (isset($response->TOTP) == true && $response->TOTP== $this::ACTIVE) {
+            $this->error('User needs TOTP verification.');
+            $this->output();
+            return $this;
+
+        }
+
+        if (isset($response->loggedIn) == false) {
             $this->error('Unable to login, check your Username and Password.');
             $this->output();
             return $this;
@@ -47,10 +55,7 @@ class cUsers extends \OhCrud\Core {
     public function logout($request) {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
-
-        $Users = new \OhCrud\Users;
-        $userHasLoggedIn = $Users->logout();
-
+        $this->unsetSession('User');
         $this->output();
 
     }

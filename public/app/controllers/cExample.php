@@ -34,7 +34,7 @@ class cExample extends \OhCrud\Controller {
     public function publicEndPoint($request) {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
-        $this->debug($request);
+        $this->debug($_SERVER, 'Server Information:');
 
     }
 

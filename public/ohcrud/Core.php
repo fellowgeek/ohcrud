@@ -9,6 +9,9 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Core {
 
+    const ACTIVE = 1;
+    const INACTIVE = 0;
+
     const OUTPUT_NULL = null;
     const OUTPUT_HTML = 'HTML';
     const OUTPUT_JSON = 'JSON';
@@ -250,10 +253,13 @@ class Core {
         print(($colors[$color] ?? $colors['WHT']) . $message . $colors['RST'] . ($shouldAddNewLine ? "\n" : ''));
     }
 
-    public function debug($expression = null) {
+    public function debug($expression = null, $label = null) {
 
         \ref::config('expLvl', __OHCRUD_DEBUG_EXPANDED_LEVEL__);
         \ref::config('shortcutFunc', ['debug', 'r', 'rt']);
+
+        // set debug panel label (if any)
+        $GLOBALS['debugLabel'] = $label;
 
         if (isset($expression) == true) {
             if (is_object($expression) == true) {

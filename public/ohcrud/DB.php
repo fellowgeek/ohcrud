@@ -6,9 +6,6 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class DB extends \OhCrud\Core {
 
-    const ACTIVE = 1;
-    const INACTIVE = 0;
-
     public $data = [];
     public $errors = [];
     public $success = true;

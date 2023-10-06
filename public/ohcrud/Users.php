@@ -22,13 +22,14 @@ class Users extends \OhCrud\DB {
                     $sql = "CREATE TABLE IF NOT EXISTS `Users` (
                             `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
                             `USERNAME`	TEXT,
+                            `EMAIL`	TEXT,
                             `PASSWORD`	TEXT,
                             `FIRSTNAME`	TEXT,
                             `LASTNAME`	TEXT,
                             `GROUP`	INTEGER,
                             `PERMISSIONS`	INTEGER,
                             `TOKEN`	TEXT,
-                            `OTP_SECRET`	TEXT,
+                            `TOTP_SECRET`	TEXT,
                             `STATUS`	INTEGER,
                             `TOTP`	INTEGER,
                         );
@@ -41,17 +42,19 @@ class Users extends \OhCrud\DB {
                     $sql = "CREATE TABLE IF NOT EXISTS `Users` (
                         `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
                         `USERNAME` varchar(128) NOT NULL DEFAULT '',
+                        `EMAIL` varchar(128) NOT NULL DEFAULT '',
                         `PASSWORD` varchar(256) NOT NULL DEFAULT '',
                         `FIRSTNAME` varchar(64) NOT NULL DEFAULT '',
                         `LASTNAME` varchar(64) NOT NULL DEFAULT '',
                         `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
                         `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOKEN` varchar(256) NOT NULL DEFAULT '',
-                        `OTP_SECRET` varchar(256) NOT NULL DEFAULT '',
+                        `TOTP_SECRET` varchar(256) NOT NULL DEFAULT '',
                         `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOTP` int(10) unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`ID`),
                         KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
+                        KEY `idx_EMAIL` (`EMAIL`) USING BTREE,
                         KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
                         KEY `idx_GROUP` (`GROUP`) USING BTREE,
                         KEY `idx_STATUS` (`STATUS`) USING BTREE
@@ -64,6 +67,7 @@ class Users extends \OhCrud\DB {
             if ($tableExists == false && $this->success == true) {
                 $this->create('Users', [
                     'USERNAME' => 'admin',
+                    'EMAIL' => 'admin@example.com',
                     'PASSWORD' => 'admin',
                     'FIRSTNAME' => 'admin',
                     'LASTNAME' => 'admin',
@@ -96,9 +100,9 @@ class Users extends \OhCrud\DB {
         return parent::create($table, $data);
     }
 
-    // enable/re-generate OTP login
-    public function enableOTP($id) {
-        $user = $this->READ(
+    // enable/re-generate TOTP login
+    public function enableTOTP($id) {
+        $user = $this->read(
             'Users',
             'ID = :ID AND STATUS = :STATUS',
             [
@@ -108,13 +112,13 @@ class Users extends \OhCrud\DB {
         )->first();
 
         if ($user != false) {
-            $otp = TOTP::generate();
+            $totp = TOTP::generate();
 
             $output = $this->Update(
                 'Users',
                 [
                     'TOTP' => $this::ACTIVE,
-                    'OTP_SECRET' => $otp->getSecret()
+                    'TOTP_SECRET' => $totp->getSecret()
                 ],
                 'ID = :ID',
                 [
@@ -129,13 +133,14 @@ class Users extends \OhCrud\DB {
     }
 
     // method to provide authentication and check if user has TOTP enabled
-    public function login($username, $password, $token = null, $totp = null) {
+    public function login($username, $password, $token = null) {
 
         // variables
         $userHasLoggedIn = false;
 
         // handle API token based logins
         if (isset($token) == true) {
+            // get user based on token and status
             $user = $this->read(
                 'Users',
                 'TOKEN = :TOKEN AND STATUS = :STATUS',
@@ -144,20 +149,29 @@ class Users extends \OhCrud\DB {
                     ':STATUS' => $this::ACTIVE
                 ]
             )->first();
+
             if ($user != false) {
-                $userHasLoggedIn = true;
+                $user->loggedIn = true;
+
+                // remove unwanted information
+                unset($user->PASSWORD);
+                unset($user->TOKEN);
+                unset($user->TOTP_SECRET);
+
+                // create the user session and login the user
                 $this->setSession('User', $user);
-            }
-            if ($userHasLoggedIn == false) {
+            } else {
                 $this->log('warning', 'Invalid token', [$token]);
                 // delay brute force attacks
                 sleep(1);
             }
 
-            return $userHasLoggedIn;
+            return $user;
         }
 
         // handle password based logins
+
+        // get user based on username and status
         $user = $this->read(
             'Users',
             'USERNAME = :USERNAME AND STATUS = :STATUS',
@@ -168,31 +182,42 @@ class Users extends \OhCrud\DB {
         )->first();
 
         if ($user != false) {
-            $userHasLoggedIn = password_verify($password, $user->PASSWORD);
-            if ($user->TOTP == $this::ACTIVE) {
-                $user->OTPVerified = false;
+            // verify user password against stored hash
+            $user->loggedIn = password_verify($password, $user->PASSWORD);
+            if ($user->loggedIn == false) {
+                $this->log('warning', 'Login attempt was not successful', [$username]);
+                // delay brute force attacks
+                sleep(1);
+
+                return false;
             }
+
+            // remove unwanted information
             unset($user->PASSWORD);
             unset($user->TOKEN);
-            unset($user->OTP_SECRET);
-            if ($userHasLoggedIn == true) {
+
+            // check if user has TOTP enabled
+            if ($user->TOTP == $this::ACTIVE) {
+                $user->TOTPVerified = false;
+            } else {
+                // remove the TOTP secret if user TOTP is not enabled for the user
+                unset($user->TOTP_SECRET);
+            }
+
+            // create the user session and login the user if TOTP is not enabled for this user
+            if ($user->TOTP == $this::INACTIVE) {
                 $this->setSession('User', $user);
             }
         }
 
-        if ($userHasLoggedIn == false) {
-            $this->log('warning', 'Login attempt was not successful', [$username]);
-            // delay brute force attacks
-            sleep(1);
-        }
-
-        return $userHasLoggedIn;
+        return $user;
     }
 
-    // logout user by terminating the session
-    public function logout() {
-        $this->unsetSession('User');
-        return true;
+    // handle TOTP authentication for a given user id
+    public function verifyOTP($id) {
+        // variables
+        $userHasLoggedIn = false;
+
     }
 
     // generate a randomized API token based on username
