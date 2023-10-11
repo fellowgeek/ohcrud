@@ -45,7 +45,7 @@ class mPages extends \OhCrud\DB {
                             `LAYOUT` varchar(32) NOT NULL DEFAULT '',
                             `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
                             PRIMARY KEY (`ID`),
-                            KEY `idx_URL` (`URL`) USING BTREE,
+                            UNIQUE KEY `idx_URL` (`URL`) USING BTREE,
                             KEY `idx_GROUP` (`GROUP`) USING BTREE,
                             KEY `idx_STATUS` (`STATUS`) USING BTREE
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -62,6 +62,8 @@ class mPages extends \OhCrud\DB {
                         'URL' => '/',
                         'TITLE' => 'Home',
                         'TEXT' => 'This is home.',
+                        'THEME' => __OHCRUD_CMS_DEFAULT_THEME__,
+                        'LAYOUT' => __OHCRUD_CMS_DEFAULT_LAYOUT__,
                         'STATUS' => $this::ACTIVE
                     ]
                 );

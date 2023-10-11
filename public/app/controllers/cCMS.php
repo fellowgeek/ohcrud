@@ -258,6 +258,7 @@ class cCMS extends \OhCrud\Controller {
             $isSystem = true;
             // terminate user session
             $this->unsetSession('User');
+            $this->unsetSession('tempUser');
         }
 
         $content = new \app\models\mContent;

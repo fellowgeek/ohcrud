@@ -6,15 +6,9 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class DB extends \OhCrud\Core {
 
-    public $data = [];
-    public $errors = [];
-    public $success = true;
-    public $outputType = null;
-    public $outputHeaders = array();
-    public $outputStatusCode = 200;
     public $config = [];
     public $db;
-    public $SQL;
+    public $SQL = '';
 
     public function __construct() {
         $this->config = unserialize(__OHCRUD_DB_CONFIG__);
@@ -81,6 +75,7 @@ class DB extends \OhCrud\Core {
                 return $this;
             } else {
                 $this->data = $result;
+
                 $this->data->lastInsertId = $this->db->lastInsertId();
                 return $this;
             }

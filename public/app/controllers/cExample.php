@@ -1,12 +1,10 @@
 <?php
 namespace app\controllers;
 
-use OTPHP\TOTP;
-
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class cExample extends \OhCrud\Controller {
+class cExample extends \OhCrud\DB {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
@@ -34,7 +32,9 @@ class cExample extends \OhCrud\Controller {
     public function publicEndPoint($request) {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
+        $this->debug($_SESSION, 'Session:');
         $this->debug($_SERVER, 'Server Information:');
+
 
     }
 

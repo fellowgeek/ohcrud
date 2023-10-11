@@ -53,9 +53,9 @@ class Users extends \OhCrud\DB {
                         `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOTP` int(10) unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`ID`),
-                        KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
-                        KEY `idx_EMAIL` (`EMAIL`) USING BTREE,
-                        KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
+                        UNIQUE KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
+                        UNIQUE KEY `idx_EMAIL` (`EMAIL`) USING BTREE,
+                        UNIQUE KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
                         KEY `idx_GROUP` (`GROUP`) USING BTREE,
                         KEY `idx_STATUS` (`STATUS`) USING BTREE
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -135,9 +135,6 @@ class Users extends \OhCrud\DB {
     // method to provide authentication and check if user has TOTP enabled
     public function login($username, $password, $token = null) {
 
-        // variables
-        $userHasLoggedIn = false;
-
         // handle API token based logins
         if (isset($token) == true) {
             // get user based on token and status
@@ -169,7 +166,10 @@ class Users extends \OhCrud\DB {
             return $user;
         }
 
-        // handle password based logins
+        // delay brute force attacks only if we are in production mode
+        if(__OHCRUD_DEBUG_MODE__ == false) {
+            sleep(1);
+        }
 
         // get user based on username and status
         $user = $this->read(
@@ -186,22 +186,18 @@ class Users extends \OhCrud\DB {
             $user->loggedIn = password_verify($password, $user->PASSWORD);
             if ($user->loggedIn == false) {
                 $this->log('warning', 'Login attempt was not successful', [$username]);
-                // delay brute force attacks
-                sleep(1);
-
                 return false;
             }
 
             // remove unwanted information
             unset($user->PASSWORD);
+            unset($user->TOTP_SECRET);
             unset($user->TOKEN);
 
             // check if user has TOTP enabled
             if ($user->TOTP == $this::ACTIVE) {
                 $user->TOTPVerified = false;
-            } else {
-                // remove the TOTP secret if user TOTP is not enabled for the user
-                unset($user->TOTP_SECRET);
+                $this->setSession('tempUser', $user);
             }
 
             // create the user session and login the user if TOTP is not enabled for this user
@@ -214,10 +210,45 @@ class Users extends \OhCrud\DB {
     }
 
     // handle TOTP authentication for a given user id
-    public function verifyOTP($id) {
-        // variables
-        $userHasLoggedIn = false;
+    public function verify($id, $TOTP_CODE) {
 
+        // delay brute force attacks only if we are in production mode
+        if(__OHCRUD_DEBUG_MODE__ == false) {
+            sleep(1);
+        }
+
+        // get the user
+        $user = $this->read(
+            'Users',
+            'ID = :ID AND STATUS = :STATUS',
+            [
+                ':ID' => $id,
+                ':STATUS' => $this::ACTIVE
+            ]
+        )->first();
+
+        if ($user == false) {
+            $this->log('warning', 'TOTP verification failed, User does not exist.', [$id]);
+            return false;
+        }
+
+        // create TOTP object from the secret and verify the TOTP code
+        $totp = TOTP::createFromSecret($user->TOTP_SECRET);
+        if ( $totp->verify($TOTP_CODE) == false) {
+            $this->log('warning', 'TOTP verification failed.', [$user->USERNAME]);
+            return false;
+        }
+
+        // remove unwanted information
+        unset($user->PASSWORD);
+        unset($user->TOTP_SECRET);
+        unset($user->TOKEN);
+
+        // create the user session and login the user
+        $this->setSession('User', $user);
+        $this->unsetSession('tempUser');
+
+        return $user;
     }
 
     // generate a randomized API token based on username

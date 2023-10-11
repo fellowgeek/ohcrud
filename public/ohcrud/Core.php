@@ -3,6 +3,7 @@ namespace OhCrud;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use stdClass;
 
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
@@ -63,7 +64,8 @@ class Core {
     }
 
     public function CSRF() {
-        if (empty($_SESSION['CSRF'])) {
+
+        if (empty($_SESSION['CSRF']) == true) {
             $this->setSession('CSRF', bin2hex(random_bytes(32)));
         }
         return $_SESSION['CSRF'];

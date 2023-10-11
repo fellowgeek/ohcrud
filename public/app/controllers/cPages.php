@@ -87,6 +87,14 @@ class cPages extends \app\models\mPages {
         $request->payload->TITLE = $purifier->purify($request->payload->TITLE);
         $request->payload->TEXT = $purifier->purify($request->payload->TEXT);
 
+        // set the defualts (if missing)
+        if (isset($request->payload->THEME) == false) {
+            $request->payload->THEME = __OHCRUD_CMS_DEFAULT_THEME__;
+        }
+        if (isset($request->payload->LAYOUT) == false) {
+            $request->payload->LAYOUT = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
         // check if page exists
         $PageExists = $this->run(
             "SELECT
