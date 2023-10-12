@@ -35,7 +35,7 @@ class cExample extends \OhCrud\DB {
         $this->debug($_SESSION, 'Session:');
         $this->debug($_SERVER, 'Server Information:');
 
-
+        test
     }
 
 }
