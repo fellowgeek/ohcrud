@@ -23,6 +23,7 @@ class cExample extends \OhCrud\DB {
                 ':ID' => 1
             ],
             'ID, USERNAME, FIRSTNAME, LASTNAME, TOTP, STATUS'
+        
         );
 
         $this->output();
@@ -34,7 +35,7 @@ class cExample extends \OhCrud\DB {
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
         $this->debug($_SESSION, 'Session:');
         $this->debug($_SERVER, 'Server Information:');
-
+        $this->debug(getallheaders(), 'HTTP Headers:');
         
     }
 
