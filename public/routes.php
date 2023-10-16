@@ -1,7 +1,16 @@
 <?php
 
-// allowed domains
-define('__OHCRUD_ALLOWED_DOMAINS__', [
+// allowed remote IPs ( IP filtering )
+define('__OHCRUD_ALLOWED_IPS_ENABLED__', false);
+
+// list of allowed remote IPs that can make request to this application
+define('__OHCRUD_ALLOWED_IPS__', [
+        '127.0.0.1',
+    ]
+);
+
+// list of allowed remote origins for CORS
+define('__OHCRUD_ALLOWED_ORIGINS__', [
         'http://localhost',
         'http://ohcrud.local',
     ]

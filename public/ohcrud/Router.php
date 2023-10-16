@@ -149,15 +149,20 @@ class Router extends \OhCrud\Core {
         // setup CSRF token
         $this->CSRF();
 
-        // handle CLI mode
-        if (PHP_SAPI == 'cli' || isset($_SERVER['HTTP_ORIGIN']) == false) return true;
+        // skip CORS chekc if we are in CLI mode
+        if (PHP_SAPI == 'cli') return true;
 
+        // check if remote IP filtering is enabled and handle allowed IPs
+        if (__OHCRUD_ALLOWED_IPS_ENABLED__ == true) {
+            if (in_array($_SERVER['REMOTE_ADDR'], __OHCRUD_ALLOWED_IPS__) == false) return false;
+        }
+        
         // handle same origin requests
         $origin = strtolower($_SERVER['HTTP_ORIGIN'] ?? '');
         if ($origin == ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
 
         // handle cross origin requests
-        if (in_array($origin, __OHCRUD_ALLOWED_DOMAINS__) == true) {
+        if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true) {
             header('Access-Control-Allow-Origin: ' . $origin);
             header('Access-Control-Allow-Credentials: true');
             header('Access-Control-Max-Age: 86400');
