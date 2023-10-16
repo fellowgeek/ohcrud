@@ -32,18 +32,10 @@ class cExample extends \OhCrud\DB {
 
     public function publicEndPoint($request) {
 
-        // $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
+        $this->debug($_SESSION, 'Session:');
 
-        $this->data = new \stdClass();
-        $this->data->session = $_SESSION;
-        $this->data->server = $_SERVER;
-        $this->data->headers = getallheaders();
         $this->output();
-
-        // $this->debug($_SESSION, 'Session:');
-        // $this->debug($_SERVER, 'Server Information:');
-        // $this->debug(getallheaders(), 'HTTP Headers:');
         
     }
 
