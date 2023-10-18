@@ -157,10 +157,14 @@ class Router extends \OhCrud\Core {
             if (in_array($_SERVER['REMOTE_ADDR'], __OHCRUD_ALLOWED_IPS__) == false) return false;
         }
         
-        // handle same origin requests
+        // handle same origin requests user HTTP_ORIGIN and HTTP_REFERER to determine origin of the request
         $origin = strtolower($_SERVER['HTTP_ORIGIN'] ?? '');
+        if ($origin == '') $origin = strtolower(($_SERVER['HTTP_REFERER']) ?? '');
+        
+        // if origin is not set or request is coming from the current site return true and skip CORS headers
+        if ($origin == '') return true;
         if ($origin == ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
-
+        
         // handle cross origin requests
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true) {
             header('Access-Control-Allow-Origin: ' . $origin);
