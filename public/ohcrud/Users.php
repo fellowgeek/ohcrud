@@ -31,7 +31,7 @@ class Users extends \OhCrud\DB {
                             `TOKEN`	TEXT,
                             `TOTP_SECRET`	TEXT,
                             `STATUS`	INTEGER,
-                            `TOTP`	INTEGER,
+                            `TOTP`	INTEGER
                         );
                     ";
                     $this->run($sql);
