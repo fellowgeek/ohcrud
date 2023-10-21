@@ -5,9 +5,10 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use stdClass;
 
-// prevent direct access
+// Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+// Class Core - core operations class for OhCrud, all other OhCrud classed inherit from this class
 class Core {
 
     const ACTIVE = 1;
@@ -26,11 +27,13 @@ class Core {
     public $outputStatusCode = 200;
     public $runtime;
 
+    // Set the output type for the response.
     public function setOutputType($outputType) {
         $this->outputType = $outputType;
         return $this;
     }
 
+    // Set custom output headers for the response.
     public function setOutputHeaders($outputHeaders = array()) {
         if (is_array($outputHeaders) == true) {
             $this->outputHeaders = $outputHeaders;
@@ -40,11 +43,13 @@ class Core {
         return $this;
     }
 
+    // Set the HTTP status code for the response.
     public function setOutputStatusCode($outputStatusCode) {
         $this->outputStatusCode = $outputStatusCode;
         return $this;
     }
 
+    // Set a session variable and ensure it is stored.
     public function setSession($key, $value) {
         session_start();
         if (isset($key) == true && isset($value) == true) {
@@ -54,6 +59,7 @@ class Core {
         return $this;
     }
 
+    // Unset a session variable.
     public function unsetSession($key) {
         session_start();
         if (isset($key) == true) {
@@ -63,6 +69,7 @@ class Core {
         return $this;
     }
 
+    // Generate a CSRF token and store it in the session.
     public function CSRF() {
 
         if (empty($_SESSION['CSRF']) == true) {
@@ -71,10 +78,12 @@ class Core {
         return $_SESSION['CSRF'];
     }
 
+    // Check if a given token matches the stored CSRF token.
     public function checkCSRF($token) {
         return hash_equals($_SESSION['CSRF'] ?? '', $token);
     }
 
+    // Generate and send the response based on the output type.
     public function output() {
 
         $output = '';
@@ -121,6 +130,7 @@ class Core {
         return $this;
     }
 
+    // Send HTTP headers for the response.
     public function headers() {
         if ($this->outputType == null) {
             return $this;
@@ -135,6 +145,7 @@ class Core {
         return $this;
     }
 
+    // Retrieve data from cache if available and not expired.
     public function getCache($key, $duration = 3600) {
 
         if (__OHCRUD_CACHE_ENABLED__ == false) {
@@ -156,6 +167,7 @@ class Core {
         return $data;
     }
 
+    // Store data in cache.
     public function setCache($key, $data) {
 
         if (__OHCRUD_CACHE_ENABLED__ == false) {
@@ -167,6 +179,7 @@ class Core {
         return file_put_contents(__OHCRUD_CACHE_PATH__ . $hash, $data);
     }
 
+    // Remove data from cache.
     public function unsetCache($key) {
 
         $hash = md5($key) . '.cache';
@@ -177,6 +190,7 @@ class Core {
         return false;
     }
 
+    // Log messages using Monolog if logging is enabled.
     public function log($level, $message, array $context = array()) {
 
         if (__OHCRUD_LOG_ENABLED__ == false) {
@@ -201,6 +215,7 @@ class Core {
         return $this;
     }
 
+    // Handle errors by logging and setting the HTTP status code.
     public function error($message, $outputStatusCode = 500) {
         $debug = [];
 
@@ -219,6 +234,7 @@ class Core {
         return $this;
     }
 
+    // Perform an HTTP redirect.
     public function redirect($url) {
         if (headers_sent() == false) {
             header('Location: ' . $url);
@@ -227,6 +243,7 @@ class Core {
         return false;
     }
 
+    // Output messages in the console (for CLI environment).
     public function console($message = '', $color = 'WHT', $shouldAddNewLine = true) {
 
         if ( PHP_SAPI != 'cli') {
@@ -255,6 +272,7 @@ class Core {
         print(($colors[$color] ?? $colors['WHT']) . $message . $colors['RST'] . ($shouldAddNewLine ? "\n" : ''));
     }
 
+    // Debug information by inspecting variables or the class itself.
     public function debug($expression = null, $label = null) {
 
         \ref::config('expLvl', __OHCRUD_DEBUG_EXPANDED_LEVEL__);

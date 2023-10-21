@@ -1,48 +1,54 @@
 <?php
 namespace OhCrud;
 
-// prevent direct access
+// Prevent direct access to this class
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+// Class Router - routing operations class for OhCrud, all incoming request processed by this class
 class Router extends \OhCrud\Core {
 
     private $request;
-    private $count = 0;
+
+    // Constructor for the Router class. It sets up routing based on the provided URL path.
     public function __construct($rawPath = null) {
 
-        // global variables
+        // Extract the path from the provided URL and store it in global variables.
         $GLOBALS['PATH'] = rtrim(parse_url($rawPath, PHP_URL_PATH) ?? '', '/') . '/';
         $GLOBALS['PATH_ARRAY'] = preg_split('[/]', $GLOBALS['PATH'], 0, PREG_SPLIT_NO_EMPTY);
 
+        // Call the route method to process the request.
         $this->route($rawPath);
     }
 
+    // The route method processes incoming requests and handles routing.
     public function route($rawPath = null) {
 
-        // variables
+        // Variables
         $path = $GLOBALS['PATH'];
         $pathArray = $GLOBALS['PATH_ARRAY'];
         $method = '';
 
-        // process cli parameters
+        // Process command-line parameters if the script is run in CLI mode.
         if (PHP_SAPI == 'cli') {
             $parameters = [];
             parse_str(parse_url($rawPath, PHP_URL_QUERY), $parameters);
             $this->request = (object) $parameters;
         } else {
-            // process api parameters
+            // Process API parameters if not in CLI mode.
             $this->request = (object) \array_merge($_REQUEST, $_GET, $_POST);
             $payload = file_get_contents('php://input');
             if (empty($payload) == false) {
+                // Decode JSON payload if the content type is 'application/json'.
                 if ($_SERVER['CONTENT_TYPE'] == 'application/json') $this->request->payload = \json_decode($payload); else $this->request->payload = $payload;
             }
         }
 
-        // try to create the object first
+        // Try to create the object based on the path.
         if (array_key_exists($path, __OHCRUD_ENDPOINTS__) == true) {
             $objectName = __OHCRUD_ENDPOINTS__[$path];
             $object = new $objectName;
 
+            // Check if the object has permissions, and if not, handle authorization or forbidden access.
             if (isset($object->permissions) == true && $this->checkPermissions($object->permissions) == false) {
                 if (isset($_SESSION['User']) == false) $this->authorize(); else $this->forbidden();
             }
@@ -50,13 +56,13 @@ class Router extends \OhCrud\Core {
             return $this;
         }
 
-        // if object is not found try to create the object from the base path and call object method from ending path
+        // If the object is not found, try to create it from the base path and call the object's method from the ending path.
         $method = array_pop($pathArray);
         $path = '/' . implode('/', $pathArray) . '/';
 
         if (array_key_exists($path, __OHCRUD_ENDPOINTS__) == true) {
 
-            // handle CORS
+            // Handle CORS (Cross-Origin Resource Sharing).
             if ($this->handleCORS() == false) {
                 $this->forbidden();
                 return $this;
@@ -65,6 +71,7 @@ class Router extends \OhCrud\Core {
             $objectName = __OHCRUD_ENDPOINTS__[$path];
             $object = new $objectName;
 
+            // Check if the object has permissions for the specific method and call the method.
             if (isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
                 $object->$method($this->request);
             } else {
@@ -73,7 +80,7 @@ class Router extends \OhCrud\Core {
             return $this;
         }
 
-        // redirect to default path handler, if handler is present or 404
+        // Redirect to the default path handler if available, otherwise return a 404 error.
         if (__OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
             $objectName = __OHCRUD_DEFAULT_PATH_HANDLER__;
             $object = new $objectName;
@@ -83,29 +90,31 @@ class Router extends \OhCrud\Core {
             }
         }
 
+        // Set the output type to JSON and return a 404 error response.
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
         $this->error('Oh CRUD! You just got 404\'d.', 404);
         $this->output();
 
     }
 
+    // Check if the user has the necessary permissions for an operation.
     private function checkPermissions($expression, $method = null) {
 
-        // grant permission if script is called from command line interface
+        // Grant permission if the script is called from the command-line interface.
         if (PHP_SAPI == 'cli') return true;
 
-        // variables
+        // Variables
         $objectHasPermission = false;
         $methodHasPermission = false;
         $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;
 
-        // check object permission
+        // Check object permission
         if (isset($expression['object']) == true) {
             if ($expression['object'] == __OHCRUD_PERMISSION_ALL__ || ($expression['object'] >= $userPermissions && $userPermissions != false))
                 $objectHasPermission = true;
         }
 
-        // check method permission
+        // Check method permission
         if (isset($method) == true) {
             if (isset($expression[$method]) == true && ($expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions != false)))
                 $methodHasPermission = true;
@@ -116,14 +125,15 @@ class Router extends \OhCrud\Core {
         return ($objectHasPermission && $methodHasPermission);
     }
 
+    // Handle user authorization.
     private function authorize() {
 
-        // variables
+        // Variables
         $users = new \OhCrud\Users;
         $httpHeaders = getallheaders();
         $userHasLoggedIn = false;
 
-        // authenticate user
+        // Authenticate the user using basic authentication or a token.
         if (isset($_SERVER['PHP_AUTH_USER']) == true || isset($_SERVER['PHP_AUTH_PW']) == true || isset($httpHeaders['Token']) == true) {
             $userHasLoggedIn = $users->login($_SERVER['PHP_AUTH_USER'] ?? null, $_SERVER['PHP_AUTH_PW'] ?? null, $httpHeaders['Token'] ?? null);
         }
@@ -135,7 +145,7 @@ class Router extends \OhCrud\Core {
                 $this->forbidden();
             } else {
                 if(headers_sent() == false) {
-                    // unauthorized access
+                    // Unauthorized access - Send HTTP headers for basic authentication.
                     header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
                     header('HTTP/1.0 401 Unauthorized');
                 }
@@ -144,28 +154,29 @@ class Router extends \OhCrud\Core {
         }
     }
 
+    // Handle Cross-Origin Resource Sharing (CORS) to allow or deny access from different origins.
     private function handleCORS() {
 
-        // setup CSRF token
+        // Set up CSRF (Cross-Site Request Forgery) token.
         $this->CSRF();
 
-        // skip CORS chekc if we are in CLI mode
+        // Skip CORS check if we are in CLI mode.
         if (PHP_SAPI == 'cli') return true;
 
-        // check if remote IP filtering is enabled and handle allowed IPs
+        // Check if remote IP filtering is enabled and handle allowed IPs.
         if (__OHCRUD_ALLOWED_IPS_ENABLED__ == true) {
             if (in_array($_SERVER['REMOTE_ADDR'], __OHCRUD_ALLOWED_IPS__) == false) return false;
         }
         
-        // handle same origin requests user HTTP_ORIGIN and HTTP_REFERER to determine origin of the request
+        // Handle same origin requests using HTTP_ORIGIN and HTTP_REFERER to determine the request's origin.
         $origin = strtolower($_SERVER['HTTP_ORIGIN'] ?? '');
         if ($origin == '') $origin = strtolower(($_SERVER['HTTP_REFERER']) ?? '');
         
-        // if origin is not set or request is coming from the current site return true and skip CORS headers
+        // If the origin is not set or the request is coming from the current site, allow access.
         if ($origin == '') return true;
         if ($origin == ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
         
-        // handle cross origin requests
+        // Handle cross-origin requests and set appropriate CORS headers.
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true) {
             header('Access-Control-Allow-Origin: ' . $origin);
             header('Access-Control-Allow-Credentials: true');
@@ -182,6 +193,7 @@ class Router extends \OhCrud\Core {
 
     }
 
+    // Handle forbidden access and return a 403 error response.
     private function forbidden() {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);

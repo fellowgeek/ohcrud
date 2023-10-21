@@ -16,7 +16,6 @@ services:
     volumes:
       - ./public:/app
   composer_installation:
-    container_name: composer_installation
     image: composer
     volumes:
       - ./public:/app
