@@ -3,17 +3,19 @@ namespace OhCrud;
 
 use OTPHP\TOTP;
 
-// prevent direct access
+// Prevent direct access to this class
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+// Class Users - Users class for OhCrud, this class handles creation and authentication of the OhCrud framework users.
 class Users extends \OhCrud\DB {
 
     function __construct() {
         parent::__construct();
 
+        // Initialize the Users table and populate with default admin user if it doesn't exist
         if (__OHCRUD_DEBUG_MODE__ == true) {
 
-            // variables
+            // Check if the Users table exists and create it if it doesn't
             $tableExists = false;
 
             switch($this->config["DRIVER"]) {
@@ -64,6 +66,7 @@ class Users extends \OhCrud\DB {
                     break;
             }
 
+            // Create a default admin user if the Users table was just created
             if ($tableExists == false && $this->success == true) {
                 $this->create('Users', [
                     'USERNAME' => 'admin',
@@ -81,7 +84,7 @@ class Users extends \OhCrud\DB {
         }
     }
 
-    // overwrite create function to include TOKEN and PASSWORD
+    // Override the create function to include password hashing and token generation
     public function create($table, $data=array()) {
         // create hash from password
         if (isset($data['PASSWORD']) == true) {
@@ -92,7 +95,7 @@ class Users extends \OhCrud\DB {
             );
         }
 
-        // set API access token
+        // Generate an API access token based on the username
         if (isset($data['USERNAME']) == true) {
             $data['TOKEN'] = $this->generateToken($data['USERNAME']);
         }
@@ -100,7 +103,7 @@ class Users extends \OhCrud\DB {
         return parent::create($table, $data);
     }
 
-    // enable/re-generate TOTP login
+    // Enable or re-generate TOTP for a user
     public function enableTOTP($id) {
         $user = $this->read(
             'Users',
@@ -132,12 +135,12 @@ class Users extends \OhCrud\DB {
         }
     }
 
-    // method to provide authentication and check if user has TOTP enabled
+    // Authenticate and check if the user has TOTP enabled
     public function login($username, $password, $token = null) {
 
-        // handle API token based logins
+        // Handle API token-based logins
         if (isset($token) == true) {
-            // get user based on token and status
+            // Get a user based on the token and status
             $user = $this->read(
                 'Users',
                 'TOKEN = :TOKEN AND STATUS = :STATUS',
@@ -150,28 +153,28 @@ class Users extends \OhCrud\DB {
             if ($user != false) {
                 $user->loggedIn = true;
 
-                // remove unwanted information
+                // Remove sensitive information
                 unset($user->PASSWORD);
                 unset($user->TOKEN);
                 unset($user->TOTP_SECRET);
 
-                // create the user session and login the user
+                // Create a user session and log in the user
                 $this->setSession('User', $user);
             } else {
                 $this->log('warning', 'Invalid token', [$token]);
-                // delay brute force attacks
+                // Delay to mitigate brute force attacks
                 sleep(1);
             }
 
             return $user;
         }
 
-        // delay brute force attacks only if we are in production mode
+        // Delay to mitigate brute force attacks, only in production mode
         if(__OHCRUD_DEBUG_MODE__ == false) {
             sleep(1);
         }
 
-        // get user based on username and status
+        // Get a user based on username and status
         $user = $this->read(
             'Users',
             'USERNAME = :USERNAME AND STATUS = :STATUS',
@@ -182,25 +185,25 @@ class Users extends \OhCrud\DB {
         )->first();
 
         if ($user != false) {
-            // verify user password against stored hash
+            // Verify the user's password against the stored hash
             $user->loggedIn = password_verify($password, $user->PASSWORD);
             if ($user->loggedIn == false) {
                 $this->log('warning', 'Login attempt was not successful', [$username]);
                 return false;
             }
 
-            // remove unwanted information
+            // Remove sensitive information
             unset($user->PASSWORD);
             unset($user->TOTP_SECRET);
             unset($user->TOKEN);
 
-            // check if user has TOTP enabled
+            // Check if the user has TOTP enabled
             if ($user->TOTP == $this::ACTIVE) {
                 $user->TOTPVerified = false;
                 $this->setSession('tempUser', $user);
             }
 
-            // create the user session and login the user if TOTP is not enabled for this user
+            // Create the user session and log in the user if TOTP is not enabled for this user
             if ($user->TOTP == $this::INACTIVE) {
                 $this->setSession('User', $user);
             }
@@ -209,15 +212,15 @@ class Users extends \OhCrud\DB {
         return $user;
     }
 
-    // handle TOTP authentication for a given user id
+    // Handle TOTP authentication for a given user ID
     public function verify($id, $TOTP_CODE) {
 
-        // delay brute force attacks only if we are in production mode
+        // Delay to mitigate brute force attacks, only in production mode
         if(__OHCRUD_DEBUG_MODE__ == false) {
             sleep(1);
         }
 
-        // get the user
+        // Get the user
         $user = $this->read(
             'Users',
             'ID = :ID AND STATUS = :STATUS',
@@ -232,26 +235,26 @@ class Users extends \OhCrud\DB {
             return false;
         }
 
-        // create TOTP object from the secret and verify the TOTP code
+        // Create a TOTP object from the secret and verify the TOTP code
         $totp = TOTP::createFromSecret($user->TOTP_SECRET);
         if ( $totp->verify($TOTP_CODE) == false) {
             $this->log('warning', 'TOTP verification failed.', [$user->USERNAME]);
             return false;
         }
 
-        // remove unwanted information
+        // Remove sensitive information
         unset($user->PASSWORD);
         unset($user->TOTP_SECRET);
         unset($user->TOKEN);
 
-        // create the user session and login the user
+        // Create the user session and log in the user
         $this->setSession('User', $user);
         $this->unsetSession('tempUser');
 
         return $user;
     }
 
-    // generate a randomized API token based on username
+    // Generate a randomized API token based on the username
     private function generateToken($username) {
         $randomString = '';
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
