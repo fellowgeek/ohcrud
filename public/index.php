@@ -1,5 +1,5 @@
 <?php
-// Set a global variable for OHCRUD framework.
+    // Set a global variable for OHCRUD framework.
     $GLOBALS['OHCRUD'] = true;
 
     // Define a constant for permission levels, allowing all permissions.
