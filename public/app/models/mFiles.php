@@ -1,11 +1,13 @@
 <?php
 namespace app\models;
 
-// prevent direct access
+// Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+// Model mFiles - Represents a file model extending the \OhCrud\DB class.
 class mFiles extends \OhCrud\DB {
 
+    // The permissions associated with the model.
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__
     ];
@@ -15,9 +17,8 @@ class mFiles extends \OhCrud\DB {
 
         if (__OHCRUD_DEBUG_MODE__ == true) {
 
-            // variables
+            // Check if the 'Files' table exists based on the database driver.
             $tableExists = false;
-
             switch($this->config["DRIVER"]) {
                 case "SQLITE":
                     $tableExists = $this->run("SELECT * FROM sqlite_master WHERE `name`='Files';")->first() ?? false;
@@ -55,7 +56,7 @@ class mFiles extends \OhCrud\DB {
                     break;
             }
 
-            // seed the table
+            // Seed the 'Files' table if it doesn't exist and if the database setup was successful.
             if ($tableExists == false && $this->success == true) {
                 $this->create(
                     'Files',

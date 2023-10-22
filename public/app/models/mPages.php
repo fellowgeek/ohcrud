@@ -1,9 +1,10 @@
 <?php
 namespace app\models;
 
-// prevent direct access
+// Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+// Model mPages - Represents a pages model extending the \OhCrud\DB class.
 class mPages extends \OhCrud\DB {
 
     function __construct() {
@@ -11,9 +12,8 @@ class mPages extends \OhCrud\DB {
 
         if (__OHCRUD_DEBUG_MODE__ == true) {
 
-            // variables
+            // Check if the 'Pages' table exists in the database, and create it if it doesn't.
             $tableExists = false;
-
             switch($this->config["DRIVER"]) {
                 case "SQLITE":
                     $tableExists = $this->run("SELECT * FROM sqlite_master WHERE `name`='Pages';")->first() ?? false;
@@ -54,7 +54,7 @@ class mPages extends \OhCrud\DB {
                     break;
             }
 
-            // seed the table
+            // If the 'Pages' table was created and the operation was successful, seed the table with a default page.
             if ($tableExists == false && $this->success == true) {
                 $this->create(
                     'Pages',

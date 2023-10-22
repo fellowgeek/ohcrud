@@ -1,11 +1,13 @@
 <?php
 namespace app\controllers;
 
-// prevent direct access
+// Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+// Controller cUsers - users controller used by the OhCRUD framework
 class cUsers extends \OhCrud\DB {
 
+    // Define permissions for the controller.    
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
         'login' => __OHCRUD_PERMISSION_ALL__,
@@ -13,34 +15,41 @@ class cUsers extends \OhCrud\DB {
         'logout' => __OHCRUD_PERMISSION_ALL__
     ];
 
+    // This method, handles user login functionality 
     public function login($request) {
 
+        // Sets the output type for this controller to JSON.
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
-        // variables
+        // Initializes variables and creates an instance of the 'OhCrud\Users' class.
         $this->data = new \stdClass();
         $Users = new \OhCrud\Users;
 
-        // validation
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
             $this->error('Missing or invalid CSRF token.');
 
+        // Check for missing or incomplete user login data
         if (isset($request->payload) == false || empty($request->payload->USERNAME) == true || empty($request->payload->PASSWORD) == true)
             $this->error('Missing or incomplete data.');
 
+        // If there are errors, output them and return
         if ($this->success == false) {
             $this->output();
             return $this;
         }
 
+        // Attempt user login
         $response = $Users->login($request->payload->USERNAME, $request->payload->PASSWORD);
 
+        // If login is unsuccessful, output an error and return
         if ($response == false) {
             $this->error('Unable to login, check your Username and Password.');
             $this->output();
             return $this;
         }
 
+        // Populate data object with response data
         $this->data->TOTP = $response->TOTP;
         $this->data->TOTPVerified = $response->TOTPVerified ?? false;
         $this->data->loggedIn = $response->loggedIn ?? false;
@@ -50,47 +59,58 @@ class cUsers extends \OhCrud\DB {
         return $this;
     }
 
+    // Handles user TOTP verification after login
     public function verify($request) {
 
+        // Sets the output type for this controller to JSON.
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
-        // variables
+        // Initializes variables and creates an instance of the 'OhCrud\Users' class.
         $this->data = new \stdClass();
         $Users = new \OhCrud\Users;
 
-        // validation
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
             $this->error('Missing or invalid CSRF token.');
 
+        // Check for missing or incomplete verification data
         if (isset($request->payload) == false || empty($request->payload->TOTP_CODE) == true)
             $this->error('Missing or incomplete data.');
 
+        // Check if the user has logged in yet (in the current temporary session)
         if (isset($_SESSION['tempUser']) == false)
             $this->error('User has not logged in yet.');
 
+        // If there are errors, output them and return
         if ($this->success == false) {
             $this->output();
             return $this;
         }
 
+        // Attempt two-factor authentication verification
         $response = $Users->verify($_SESSION['tempUser']->ID, $request->payload->TOTP_CODE);
 
+        // If verification is unsuccessful, output an error and return
         if ($response == false) {
             $this->error('Unable to verify, check your two factor authentication code.');
             $this->output();
             return $this;
         }
 
+        // Set user as logged in and set the REDIRECT property in the data object
         $this->data->loggedIn = true;
         $this->data->REDIRECT = $request->payload->REDIRECT ?? '';
         $this->output();
         return $this;
     }
 
+    // Handles user logout
     public function logout($request) {
 
+        // Sets the output type for this controller to JSON.
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
+        // Unset the User and tempUser sessions (user logout)
         $this->unsetSession('User');
         $this->unsetSession('tempUser');
         $this->output();

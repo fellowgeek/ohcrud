@@ -3,74 +3,29 @@ namespace app\controllers;
 
 use HTMLPurifier;
 
-// prevent direct access
+// Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+// Controller cPages - pages controller used by the CMS 
 class cPages extends \app\models\mPages {
 
+    // Define permissions for the controller.
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
         'save' => 1,
         'restoreDeletePage' => 1
     ];
 
-    public function restoreDeletePage($request) {
-
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
-
-        // validation
-        if (isset($request->payload) == false || empty($request->payload->URL) == true)
-            $this->error('Missing or incomplete data.');
-
-        // check if page is hard-coded as file
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
-            $this->error('You can\'t delete hard coded page.');
-
-        if ($this->success == false) {
-            $this->output();
-            return $this;
-        }
-
-        // check if page exists
-        $page = $this->run(
-            "SELECT
-                *
-            FROM
-                Pages
-            WHERE
-                URL = :URL
-            ",
-            [
-                ':URL' => $request->payload->URL
-            ]
-        )->first();
-
-        if ($page != false) {
-            // update the record
-            $this->update('Pages',
-                [
-                    'STATUS' => ($page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
-                ],
-                'URL = :URL',
-                [
-                    ':URL' => $request->payload->URL
-                ]
-            );
-        }
-
-        $this->output();
-
-    }
-
+    // Method to save or edit a page.
     public function save($request) {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
-        // validation
+        // Check if the request payload contains the necessary data.
         if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->TITLE) == true || empty($request->payload->TEXT) == true)
             $this->error('Missing or incomplete data.');
 
-        // check if page is hard-coded as file
+        // Check if the page is hard-coded as a file.
         if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
             $this->error('You can\'t edit this page.');
 
@@ -79,7 +34,7 @@ class cPages extends \app\models\mPages {
             return $this;
         }
 
-        // cleanup input
+        // Clean up the input by using HTMLPurifier to prevent XSS attacks.
         $purifier = new HTMLPurifier();
         $purifier->config->set('HTML.SafeIframe', true);
         $purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
@@ -87,7 +42,7 @@ class cPages extends \app\models\mPages {
         $request->payload->TITLE = $purifier->purify($request->payload->TITLE);
         $request->payload->TEXT = $purifier->purify($request->payload->TEXT);
 
-        // set the defualts (if missing)
+        // Set default values for THEME and LAYOUT if missing in the payload.
         if (isset($request->payload->THEME) == false) {
             $request->payload->THEME = __OHCRUD_CMS_DEFAULT_THEME__;
         }
@@ -95,7 +50,7 @@ class cPages extends \app\models\mPages {
             $request->payload->LAYOUT = __OHCRUD_CMS_DEFAULT_LAYOUT__;
         }
 
-        // check if page exists
+        // Check if the page exists in the database.
         $PageExists = $this->run(
             "SELECT
                 COUNT(*) AS `PageExists`
@@ -110,7 +65,7 @@ class cPages extends \app\models\mPages {
         )->first()->PageExists;
 
         if ($PageExists == false) {
-            // create the record
+            // Create a new record in the 'Pages' table.
             $this->create('Pages', [
                 'URL' => $request->payload->URL,
                 'TITLE' => $request->payload->TITLE,
@@ -121,7 +76,7 @@ class cPages extends \app\models\mPages {
                 ]
             );
         } else {
-            // update the record
+            // Update the existing record in the 'Pages' table.
             $this->update('Pages',
                 [
                     'TITLE' => $request->payload->TITLE,
@@ -129,6 +84,55 @@ class cPages extends \app\models\mPages {
                     'THEME' => $request->payload->THEME,
                     'LAYOUT' => $request->payload->LAYOUT,
                     'STATUS' => $this::ACTIVE
+                ],
+                'URL = :URL',
+                [
+                    ':URL' => $request->payload->URL
+                ]
+            );
+        }
+
+        $this->output();
+
+    }
+
+    // Method to restore or delete a page.
+    public function restoreDeletePage($request) {
+
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+
+        // Check if the request payload is complete.
+        if (isset($request->payload) == false || empty($request->payload->URL) == true)
+            $this->error('Missing or incomplete data.');
+
+        // Check if the page is hard-coded as a file.
+        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+            $this->error('You can\'t delete hard coded page.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Check if the page exists in the database.
+        $page = $this->run(
+            "SELECT
+                *
+            FROM
+                Pages
+            WHERE
+                URL = :URL
+            ",
+            [
+                ':URL' => $request->payload->URL
+            ]
+        )->first();
+
+        if ($page != false) {
+            // Update the record: toggle the STATUS between ACTIVE and INACTIVE.
+            $this->update('Pages',
+                [
+                    'STATUS' => ($page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
                 ],
                 'URL = :URL',
                 [
