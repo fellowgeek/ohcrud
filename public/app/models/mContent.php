@@ -29,6 +29,12 @@ class mContent {
     // The HTML content.
     public $html = '';
 
+    // The CSS content.
+    public $stylesheet = '';
+
+    // The JavaScript content.
+    public $javascript = '';
+
     // Indicates if the content represents a 404 error page.
     public $is404 = false;
 

@@ -80,6 +80,8 @@ class Core {
 
     // Check if a given token matches the stored CSRF token.
     public function checkCSRF($token) {
+        // Disable CSRF check for debug mode
+        if (__OHCRUD_DEBUG_MODE__ == true) return true;
         return hash_equals($_SESSION['CSRF'] ?? '', $token);
     }
 
@@ -273,13 +275,15 @@ class Core {
     }
 
     // Debug information by inspecting variables or the class itself.
-    public function debug($expression = null, $label = null) {
+    public function debug($expression = null, $label = null, $showLineNumber = true) {
 
         \ref::config('expLvl', __OHCRUD_DEBUG_EXPANDED_LEVEL__);
         \ref::config('shortcutFunc', ['debug', 'r', 'rt']);
 
-        // set debug panel label (if any)
+        // Set debug panel label (if any)
         $GLOBALS['debugLabel'] = $label;
+        // Shoud debug panel hide the line number?
+        $GLOBALS['debugShowLineNo'] = $showLineNumber;
 
         if (isset($expression) == true) {
             if (is_object($expression) == true) {

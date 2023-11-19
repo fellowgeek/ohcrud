@@ -1,7 +1,7 @@
 <?php
 namespace OhCrud;
 
-// Prevent direct access to this class.
+// prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 class Controller extends \OhCrud\DB {
