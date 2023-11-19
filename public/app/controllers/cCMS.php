@@ -58,7 +58,7 @@ class cCMS extends \OhCrud\Controller {
     }
 
     // Handler for all incoming requests
-    public function defaultPathHandler($path, $pathArray) {
+    public function defaultPathHandler($path) {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
 
@@ -217,7 +217,7 @@ class cCMS extends \OhCrud\Controller {
         // Check if the component exists
         if (\file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
 
-            $component = new $componentClass;
+            $component = new $componentClass($this->request, $this->path);
             $component->output($componentParameters);
             $content = $component->content;
 
@@ -286,11 +286,12 @@ class cCMS extends \OhCrud\Controller {
 
         return \base64_encode(json_encode($themes));
     }
-    
+
     // Process theme
     private function processTheme() {
 
         $output = '';
+        $javascriptGlobals = '';
 
         // fallback to default theme ans layout if file does not exist
         if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false || $this->editMode == true) {
@@ -330,7 +331,15 @@ class cCMS extends \OhCrud\Controller {
         $output = str_ireplace("{{CMS:CONTENT}}",           $this->content->html . $editIconHTML, $output);
         $output = str_ireplace("{{CMS:CONTENT-TEXT}}",      $this->content->text, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}",        $this->content->stylesheet, $output);
-        $output = str_ireplace("{{CMS:JAVASCRIPT}}",        $this->content->javascript, $output);
+
+        $javascriptGlobals .= "<script>\n";
+        $javascriptGlobals .= "const __SITE__ = '" . __SITE__ . "';\n";
+        $javascriptGlobals .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
+        $javascriptGlobals .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
+        $javascriptGlobals .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
+        $javascriptGlobals .= "</script>\n";
+        $output = str_ireplace("{{CMS:JAVASCRIPT}}", $javascriptGlobals . $this->content->javascript, $output);
+
         $output = str_ireplace("{{CMS:OHCRUD}}",            '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). | <a href="/login/">LOGIN</a></p>', $output);
 
         $this->data = $output;

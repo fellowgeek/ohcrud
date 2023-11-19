@@ -83,9 +83,9 @@ class Router extends \OhCrud\Core {
         // Redirect to the default path handler if available, otherwise return a 404 error.
         if (__OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
             $objectName = __OHCRUD_DEFAULT_PATH_HANDLER__;
-            $object = new $objectName;
+            $object = new $objectName($this->request);
             if (method_exists($object, 'defaultPathHandler') == true) {
-                $object->defaultPathHandler($GLOBALS['PATH'], $GLOBALS['PATH_ARRAY']);
+                $object->defaultPathHandler($GLOBALS['PATH']);
                 return $this;
             }
         }
@@ -167,15 +167,20 @@ class Router extends \OhCrud\Core {
         if (__OHCRUD_ALLOWED_IPS_ENABLED__ == true) {
             if (in_array($_SERVER['REMOTE_ADDR'], __OHCRUD_ALLOWED_IPS__) == false) return false;
         }
-        
+
         // Handle same origin requests using HTTP_ORIGIN and HTTP_REFERER to determine the request's origin.
         $origin = strtolower($_SERVER['HTTP_ORIGIN'] ?? '');
-        if ($origin == '') $origin = strtolower(($_SERVER['HTTP_REFERER']) ?? '');
-        
+        if ($origin == '')  {
+            if ($parts = parse_url(strtolower(($_SERVER['HTTP_REFERER'] ?? '')))) {
+                if (isset($parts['scheme']) == true && isset($parts['host']) == true)
+                $origin = $parts['scheme'] . '://' . $parts['host'];
+            }
+        }
+
         // If the origin is not set or the request is coming from the current site, allow access.
-        if ($origin == '') return true;
         if ($origin == ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
-        
+        if ($origin == '') return true;
+
         // Handle cross-origin requests and set appropriate CORS headers.
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true) {
             header('Access-Control-Allow-Origin: ' . $origin);
@@ -190,14 +195,13 @@ class Router extends \OhCrud\Core {
         } else {
             return false;
         }
-
     }
 
     // Handle forbidden access and return a 403 error response.
     private function forbidden() {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
-        $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that...', 403);
+        $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.', 403);
         $this->output();
     }
 

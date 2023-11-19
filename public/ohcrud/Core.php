@@ -80,6 +80,8 @@ class Core {
 
     // Check if a given token matches the stored CSRF token.
     public function checkCSRF($token) {
+        // Disable CSRF check for debug mode
+        if (__OHCRUD_DEBUG_MODE__ == true) return true;
         return hash_equals($_SESSION['CSRF'] ?? '', $token);
     }
 

@@ -11,8 +11,14 @@ define('__SITE__', $_SERVER['SERVER_NAME'] ?? '');
 // Define the name of the application.
 define('__APP__', 'Oh CRUD!');
 
+// Define the base API route for OhCRUD core functionality
+define('__OHCRUD_BASE_API_ROUTE__', '/ohcrud');
+
 // Enable or disable debug mode (set to false for production use).
 define('__OHCRUD_DEBUG_MODE__', true);
+
+// Enable SQL query in the API responses (set to false for production use, depends on __OHCRUD_DEBUG_MODE__).
+define('__OHCRUD_DEBUG_MODE_SHOW_SQL__', false);
 
 // Specify the initial expanded debug levels for debugging (HTML mode only).
 define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);

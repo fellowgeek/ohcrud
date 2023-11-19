@@ -58,20 +58,20 @@
         },
         {
             "name": "ezyang/htmlpurifier",
-            "version": "v4.16.0",
+            "version": "v4.17.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ezyang/htmlpurifier.git",
-                "reference": "523407fb06eb9e5f3d59889b3978d5bfe94299c8"
+                "reference": "bbc513d79acf6691fa9cf10f192c90dd2957f18c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ezyang/htmlpurifier/zipball/523407fb06eb9e5f3d59889b3978d5bfe94299c8",
-                "reference": "523407fb06eb9e5f3d59889b3978d5bfe94299c8",
+                "url": "https://api.github.com/repos/ezyang/htmlpurifier/zipball/bbc513d79acf6691fa9cf10f192c90dd2957f18c",
+                "reference": "bbc513d79acf6691fa9cf10f192c90dd2957f18c",
                 "shasum": ""
             },
             "require": {
-                "php": "~5.6.0 || ~7.0.0 || ~7.1.0 || ~7.2.0 || ~7.3.0 || ~7.4.0 || ~8.0.0 || ~8.1.0 || ~8.2.0"
+                "php": "~5.6.0 || ~7.0.0 || ~7.1.0 || ~7.2.0 || ~7.3.0 || ~7.4.0 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0"
             },
             "require-dev": {
                 "cerdic/css-tidy": "^1.7 || ^2.0",
@@ -113,9 +113,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ezyang/htmlpurifier/issues",
-                "source": "https://github.com/ezyang/htmlpurifier/tree/v4.16.0"
+                "source": "https://github.com/ezyang/htmlpurifier/tree/v4.17.0"
             },
-            "time": "2022-09-18T07:06:19+00:00"
+            "time": "2023-11-17T15:01:25+00:00"
         },
         {
             "name": "fellowgeek/php-ref",
@@ -123,16 +123,16 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/fellowgeek/php-ref.git",
-                "reference": "a42462d8b3aee08bd5f15e650ee2bf1b45be81ea"
+                "reference": "7e4ae076ef7cce212624291f6cf7e00803a80619"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fellowgeek/php-ref/zipball/a42462d8b3aee08bd5f15e650ee2bf1b45be81ea",
-                "reference": "a42462d8b3aee08bd5f15e650ee2bf1b45be81ea",
+                "url": "https://api.github.com/repos/fellowgeek/php-ref/zipball/7e4ae076ef7cce212624291f6cf7e00803a80619",
+                "reference": "7e4ae076ef7cce212624291f6cf7e00803a80619",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3.0"
+                "php": ">=8.0.0"
             },
             "default-branch": true,
             "type": "library",
@@ -145,7 +145,7 @@
             "license": [
                 "MIT"
             ],
-            "description": "A nicer print_r/var_dump alternative for PHP 5.3+",
+            "description": "A nicer print_r/var_dump alternative for PHP 8.0+",
             "homepage": "https://github.com/fellowgeek/php-ref",
             "keywords": [
                 "debug",
@@ -155,20 +155,20 @@
                 "issues": "https://github.com/fellowgeek/php-ref/issues",
                 "source": "https://github.com/fellowgeek/php-ref/tree/master"
             },
-            "time": "2023-10-06T17:48:21+00:00"
+            "time": "2023-11-15T17:29:30+00:00"
         },
         {
             "name": "filp/whoops",
-            "version": "2.15.3",
+            "version": "2.15.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filp/whoops.git",
-                "reference": "c83e88a30524f9360b11f585f71e6b17313b7187"
+                "reference": "a139776fa3f5985a50b509f2a02ff0f709d2a546"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filp/whoops/zipball/c83e88a30524f9360b11f585f71e6b17313b7187",
-                "reference": "c83e88a30524f9360b11f585f71e6b17313b7187",
+                "url": "https://api.github.com/repos/filp/whoops/zipball/a139776fa3f5985a50b509f2a02ff0f709d2a546",
+                "reference": "a139776fa3f5985a50b509f2a02ff0f709d2a546",
                 "shasum": ""
             },
             "require": {
@@ -218,7 +218,7 @@
             ],
             "support": {
                 "issues": "https://github.com/filp/whoops/issues",
-                "source": "https://github.com/filp/whoops/tree/2.15.3"
+                "source": "https://github.com/filp/whoops/tree/2.15.4"
             },
             "funding": [
                 {
@@ -226,7 +226,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-07-13T12:00:00+00:00"
+            "time": "2023-11-03T12:00:00+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -522,5 +522,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }

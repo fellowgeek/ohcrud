@@ -16,10 +16,10 @@ define('__OHCRUD_ALLOWED_ORIGINS__', [
 
 // Define API endpoints and their corresponding controller classes.
 define('__OHCRUD_ENDPOINTS__', [
-    '/api/themes/' => 'app\controllers\cThemes',
-    '/api/pages/' => 'app\controllers\cPages',
-    '/api/users/' => 'app\controllers\cUsers',
-    '/api/files/' => 'app\controllers\cFiles',
+    __OHCRUD_BASE_API_ROUTE__ . '/themes/' => 'app\controllers\cThemes',
+    __OHCRUD_BASE_API_ROUTE__ . '/pages/' => 'app\controllers\cPages',
+    __OHCRUD_BASE_API_ROUTE__ . '/users/' => 'app\controllers\cUsers',
+    __OHCRUD_BASE_API_ROUTE__ . '/files/' => 'app\controllers\cFiles',
     '/example/' => 'app\controllers\cExample',
 
     /*

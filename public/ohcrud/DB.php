@@ -70,9 +70,11 @@ class DB extends \OhCrud\Core {
             return $this->output();
         }
 
-        if (__OHCRUD_DEBUG_MODE__ == true) {
+        if (__OHCRUD_DEBUG_MODE__ == true && __OHCRUD_DEBUG_MODE_SHOW_SQL__ == true) {
             // Store the SQL query for debugging
             $this->SQL = $sql;
+        } else {
+            unset($this->SQL);
         }
 
         try {
