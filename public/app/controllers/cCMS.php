@@ -75,15 +75,15 @@ class cCMS extends \OhCrud\Controller {
             $this->unsetCache(__CLASS__ . __FUNCTION__ . $this->path);
         }
 
-        // Include application JavaScript & CSS files
-        $this->includeJSFile('application.js', 1);
-        $this->includeCSSFile('styles.css', 2);
+        // include application javascript & css files
+        $this->includeJSFile('/global-assets/js/application.js', 1);
+        $this->includeCSSFile('/global-assets/css/styles.css', 2);
 
-        // Add assets for page editor if needed
+        // add assets for page editor if needed
         if ($this->editMode == true) {
-            $this->includeCSSFile('simplemde.min.css', 1);
-            $this->includeJSFile('simplemde.min.js', 2);
-            $this->includeJSFile('editor.js', 3);
+            $this->includeCSSFile('/global-assets/css/simplemde.min.css', 1);
+            $this->includeJSFile('/global-assets/js/simplemde.min.js', 2);
+            $this->includeJSFile('/global-assets/js/editor.js', 3);
         }
 
         // Get content and set theme & layout from content
@@ -109,44 +109,36 @@ class cCMS extends \OhCrud\Controller {
 
     }
 
-    // Include CSS file(s)
+    // include CSS file(s)
     public function includeCSSFile($file, $priority = 100) {
-
         if (isset($this->cssFiles[$file]) == false) {
             $this->cssFiles[$file] = $priority;
             asort($this->cssFiles);
         }
-
     }
 
-    // Get CSS assets
+    // get CSS assets
     private function getCSSAssets() {
-
         $this->content->stylesheet = '';
         foreach ($this->cssFiles as $cssFile => $priority) {
-            $this->content->stylesheet .= '<link rel="stylesheet" href="/global-assets/css/' . $cssFile . '" media="all" />' . "\n";
+            $this->content->stylesheet .= '<link rel="stylesheet" href="' . $cssFile . '" media="all" />' . "\n";
         }
-
     }
 
-    // Include Javascript file(s)
+    // include Javascript file(s)
     public function includeJSFile($file, $priority = 100) {
-
         if (isset($this->jsFiles[$file]) == false) {
             $this->jsFiles[$file] = $priority;
             asort($this->jsFiles);
         }
-
     }
 
-    // Get Javascript assets
+    // get Javascript assets
     private function getJSAssets() {
-
         $this->content->javascript = '';
         foreach ($this->jsFiles as $jsFile => $priority) {
-            $this->content->javascript .= '<script src="/global-assets/js/' . $jsFile . '"></script>' . "\n";
+            $this->content->javascript .= '<script src="' . $jsFile . '"></script>' . "\n";
         }
-
     }
 
     // Load content
@@ -235,7 +227,6 @@ class cCMS extends \OhCrud\Controller {
         }
 
         return $content;
-
     }
 
     // Load hard-coded content
