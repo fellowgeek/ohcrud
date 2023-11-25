@@ -245,6 +245,27 @@ class Core {
         return false;
     }
 
+    // Function to encrypt text
+    public function encryptText($text, $password) {
+        $method = 'aes-256-cbc';
+        $key = hash('sha256', $password . __OHCRUD_SECRET__, true);
+        $iv = openssl_random_pseudo_bytes(16);
+
+        $encrypted = openssl_encrypt($text, $method, $key, 0, $iv);
+        return base64_encode($iv . $encrypted);
+    }
+
+    // Function to decrypt text
+    public function decryptText($encryptedText, $password) {
+        $method = 'aes-256-cbc';
+        $key = hash('sha256', $password . __OHCRUD_SECRET__, true);
+        $data = base64_decode($encryptedText);
+        $iv = substr($data, 0, 16);
+        $encrypted = substr($data, 16);
+
+        return openssl_decrypt($encrypted, $method, $key, 0, $iv);
+    }
+
     // Output messages in the console (for CLI environment).
     public function console($message = '', $color = 'WHT', $shouldAddNewLine = true) {
 
