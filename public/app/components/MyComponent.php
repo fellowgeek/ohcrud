@@ -14,7 +14,6 @@ class MyComponent extends \app\components\Component {
 
         // component HTML content should go here
         $this->content->html = $_SERVER['REMOTE_ADDR'];
-
     }
 
 }
