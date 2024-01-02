@@ -6,7 +6,13 @@
 define('__SELF__', __DIR__ . '/');
 
 // Define the application's URL based on the server's server name, or an empty string if not available.
-define('__SITE__', $_SERVER['SERVER_NAME'] ?? '');
+define('__SITE__', $_SERVER['HTTP_HOST'] ?? '');
+
+// Defines the domain to be used for this application.
+define('__DOMAIN__', implode('.', array_slice(explode('.', __SITE__), -2)));
+
+// Defines the subdomain to be used for this application.
+define('__SUB_DOMAIN__', (count($parts = explode('.', $_SERVER['HTTP_HOST'])) > 2) ? $parts[0] : '');
 
 // Define the name of the application.
 define('__APP__', 'Oh CRUD!');
