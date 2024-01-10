@@ -331,6 +331,7 @@ class cCMS extends \OhCrud\Controller {
         $javascriptGlobals .= "const __SITE__ = '" . __SITE__ . "';\n";
         $javascriptGlobals .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
         $javascriptGlobals .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
+        $javascriptGlobals .= "const __PATH__ = '" . $this->path . "';\n";
         $javascriptGlobals .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
         $javascriptGlobals .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
         $javascriptGlobals .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
