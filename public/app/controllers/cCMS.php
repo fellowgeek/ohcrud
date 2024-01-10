@@ -94,8 +94,6 @@ class cCMS extends \OhCrud\Controller {
         // Process embedded content & components
         $this->content = $this->processContent($this->content);
         $this->content = $this->processComponents($this->content);
-        $this->getCSSAssets();
-        $this->getJSAssets();
 
         // Process theme & layout
         $this->processTheme();
@@ -301,6 +299,12 @@ class cCMS extends \OhCrud\Controller {
         $themeContent->html = $output;
         $themeContent = $this->processContent($themeContent);
         $themeContent = $this->processComponents($themeContent);
+
+        // gather CSS and JS assets
+        $this->getCSSAssets();
+        $this->getJSAssets();
+
+        // Set HTML output
         $output = $themeContent->html;
 
         // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
@@ -325,6 +329,9 @@ class cCMS extends \OhCrud\Controller {
 
         $javascriptGlobals .= "<script>\n";
         $javascriptGlobals .= "const __SITE__ = '" . __SITE__ . "';\n";
+        $javascriptGlobals .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
+        $javascriptGlobals .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
+        $javascriptGlobals .= "const __PATH__ = '" . $this->path . "';\n";
         $javascriptGlobals .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
         $javascriptGlobals .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
         $javascriptGlobals .= "const __CSRF__ = '" . $this->CSRF() . "';\n";

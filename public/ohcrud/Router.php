@@ -31,7 +31,7 @@ class Router extends \OhCrud\Core {
         // Process command-line parameters if the script is run in CLI mode.
         if (PHP_SAPI == 'cli') {
             $parameters = [];
-            parse_str(parse_url($rawPath, PHP_URL_QUERY), $parameters);
+            parse_str(parse_url($rawPath, PHP_URL_QUERY) ?? '', $parameters);
             $this->request = (object) $parameters;
         } else {
             // Process API parameters if not in CLI mode.

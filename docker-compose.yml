@@ -9,6 +9,9 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ./public:/app
+    depends_on:
+      - php
+      - mysql
   php:
     build:
       context: .
