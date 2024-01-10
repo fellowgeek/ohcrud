@@ -74,7 +74,7 @@ class DB extends \OhCrud\Core {
             // Store the SQL query for debugging
             $this->SQL = $sql;
         } else {
-            unset($this->SQL);
+            $this->SQL = 'Redacted from debug.';
         }
 
         try {
@@ -127,7 +127,7 @@ class DB extends \OhCrud\Core {
         return $this->run($sql, $bind);
     }
 
-    // Execute a SELECT SQL query with optional parameter binding.    
+    // Execute a SELECT SQL query with optional parameter binding.
     public function read($table, $where="", $bind=array(), $fields="*") {
 
         $sql = "SELECT " . $fields . " FROM " . $table;
