@@ -18,6 +18,7 @@ class DB extends \OhCrud\Core {
 
     // Constructor for the DB class.
     public function __construct() {
+
         // Deserialize the database configuration
         $this->config = unserialize(__OHCRUD_DB_CONFIG__);
         // Define PDO options for database connection
@@ -94,6 +95,8 @@ class DB extends \OhCrud\Core {
                 return $this;
             } else {
                 // For non-SELECT queries, store the result
+                $this->data = new \stdClass();
+                $this->data->lastInsertId = 0;
                 $this->data = $result;
                 $this->data->lastInsertId = $this->db->lastInsertId();
                 return $this;
