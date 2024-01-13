@@ -18,6 +18,7 @@ class DB extends \OhCrud\Core {
 
     // Constructor for the DB class.
     public function __construct() {
+
         // Deserialize the database configuration
         $this->config = unserialize(__OHCRUD_DB_CONFIG__);
         // Define PDO options for database connection
@@ -74,7 +75,7 @@ class DB extends \OhCrud\Core {
             // Store the SQL query for debugging
             $this->SQL = $sql;
         } else {
-            unset($this->SQL);
+            $this->SQL = 'Redacted from debug.';
         }
 
         try {
@@ -94,6 +95,8 @@ class DB extends \OhCrud\Core {
                 return $this;
             } else {
                 // For non-SELECT queries, store the result
+                $this->data = new \stdClass();
+                $this->data->lastInsertId = 0;
                 $this->data = $result;
                 $this->data->lastInsertId = $this->db->lastInsertId();
                 return $this;
@@ -127,7 +130,7 @@ class DB extends \OhCrud\Core {
         return $this->run($sql, $bind);
     }
 
-    // Execute a SELECT SQL query with optional parameter binding.    
+    // Execute a SELECT SQL query with optional parameter binding.
     public function read($table, $where="", $bind=array(), $fields="*") {
 
         $sql = "SELECT " . $fields . " FROM " . $table;

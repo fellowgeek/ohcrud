@@ -145,7 +145,7 @@ class cCMS extends \OhCrud\Controller {
         $content = new \app\models\mContent;
 
         // Try getting page content from file
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true || $path == '/login/') {
+        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
             $content = $this->getContentFromFile($path);
             return $content;
         }
@@ -229,27 +229,15 @@ class cCMS extends \OhCrud\Controller {
 
     // Load hard-coded content
     private function getContentFromFile($path, $is404 = false, $isSystem = false) {
-
-        if ($is404 == true) $isSystem = true;
-        if ($path == '/login/') {
-            $isSystem = true;
-            // Terminate user session
-            $this->unsetSession('User');
-            $this->unsetSession('tempUser');
-        }
-
         $content = new \app\models\mContent;
         $content->type = \app\models\mContent::TYPE_FILE;
-
         $content->title = ucwords(trim($path, '/'));
         ob_start();
-        include(__SELF__ . 'app/views/cms/' . ($isSystem ? 'system/' : '') . trim(($is404 ? '404' : $path), '/') . '.phtml');
-
+        include(__SELF__ . 'app/views/cms/' . trim(($is404 ? '404' : $path), '/') . '.phtml');
         $content->text = ob_get_clean();
         $content->html = $content->text;
 
         return $content;
-
     }
 
     // Get themes and layouts

@@ -121,7 +121,7 @@ class Users extends \OhCrud\DB {
                 'Users',
                 [
                     'TOTP' => $this::ACTIVE,
-                    'TOTP_SECRET' => $totp->getSecret()
+                    'TOTP_SECRET' => $this->encryptText($totp->getSecret())
                 ],
                 'ID = :ID',
                 [
@@ -236,7 +236,7 @@ class Users extends \OhCrud\DB {
         }
 
         // Create a TOTP object from the secret and verify the TOTP code
-        $totp = TOTP::createFromSecret($user->TOTP_SECRET);
+        $totp = TOTP::createFromSecret($this->decryptText($user->TOTP_SECRET));
         if ( $totp->verify($TOTP_CODE) == false) {
             $this->log('warning', 'TOTP verification failed.', [$user->USERNAME]);
             return false;
