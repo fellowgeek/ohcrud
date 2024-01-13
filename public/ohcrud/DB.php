@@ -7,6 +7,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 //  Class DB - Database operations class for OhCrud.
 class DB extends \OhCrud\Core {
 
+    public $lastInsertId;
+
     // Configuration settings for the database
     public $config = [];
 
@@ -95,10 +97,8 @@ class DB extends \OhCrud\Core {
                 return $this;
             } else {
                 // For non-SELECT queries, store the result
-                $this->data = new \stdClass();
-                $this->data->lastInsertId = 0;
                 $this->data = $result;
-                $this->data->lastInsertId = $this->db->lastInsertId();
+                $this->lastInsertId = $this->db->lastInsertId();
                 return $this;
             }
         } catch (\PDOException $e) {

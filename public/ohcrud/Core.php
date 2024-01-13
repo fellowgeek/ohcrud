@@ -18,7 +18,7 @@ class Core {
     const OUTPUT_HTML = 'HTML';
     const OUTPUT_JSON = 'JSON';
 
-    public $data = [];
+    public $data;
     public $errors = [];
     public $success = true;
     public $outputType = null;
