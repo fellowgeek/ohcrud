@@ -28,7 +28,7 @@ class cExample extends \OhCrud\DB {
                 ':ID' => 1
             ],
             'ID, USERNAME, FIRSTNAME, LASTNAME, TOTP, STATUS'
-        
+
         );
 
         // Output the result.
@@ -47,7 +47,7 @@ class cExample extends \OhCrud\DB {
 
         // Output the result.
         $this->output();
-        
+
     }
 
 }

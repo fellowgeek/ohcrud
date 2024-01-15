@@ -4,7 +4,7 @@ namespace app\controllers;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Controller cFiles - files controller used by the CMS 
+// Controller cFiles - files controller used by the CMS
 class cFiles extends \app\models\mFiles {
 
     // Define permissions for the controller.
@@ -66,8 +66,8 @@ class cFiles extends \app\models\mFiles {
         $filesOutput = $files->create('Files', $filesParameters);
 
         // Check if the file creation was successful and retrieve the last inserted ID.
-        if (isset($filesOutput->data->lastInsertId) == true) {
-            $filesParameters['ID'] = $filesOutput->data->lastInsertId;
+        if (isset($filesOutput->lastInsertId) == true) {
+            $filesParameters['ID'] = $filesOutput->lastInsertId;
         }
 
         // Set the controller's data to the file parameters and output it.
