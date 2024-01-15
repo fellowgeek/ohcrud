@@ -7,6 +7,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 //  Class DB - Database operations class for OhCrud.
 class DB extends \OhCrud\Core {
 
+    // Stores the last DB insert ID for INSERT statements
     public $lastInsertId;
 
     // Configuration settings for the database

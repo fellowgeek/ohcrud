@@ -1,5 +1,4 @@
 <?php
-
     // Set a global variable for OHCRUD framework.
     $GLOBALS['OHCRUD'] = true;
 
