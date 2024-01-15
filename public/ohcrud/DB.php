@@ -64,7 +64,7 @@ class DB extends \OhCrud\Core {
     }
 
     // Execute an SQL query with optional parameter binding.
-    public function run($sql, $bind=array()) {
+    public function run($sql, $bind=array(), $updateSuccess = true) {
         // Trim the SQL query
         $sql = trim($sql);
 
@@ -84,11 +84,10 @@ class DB extends \OhCrud\Core {
         try {
             // Prepare and execute the query
             $result = $this->db->prepare($sql);
-            $this->success = $result->execute($bind);
+            if ($updateSuccess == true) $this->success = $result->execute($bind); else $result->execute($bind);
 
             if (preg_match("/^SELECT(.*?)/i", $sql) == 1) {
                 // If it's a SELECT query, fetch and store the results
-                $result->execute($bind);
                 $result->setFetchMode(\PDO::FETCH_ASSOC);
                 $rows = array();
                 while($row = $result->fetch()) {
