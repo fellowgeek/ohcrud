@@ -18,7 +18,7 @@ class cExample extends \OhCrud\DB {
     public function protectedEndPoint($request) {
 
         // Set the output type to JSON.
-        // $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         // Perform a read operation on the 'Users' table with a specific condition.
         $this->read(
@@ -30,9 +30,6 @@ class cExample extends \OhCrud\DB {
             'ID, USERNAME, FIRSTNAME, LASTNAME, TOTP, STATUS'
 
         );
-
-        $this->debug($_SERVER);
-        $this->debug($this->data);
 
         // Output the result.
         $this->output();
