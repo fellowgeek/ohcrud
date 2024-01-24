@@ -8,7 +8,7 @@ use HTMLPurifier;
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cCMS - CMS controller used by the OhCRUD framework
-class cCMS extends \OhCrud\Controller {
+class cCMS extends \OhCrud\DB {
 
     // The path of the requested content.
     public $path;

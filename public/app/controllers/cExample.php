@@ -10,9 +10,19 @@ class cExample extends \OhCrud\DB {
     // Define permissions for the controller.
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
+        'whoami' => __OHCRUD_PERMISSION_ALL__,
         'protectedEndPoint' => 1,
         'publicEndPoint' => __OHCRUD_PERMISSION_ALL__
     ];
+
+    // This function returns information about the current user of the API
+    public function whoami($request) {
+
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+
+        $this->data = $_SESSION['User']->USERNAME ?? 'unknown';
+        $this->output();
+    }
 
     // This function handles the protected endpoint.
     public function protectedEndPoint($request) {
@@ -21,13 +31,15 @@ class cExample extends \OhCrud\DB {
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         // Perform a read operation on the 'Users' table with a specific condition.
-        $this->read(
+        $this->update(
             'Users',
+            [
+                'NAME' => 'test'
+            ],
             'ID=:ID',
             [
                 ':ID' => 1
-            ],
-            'ID, USERNAME, FIRSTNAME, LASTNAME, TOTP, STATUS'
+            ]
 
         );
 

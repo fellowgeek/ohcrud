@@ -4,18 +4,18 @@ namespace app\controllers;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Controller cThemes - themes controller used by the CMS 
-class cThemes extends \OhCrud\Controller {
+// Controller cThemes - themes controller used by the CMS
+class cThemes extends \OhCrud\DB {
 
-    // Define permissions for the controller.    
+    // Define permissions for the controller.
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
         'getThemes' => 1,
     ];
 
-    // Get themes and layouts from themes directory 
+    // Get themes and layouts from themes directory
     public function getThemes() {
-        
+
         // Set the output type for this controller to JSON
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
@@ -39,12 +39,12 @@ class cThemes extends \OhCrud\Controller {
                 // Extract the layout name
                 $layout = $matches[2];
             }
-            
+
             // Organize themes and layouts into an associative array
             $themes[$theme][] = $layout;
         }
 
-        // Set the data to the themes and layouts array        
+        // Set the data to the themes and layouts array
         $this->data = $themes;
         $this->output();
 
