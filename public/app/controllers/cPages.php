@@ -6,7 +6,7 @@ use HTMLPurifier;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Controller cPages - pages controller used by the CMS 
+// Controller cPages - pages controller used by the CMS
 class cPages extends \app\models\mPages {
 
     // Define permissions for the controller.
@@ -18,7 +18,6 @@ class cPages extends \app\models\mPages {
 
     // Method to save or edit a page.
     public function save($request) {
-
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
         // Check if the request payload contains the necessary data.
@@ -93,7 +92,6 @@ class cPages extends \app\models\mPages {
         }
 
         $this->output();
-
     }
 
     // Method to restore or delete a page.
@@ -142,7 +140,6 @@ class cPages extends \app\models\mPages {
         }
 
         $this->output();
-
     }
 
 }

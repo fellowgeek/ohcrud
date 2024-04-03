@@ -221,7 +221,7 @@ class DB extends \OhCrud\Core {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` TEXT;");
                     }
                     if ($this->config['DRIVER'] == 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` datetime DEFAULT NULL;");
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CDATE` (`CDATE`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'CDATE'; }
                 }
@@ -231,7 +231,7 @@ class DB extends \OhCrud\Core {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` TEXT;");
                     }
                     if ($this->config['DRIVER'] == 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` datetime DEFAULT NULL;");
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MDATE` (`MDATE`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'MDATE'; }
                 }
@@ -241,7 +241,7 @@ class DB extends \OhCrud\Core {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` INTEGER;");
                     }
                     if ($this->config['DRIVER'] == 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT NULL;");
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CUSER` (`CUSER`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'CUSER'; }
                 }
@@ -251,7 +251,7 @@ class DB extends \OhCrud\Core {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` INTEGER;");
                     }
                     if ($this->config['DRIVER'] == 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT NULL;");
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MUSER` (`MUSER`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'MUSER'; }
                 }
