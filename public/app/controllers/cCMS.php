@@ -35,17 +35,17 @@ class cCMS extends \OhCrud\DB {
     // HTML purifier for security.
     public $purifier;
 
-    public function __construct() {
+    public function __construct($request) {
         parent::__construct();
 
-        $this->request = $_REQUEST;
+        $this->request = $request;
         $this->content = new \app\models\mContent;
         $this->pages = new \app\models\mPages;
 
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
         // Set edit mode
-        if ($this->loggedIn == true && isset($this->request['action']) == true && $this->request['action'] == 'edit') {
+        if ($this->loggedIn == true && isset($this->request->action) == true && $this->request->action == 'edit') {
             $this->editMode = true;
         }
 
@@ -54,7 +54,6 @@ class cCMS extends \OhCrud\DB {
         $this->purifier = new HTMLPurifier();
         $this->purifier->config->set('HTML.SafeIframe', true);
         $this->purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
-
     }
 
     // Handler for all incoming requests
@@ -75,11 +74,11 @@ class cCMS extends \OhCrud\DB {
             $this->unsetCache(__CLASS__ . __FUNCTION__ . $this->path);
         }
 
-        // include application javascript & css files
+        // Include application javascript & css files
         $this->includeJSFile('/global-assets/js/application.js', 1);
         $this->includeCSSFile('/global-assets/css/styles.css', 2);
 
-        // add assets for page editor if needed
+        // Add assets for page editor if needed
         if ($this->editMode == true) {
             $this->includeCSSFile('/global-assets/css/simplemde.min.css', 1);
             $this->includeJSFile('/global-assets/js/simplemde.min.js', 2);
@@ -107,7 +106,7 @@ class cCMS extends \OhCrud\DB {
 
     }
 
-    // include CSS file(s)
+    // Include CSS file(s)
     public function includeCSSFile($file, $priority = 100) {
         if (isset($this->cssFiles[$file]) == false) {
             $this->cssFiles[$file] = $priority;
@@ -115,7 +114,7 @@ class cCMS extends \OhCrud\DB {
         }
     }
 
-    // get CSS assets
+    // Get CSS assets
     private function getCSSAssets() {
         $this->content->stylesheet = '';
         foreach ($this->cssFiles as $cssFile => $priority) {
@@ -123,7 +122,7 @@ class cCMS extends \OhCrud\DB {
         }
     }
 
-    // include Javascript file(s)
+    // Include Javascript file(s)
     public function includeJSFile($file, $priority = 100) {
         if (isset($this->jsFiles[$file]) == false) {
             $this->jsFiles[$file] = $priority;
@@ -131,7 +130,7 @@ class cCMS extends \OhCrud\DB {
         }
     }
 
-    // get Javascript assets
+    // Get Javascript assets
     private function getJSAssets() {
         $this->content->javascript = '';
         foreach ($this->jsFiles as $jsFile => $priority) {
@@ -159,12 +158,12 @@ class cCMS extends \OhCrud\DB {
             ]
         )->first();
 
-        // Check if page does not exist
+        // Check if page does not exists
         if ($page == false || $page->STATUS != \app\models\mPages::ACTIVE) {
             if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
-            if (($this->request['action'] ?? '') != 'edit') {
+            if (($this->request->action ?? '') != 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
             if (($page->STATUS ?? -1) == $this::INACTIVE) {
@@ -180,7 +179,7 @@ class cCMS extends \OhCrud\DB {
         $content->theme = $page->THEME;
         $content->layout = $page->LAYOUT;
 
-        // Check if the user has permission
+        // Check if user has permission
         $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;
         if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions != false)) {
             $content->text = $page->TEXT;
@@ -190,7 +189,6 @@ class cCMS extends \OhCrud\DB {
         }
 
         return $content;
-
     }
 
     // Load component(s)
@@ -270,7 +268,7 @@ class cCMS extends \OhCrud\DB {
         $output = '';
         $javascriptGlobals = '';
 
-        // fallback to default theme ans layout if file does not exist
+        // Fallback to default theme ans layout if file does not exist
         if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false || $this->editMode == true) {
             $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
             $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
@@ -309,12 +307,14 @@ class cCMS extends \OhCrud\DB {
             $output = str_ireplace('{{CMS-IS-DELETED}}',    $this->content->isDeleted, $output);
         }
 
-        $output = str_ireplace("{{CMS:PATH}}",              $this->path, $output);
-        $output = str_ireplace("{{CMS:TITLE}}",             $this->content->title, $output);
-        $output = str_ireplace("{{CMS:CONTENT}}",           $this->content->html . $editIconHTML, $output);
-        $output = str_ireplace("{{CMS:CONTENT-TEXT}}",      $this->content->text, $output);
-        $output = str_ireplace("{{CMS:STYLESHEET}}",        $this->content->stylesheet, $output);
+        // Replace OhCRUD templates with the proccessed content from the cms
+        $output = str_ireplace("{{CMS:PATH}}", $this->path, $output);
+        $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
+        $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . $editIconHTML, $output);
+        $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
+        $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
 
+        // Include Javascript constants and assets
         $javascriptGlobals .= "<script>\n";
         $javascriptGlobals .= "const __SITE__ = '" . __SITE__ . "';\n";
         $javascriptGlobals .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
@@ -325,16 +325,14 @@ class cCMS extends \OhCrud\DB {
         $javascriptGlobals .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
         $javascriptGlobals .= "</script>\n";
         $output = str_ireplace("{{CMS:JAVASCRIPT}}", $javascriptGlobals . $this->content->javascript, $output);
-
-        $output = str_ireplace("{{CMS:OHCRUD}}",            '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). | <a href="/login/">LOGIN</a></p>', $output);
+        // Include OhCRUD footer into the template
+        $output = str_ireplace("{{CMS:OHCRUD}}", '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION . ' | <a href="/login/">LOGIN</a></p>', $output);
 
         $this->data = $output;
-
     }
 
     // Process embedded content
     private function processContent($content) {
-
         // Skip processing when in edit mode
         if ($this->editMode == true) {
             return $content;
@@ -354,12 +352,10 @@ class cCMS extends \OhCrud\DB {
         }
 
         return $content;
-
     }
 
     // Process component(s)
     private function processComponents($content) {
-
         // Skip processing when in edit mode
         if ($this->editMode == true) {
             return $content;
@@ -378,7 +374,6 @@ class cCMS extends \OhCrud\DB {
         }
 
         return $content;
-
     }
 
 }
