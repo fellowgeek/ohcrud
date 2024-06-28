@@ -34,6 +34,10 @@ class cCMS extends \OhCrud\DB {
     public $parsedown;
     // HTML purifier for security.
     public $purifier;
+    // Recursive content counter.
+    public $recursiveContentCounter = 0;
+    // Max recursive content
+    public $maxRecursiveContent = 7;
 
     public function __construct($request) {
         parent::__construct();
@@ -92,7 +96,6 @@ class cCMS extends \OhCrud\DB {
 
         // Process embedded content & components
         $this->content = $this->processContent($this->content);
-        $this->content = $this->processComponents($this->content);
 
         // Process theme & layout
         $this->processTheme();
@@ -103,7 +106,6 @@ class cCMS extends \OhCrud\DB {
         }
 
         $this->output();
-
     }
 
     // Include CSS file(s)
@@ -219,7 +221,7 @@ class cCMS extends \OhCrud\DB {
             }
 
         } else {
-            $content->html = '<mark>Oh CRUD! Component not found.</mark>';
+            $content->is404 = true;
         }
 
         return $content;
@@ -284,7 +286,6 @@ class cCMS extends \OhCrud\DB {
         $themeContent->text = $output;
         $themeContent->html = $output;
         $themeContent = $this->processContent($themeContent);
-        $themeContent = $this->processComponents($themeContent);
 
         // gather CSS and JS assets
         $this->getCSSAssets();
@@ -331,49 +332,80 @@ class cCMS extends \OhCrud\DB {
         $this->data = $output;
     }
 
-    // Process embedded content
+    // Process embedded content and components
     private function processContent($content) {
         // Skip processing when in edit mode
         if ($this->editMode == true) {
             return $content;
         }
 
+        // Check for embedded content
+        $regex = '/(?<=\{{)(?!CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
         $matches = [];
-        preg_match_all('/{{(.*?)}}/i', $content->text, $matches);
+        $matchCount = preg_match_all($regex, $content->html, $matches);
 
-        if (isset($matches[1]) == true) {
-            foreach ($matches[1] as $match) {
+        // If embedded content is found, process it
+        if ($matchCount > 0) {
+            $this->recursiveContentCounter++;
+            foreach ($matches[0] as $match) {
+                if ($this->path == '/' . $match . '/' || $this->recursiveContentCounter > $this->maxRecursiveContent) {
+                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>Oh CRUD! Recursive content not allowed.</mark>', $content->html);
+                    continue;
+                }
                 $embeddedContent = $this->getContent('/' . $match . '/', false);
-
-                if ($embeddedContent->is404 == true) continue;
+                if ($embeddedContent->is404 == true) {
+                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>Oh CRUD! Content not found.</mark>', $content->html);
+                    continue;
+                }
                 $content->html = str_ireplace('{{' . $match . '}}', $embeddedContent->html, $content->html);
-                $content->text = str_ireplace('{{' . $match . '}}', $embeddedContent->text, $content->text);
+            }
+            // Check for resursive embedded content
+            $matchCount = $matchCount = $this->getContentPatternMatchCount($content->html);
+            if ($matchCount > 0) {
+                $content = $this->processContent($content);
             }
         }
 
+        // Check for components
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $matches = [];
+        $matchCount = preg_match_all($regex, $content->html, $matches);
+
+        // If component is found, process it
+        if ($matchCount > 0) {
+            $this->recursiveContentCounter++;
+            foreach ($matches[0] as $match) {
+                if ($this->recursiveContentCounter > $this->maxRecursiveContent) {
+                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>Oh CRUD! Recursive content not allowed.</mark>', $content->html);
+                    continue;
+                }
+                $embeddedContent = $this->getComponent($match, false);
+                if ($embeddedContent->is404 == true) {
+                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>Oh CRUD! Component not found.</mark>', $content->html);
+                    continue;
+                }
+                $content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $content->html);
+            }
+            // Check for resursive components
+            $matchCount = $this->getContentPatternMatchCount($content->html);
+            if ($matchCount > 0) {
+                $content = $this->processContent($content);
+            }
+        }
+
+        $this->recursiveContentCounter = 0;
         return $content;
     }
 
-    // Process component(s)
-    private function processComponents($content) {
-        // Skip processing when in edit mode
-        if ($this->editMode == true) {
-            return $content;
-        }
+    // This function is used to count the number of content patterns in a text
+    private function getContentPatternMatchCount($text) {
+        $matchCount = 0;
+        $regex = '/(?<=\{{)(?!CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $matchCount += preg_match_all($regex, $text);
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $matchCount += preg_match_all($regex, $text);
 
-        $matches = [];
-        preg_match_all('/\[\[(.*?)\]\]/i', $content->text, $matches);
-
-        if (isset($matches[1]) == true) {
-            foreach ($matches[1] as $match) {
-                $embeddedContent = $this->getComponent($match, false);
-                if ($embeddedContent->is404 == true) continue;
-                $content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $content->html);
-                $content->text = str_ireplace('[[' . $match . ']]', $embeddedContent->text, $content->text);
-            }
-        }
-
-        return $content;
+        return $matchCount;
     }
 
 }

@@ -16,6 +16,9 @@ class Router extends \OhCrud\Core {
         $GLOBALS['PATH'] = rtrim(parse_url($rawPath, PHP_URL_PATH) ?? '', '/') . '/';
         $GLOBALS['PATH_ARRAY'] = preg_split('[/]', $GLOBALS['PATH'], 0, PREG_SPLIT_NO_EMPTY);
 
+        // Register the core error handlers.
+        $this->registerCoreErrorHandlers();
+
         // Call the route method to process the request.
         $this->route($rawPath);
     }

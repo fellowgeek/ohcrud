@@ -10,6 +10,7 @@
 
     // Register the Whoops error handling library if in debug mode.
     if (__OHCRUD_DEBUG_MODE__ == true) {
+        $GLOBALS['coreErrorHandlersRegistered'] = true;
         $whoops = new \Whoops\Run;
         $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
         $whoops->register();
