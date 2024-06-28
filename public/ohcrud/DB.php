@@ -173,7 +173,7 @@ class DB extends \OhCrud\Core {
     // Get the first result from $this->data and return as object
     public function first() {
         if (empty($this->data) == false && is_array($this->data) == true) {
-            return (object) $this->data[0];
+            return (object) $this->data[0] ?? false;
         } else {
             return false;
         }

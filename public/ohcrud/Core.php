@@ -266,6 +266,38 @@ class Core {
         return $this;
     }
 
+    // Register core error handlers
+    public function registerCoreErrorHandlers() {
+        if (__OHCRUD_DEBUG_MODE__ == false && isset($GLOBALS['coreErrorHandlersRegistered']) == false) {
+            set_error_handler([$this, 'coreErrorHandler']);
+            set_exception_handler([$this, 'coreExceptionHandler']);
+            register_shutdown_function([$this, 'coreShutdownHandler']);
+            $GLOBALS['coreErrorHandlersRegistered'] = true;
+        }
+    }
+
+    // Custom error handler to convert errors to exceptions
+    public function coreErrorHandler($errno, $errstr, $errfile, $errline) {
+        if (!(error_reporting() & $errno)) {
+            // This error code is not included in error_reporting
+            return;
+        }
+        throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+    }
+
+    // Custom exception handler for uncaught exceptions
+    public function coreExceptionHandler($exception) {
+        $this->log('error', $exception->getMessage(), debug_backtrace());
+    }
+
+    // Shutdown function to handle fatal errors
+    public function coreShutdownHandler() {
+        $error = error_get_last();
+        if ($error && ($error['type'] === E_ERROR || $error['type'] === E_CORE_ERROR || $error['type'] === E_COMPILE_ERROR || $error['type'] === E_PARSE)) {
+            $this->log('error', $error['message'], $error);
+        }
+    }
+
     // Run a CLI route in the background
     public function background($command) {
         shell_exec('php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &');
