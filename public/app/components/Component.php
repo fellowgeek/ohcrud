@@ -8,8 +8,9 @@ class Component extends \OhCrud\DB {
 
     public $path;
     public $content;
-    public $jsFiles = [];
+    public $metaTags = [];
     public $cssFiles = [];
+    public $jsFiles = [];
     public $variables = [];
     public $request;
     public $directory;
@@ -26,6 +27,11 @@ class Component extends \OhCrud\DB {
         $this->directory = substr(__DIR__, strlen($_SERVER['DOCUMENT_ROOT'])) . '/';
         // Define 'content' property
         $this->content = new \app\models\mContent;
+    }
+
+    // Method to include a meta tags
+    public function includeMetaTags($tag, $value) {
+        $this->metaTags[$tag] = $value;
     }
 
     // Method to include a CSS file with an optional priority.

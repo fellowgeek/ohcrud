@@ -18,10 +18,12 @@ class cCMS extends \OhCrud\DB {
     public $theme = __OHCRUD_CMS_DEFAULT_THEME__;
     // The layout of the page.
     public $layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
-    // JavaScript files to include.
-    public $jsFiles = [];
+    // Meta tags to include.
+    public $metaTags = [];
     // CSS files to include.
     public $cssFiles = [];
+    // JavaScript files to include.
+    public $jsFiles = [];
     // Flag indicating whether the user is in edit mode.
     public $editMode = false;
     // Flag indicating whether the user is logged in.
@@ -79,8 +81,8 @@ class cCMS extends \OhCrud\DB {
         }
 
         // Include application javascript & css files
-        $this->includeJSFile('/global-assets/js/application.js', 1);
         $this->includeCSSFile('/global-assets/css/styles.css', 2);
+        $this->includeJSFile('/global-assets/js/application.js', 1);
 
         // Add assets for page editor if needed
         if ($this->editMode == true) {
@@ -106,6 +108,19 @@ class cCMS extends \OhCrud\DB {
         }
 
         $this->output();
+    }
+
+    // Include meta tags
+    public function includeMetaTags($tag, $value) {
+        $this->metaTags[$tag] = $value;
+    }
+
+    // Get meta tags
+    private function getMetaTags() {
+        $this->content->metaTags = '';
+        foreach ($this->metaTags as $tag => $value) {
+            $this->content->metaTags .= '<meta name="' . $tag . '" content="' . $value . '">' . "\n";
+        }
     }
 
     // Include CSS file(s)
@@ -211,6 +226,10 @@ class cCMS extends \OhCrud\DB {
             $component->output($componentParameters);
             $content = $component->content;
 
+            // Get content meta tags
+            foreach ($component->metaTags as $metaTag => $value) {
+                $this->includeMetaTags($metaTag, $value);
+            }
             // Get component CSS assets
             foreach ($component->cssFiles as $cssFile => $priority) {
                 $this->includeCSSFile($cssFile, $priority);
@@ -288,6 +307,7 @@ class cCMS extends \OhCrud\DB {
         $themeContent = $this->processContent($themeContent);
 
         // gather CSS and JS assets
+        $this->getMetaTags();
         $this->getCSSAssets();
         $this->getJSAssets();
 
@@ -313,6 +333,7 @@ class cCMS extends \OhCrud\DB {
         $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
         $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . $editIconHTML, $output);
         $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
+        $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
 
         // Include Javascript constants and assets
@@ -340,7 +361,7 @@ class cCMS extends \OhCrud\DB {
         }
 
         // Check for embedded content
-        $regex = '/(?<=\{{)(?!CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $regex = '/(?<=\{{)(?!CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
         $matches = [];
         $matchCount = preg_match_all($regex, $content->html, $matches);
 
@@ -400,7 +421,7 @@ class cCMS extends \OhCrud\DB {
     // This function is used to count the number of content patterns in a text
     private function getContentPatternMatchCount($text) {
         $matchCount = 0;
-        $regex = '/(?<=\{{)(?!CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $regex = '/(?<=\{{)(?!CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
         $matchCount += preg_match_all($regex, $text);
         $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
         $matchCount += preg_match_all($regex, $text);

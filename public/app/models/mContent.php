@@ -4,7 +4,7 @@ namespace app\models;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Model mContent - content model used by the CMS 
+// Model mContent - content model used by the CMS
 class mContent {
 
     // Define constants for content types.
@@ -28,6 +28,9 @@ class mContent {
 
     // The HTML content.
     public $html = '';
+
+    // The meta content.
+    public $metaTags = '';
 
     // The CSS content.
     public $stylesheet = '';
