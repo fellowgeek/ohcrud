@@ -14,7 +14,7 @@ class cFiles extends \app\models\mFiles {
     ];
 
     // Define an array of file extensions allowed for uploading.
-    private $filesAllowed = ['jpg', 'png', 'webp', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip'];
+    private $filesAllowed = ['jpg', 'jpeg', 'png', 'webp', 'svg', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip'];
 
     // Define the 'upload' method for this controller.
     public function upload($request) {
