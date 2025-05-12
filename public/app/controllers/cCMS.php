@@ -26,6 +26,8 @@ class cCMS extends \OhCrud\DB {
     public $jsFiles = [];
     // Flag indicating whether the user is in edit mode.
     public $editMode = false;
+    // Flag indicating whether should use cache.
+    public $useCache = true;
     // Flag indicating whether the user is logged in.
     public $loggedIn = false;
     // Request data.
@@ -55,6 +57,11 @@ class cCMS extends \OhCrud\DB {
             $this->editMode = true;
         }
 
+        // Set cache status flag
+        if ($this->loggedIn == true || (isset($this->request->action) == true && $this->request->action == 'edit')) {
+            $this->useCache = false;
+        }
+
         // Setup markdown processor and HTML purifier
         $this->parsedown = new Parsedown();
         $this->purifier = new HTMLPurifier();
@@ -71,9 +78,12 @@ class cCMS extends \OhCrud\DB {
         $this->path = \strtolower($path);
 
         // Get cached response (if any)
-        $cachedResponse = $this->getCache(__CLASS__ . __FUNCTION__ . $this->path, 3600);
-        if ($this->loggedIn == false && $cachedResponse != false) {
+        $cachedResponse = $this->getCache(__CLASS__ . __FUNCTION__ . $this->path . md5(json_encode($_GET ?? '')), 3600);
+        if ($this->useCache == true && $cachedResponse != false) {
             $this->data = $cachedResponse;
+            // Inject the uncachable content
+            $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContent(), $this->data);
+            // Output the HTML page
             $this->output();
             return;
         } else {
@@ -104,9 +114,13 @@ class cCMS extends \OhCrud\DB {
 
         // Set cache
         if ($this->editMode == false) {
-            $this->setCache(__CLASS__ . __FUNCTION__ . $this->path, $this->data);
+            $this->setCache(__CLASS__ . __FUNCTION__ . $this->path . md5(json_encode($_GET ?? '')), $this->data);
         }
 
+        // Inject the uncachable content
+        $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContent(), $this->data);
+
+        // Output the HTML page
         $this->output();
     }
 
@@ -287,7 +301,6 @@ class cCMS extends \OhCrud\DB {
     private function processTheme() {
 
         $output = '';
-        $javascriptGlobals = '';
 
         // Fallback to default theme ans layout if file does not exist
         if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false || $this->editMode == true) {
@@ -336,21 +349,30 @@ class cCMS extends \OhCrud\DB {
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
 
-        // Include Javascript constants and assets
-        $javascriptGlobals .= "<script>\n";
-        $javascriptGlobals .= "const __SITE__ = '" . __SITE__ . "';\n";
-        $javascriptGlobals .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
-        $javascriptGlobals .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
-        $javascriptGlobals .= "const __PATH__ = '" . $this->path . "';\n";
-        $javascriptGlobals .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
-        $javascriptGlobals .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
-        $javascriptGlobals .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
-        $javascriptGlobals .= "</script>\n";
-        $output = str_ireplace("{{CMS:JAVASCRIPT}}", $javascriptGlobals . $this->content->javascript, $output);
+        // Include javascript assets and uncachable javascript constants
+        $output = str_ireplace("{{CMS:JAVASCRIPT}}", "{{CMS:UNCACHABLE-JAVASCRIPT}}" . $this->content->javascript, $output);
         // Include OhCRUD footer into the template
-        $output = str_ireplace("{{CMS:OHCRUD}}", '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION . ' | <a href="/login/">LOGIN</a></p>', $output);
+        $output = str_ireplace("{{CMS:OHCRUD}}", '<p><a href="/">HOME</a> | CMS powered by <a href="https://github.com/fellowgeek/ohcrud">Oh CRUD!</a> - Copyright &copy; ' . date('Y') . ' justshare.me | <a href="/privacy/">PRIVACY</a> | <a href="/login/">LOGIN</a></p>', $output);
 
         $this->data = $output;
+    }
+
+    private function getUnCachableContent() {
+
+        $output = '';
+
+        // Include Javascript constants and assets
+        $output .= "<script>\n";
+        $output .= "const __SITE__ = '" . __SITE__ . "';\n";
+        $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
+        $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
+        $output .= "const __PATH__ = '" . $this->path . "';\n";
+        $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
+        $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
+        $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
+        $output .= "</script>\n";
+
+        return $output;
     }
 
     // Process embedded content and components
@@ -405,6 +427,9 @@ class cCMS extends \OhCrud\DB {
                     $content->html = str_ireplace('[[' . $match . ']]', '<mark>Oh CRUD! Component not found.</mark>', $content->html);
                     continue;
                 }
+                // Cleanup parsedown extra paragraphs (if exists)
+                $content->html = str_ireplace('<p>[[' . $match . ']]</p>', '[[' . $match . ']]', $content->html);
+                // Replace the component code with the component output
                 $content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $content->html);
             }
             // Check for resursive components

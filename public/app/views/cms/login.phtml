@@ -1,6 +1,6 @@
 <?php
-    $content->theme = 'default';
-    $content->layout = 'plain';
+    $content->theme = '_default';
+    $content->layout = 'index';
 ?>
 <div class="col col-30 page center-vh">
 
@@ -11,7 +11,6 @@
         <input type="text" placeholder="Username" name="USERNAME">
         <input type="password" placeholder="Password" name="PASSWORD">
         <input type="hidden" name="REDIRECT" value="<?= $_REQUEST['redirect'] ?? '' ?>">
-        <input type="hidden" name="CSRF" value="<?= $this->CSRF() ?>">
         <br>
         <button type="submit" class="btn btn-primary" id="ohcrud-login-login">Login</button>
         <a class="btn btn-default" href="<?= parse_url($_REQUEST['redirect'] ?? '/', PHP_URL_PATH) ?>">Cancel</a>
@@ -23,7 +22,6 @@
         <br>
         <input type="text" placeholder="TOTP Code" name="TOTP_CODE">
         <input type="hidden" name="REDIRECT" value="<?= $_REQUEST['redirect'] ?? '' ?>">
-        <input type="hidden" name="CSRF" value="<?= $this->CSRF() ?>">
         <br>
         <button type="submit" class="btn btn-primary" id="ohcrud-login-totp">Verify</button>
         <a class="btn btn-default" href="<?= parse_url($_REQUEST['redirect'] ?? '/', PHP_URL_PATH) ?>">Cancel</a>

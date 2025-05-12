@@ -42,6 +42,8 @@ define('__OHCRUD_SECRET__', 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
 
 // Set the session lifetime in seconds.
 define('__OHCRUD_SESSION_LIFETIME__', 3600);
+// Should the session cookie be secure?
+define('__OHCRUD_SESSION_SECURE_COOKIE__', true);
 
 // Determine whether OhCRUD should add (CDATE, MDATE, CUSER, MUSER) columns to every table.
 define('__OHCRUD_DB_STAMP__', true);

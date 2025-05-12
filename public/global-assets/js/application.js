@@ -1,6 +1,14 @@
+
 // Define a shorthand function to select a DOM element using document.querySelector
 let select = function(queryString) {
     return document.querySelector(queryString);
+}
+
+// Function to log messages to the console when debugMode is enabled
+function debugLog(...message) {
+    if (__OHCRUD_DEBUG_MODE__ == true) {
+        console.log(...message);
+    }
 }
 
 // Define a function to recreate a DOM element (i.e. for removing event listeners)

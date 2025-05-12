@@ -140,6 +140,10 @@ class Core {
         if (headers_sent() == false && $this->outputHeadersSent == false) {
             $this->outputHeadersSent = true;
             http_response_code($this->outputStatusCode);
+            // Disable broswer side caching
+            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+            header("Cache-Control: post-check=0, pre-check=0", false);
+            header("Pragma: no-cache");
             foreach ($this->outputHeaders as $outputHeader) {
                 header($outputHeader);
             }
@@ -299,8 +303,14 @@ class Core {
     }
 
     // Run a CLI route in the background
-    public function background($command) {
-        shell_exec('php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &');
+    public function background($command, $wait = 0) {
+        if ($wait > 0) {
+            pclose(
+                popen('sleep ' . $wait . ' && php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &', 'r')
+            );
+        } else {
+            exec('php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &');
+        }
     }
 
     // Output messages in the console (for CLI environment).

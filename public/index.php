@@ -17,7 +17,7 @@
     }
 
     // Start a PHP session and configure session parameters.
-    session_set_cookie_params(__OHCRUD_SESSION_LIFETIME__, '/', __SITE__);
+    session_set_cookie_params(__OHCRUD_SESSION_LIFETIME__, '/', __SITE__, __OHCRUD_SESSION_SECURE_COOKIE__);
     session_start();
     session_write_close();
 

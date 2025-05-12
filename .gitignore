@@ -8,4 +8,6 @@ composer.phar
 public/global-assets/files
 public/data.db
 public/app.log
+private/cert.pem
+private/key.pem
 @TODO

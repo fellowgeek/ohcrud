@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 uniqueId: url,
                 delay: 1000,
             },
+            autoDownloadFontAwesome: false,
             spellChecker: false,
             toolbar: [
                 // Various editor toolbar options

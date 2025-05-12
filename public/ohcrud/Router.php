@@ -185,7 +185,7 @@ class Router extends \OhCrud\Core {
         if ($origin == '') return true;
 
         // Handle cross-origin requests and set appropriate CORS headers.
-        if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true) {
+        if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || ___OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
             header('Access-Control-Allow-Origin: ' . $origin);
             header('Access-Control-Allow-Credentials: true');
             header('Access-Control-Max-Age: 86400');
