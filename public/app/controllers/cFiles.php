@@ -1,6 +1,8 @@
 <?php
 namespace app\controllers;
 
+// @TODO add mime type filtering
+
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 

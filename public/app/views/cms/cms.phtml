@@ -1,3 +1,82 @@
+<div class="grid grid-gap grid-cols-1 medium-grid-cols-3 margin-top">
+
+    <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
+        <ul>
+            <li class="item-content item-input">
+                <div class="item-inner">
+                <div class="item-title item-label">Title</div>
+                <div class="item-input-wrap">
+                    <input type="text" id="title" name="TITLE" value="{{CMS:TITLE}}" maxlength="100" required validate pattern="[a-zA-Z0-9\- ]{3,100}" data-error-message="Page title must be alphanumeric.">
+                    <span class="input-clear-button"></span>
+                </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
+        <ul>
+            <li class="item-content item-input">
+                <div class="item-inner">
+                <div class="item-title item-label">Theme</div>
+                <div class="item-input-wrap input-dropdown-wrap">
+                    <select id="theme" name="THEME">
+                    </select>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
+        <ul>
+            <li class="item-content item-input">
+                <div class="item-inner">
+                <div class="item-title item-label">Layout</div>
+                <div class="item-input-wrap input-dropdown-wrap">
+                    <select id="layout" name="LAYOUT">
+                    </select>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+</div>
+
+
+<div class="card">
+    <div class="card-content">
+        <!-- Card content -->
+        <textarea id="editor-text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea>
+    </div>
+</div>
+
+<div class="grid grid-gap grid-cols-1 medium-grid-cols-4 margin-top margin-horizontal">
+
+    <button class="button color-red button-fill">DELETE</button>
+    <div></div>
+    <button class="button color-orange button-fill">CANCEL</button>
+    <button class="button color-green button-fill">SAVE</button>
+
+</div>
+
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<hr />
 <input type="file" id="ohcrud-file" multiple style="display: none;" />
 <div class="alert hidden"></div>
 <form id="ohcrud-editor">
@@ -17,8 +96,8 @@
         </div>
     </div>
 
-    <textarea id="editor-text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea>
-    <hr/>
+    <!-- <textarea id="editor-text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea> -->
+    <hr />
     <button type="button" class="btn btn-primary" id="ohcrud-editor-save">Save</button>
     <button type="button" class="btn btn-secondary" id="ohcrud-editor-cancel">Cancel</button>
     <button type="button" class="btn btn-danger float-right" id="ohcrud-editor-delete-restore" data-is-deleted="{{CMS-IS-DELETED}}">...</button>

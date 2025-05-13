@@ -11,3 +11,32 @@
 .ios .list-dividers-ios .item-inner::after {
     width: calc(100% - 15px);
 }
+
+/* simplemde Styles */
+.editor-toolbar {
+  border: none !important;
+}
+
+.CodeMirror {
+  border: none !important;
+}
+
+.editor-statusbar {
+  padding: 8px 15px;
+}
+
+.editor-toolbar a:hover {
+  border: 1px solid transparent !important;
+  background-color: var(--f7-page-bg-color) !important;
+}
+
+/* Helper Classes */
+
+
+/*
+User Interface
+*/
+.container {
+  height: 100%;
+  overflow: scroll;
+}
