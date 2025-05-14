@@ -1,3 +1,7 @@
+<input type="hidden" id="currentTHEME" value="{{CMS:THEME}}" />
+<input type="hidden" id="currentLAYOUT" value="{{CMS:LAYOUT}}" />
+<input type="file" id="FILE" multiple style="display: none;" />
+
 <div class="grid grid-gap grid-cols-1 medium-grid-cols-3 margin-top">
 
     <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
@@ -46,59 +50,15 @@
 <div class="card">
     <div class="card-content">
         <!-- Card content -->
-        <textarea id="editor-text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea>
+        <textarea id="text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea>
     </div>
 </div>
 
 <div class="grid grid-gap grid-cols-1 medium-grid-cols-4 margin-top margin-horizontal">
 
-    <button class="button color-red button-fill">DELETE</button>
+    <button id="btnCMSSave" class="button color-green button-fill">SAVE</button>
+    <button id="btnCMSCancel" class="button color-orange button-fill">CANCEL</button>
     <div></div>
-    <button class="button color-orange button-fill">CANCEL</button>
-    <button class="button color-green button-fill">SAVE</button>
+    <button id="btnCMSDeleteRestore" class="button color-red button-fill" data-is-deleted="{{CMS-IS-DELETED}}">DELETE</button>
 
 </div>
-
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
-<hr />
-<input type="file" id="ohcrud-file" multiple style="display: none;" />
-<div class="alert hidden"></div>
-<form id="ohcrud-editor">
-    <input type="hidden" id="url" name="URL" value="{{CMS:PATH}}" />
-    <input type="hidden" id="current-theme" value="{{CMS:THEME}}" />
-    <input type="hidden" id="current-layout" value="{{CMS:LAYOUT}}" />
-
-    <div class="ohcrud-100">
-        <div class="ohcrud-50">
-            <input type="text" id="title" name="TITLE" value="{{CMS:TITLE}}" />
-        </div>
-        <div class="ohcrud-25 padding-left">
-            <select id="theme" name="THEME"></select>
-        </div>
-        <div class="ohcrud-25 padding-left">
-            <select id="layout" name="LAYOUT"></select>
-        </div>
-    </div>
-
-    <!-- <textarea id="editor-text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea> -->
-    <hr />
-    <button type="button" class="btn btn-primary" id="ohcrud-editor-save">Save</button>
-    <button type="button" class="btn btn-secondary" id="ohcrud-editor-cancel">Cancel</button>
-    <button type="button" class="btn btn-danger float-right" id="ohcrud-editor-delete-restore" data-is-deleted="{{CMS-IS-DELETED}}">...</button>
-</form>

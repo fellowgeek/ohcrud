@@ -19,10 +19,22 @@
 
 .CodeMirror {
   border: none !important;
+	font-family: 'Menlo', monospace;
+	font-size: 14px;
 }
 
 .editor-statusbar {
   padding: 8px 15px;
+  text-transform: lowercase;
+}
+
+.editor-statusbar span {
+	padding: 1px 4px;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.editor-toolbar {
+	opacity: 1;
 }
 
 .editor-toolbar a:hover {
@@ -39,4 +51,8 @@ User Interface
 .container {
   height: 100%;
   overflow: scroll;
+}
+
+.ohcrud-loader {
+	width: 35px;
 }

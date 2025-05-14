@@ -1,25 +1,19 @@
 // Define variables to handle content editor
 
-// URL
-let url = select('#url').value;
-// Themes & layouts
+// global variables
 let themes = {};
-let themeSelect = select('#theme');
-let layoutSelect = select('#layout');
-let currentTheme = select('#current-theme').value;
-let currentLayout = select('#current-layout').value;
-// File
-let file = select('#ohcrud-file');
-let fileToUploadMode = '';
+const __CURRENT_THEME__ = $$('#currentTHEME').val();
+const __CURRENT_LAYOUT__ = $$('#currentLAYOUT').val();
+
 // Editor
-let ohCrudEditor = {};
+let ohCrudEditor = null;
 // Save button
-let editorSave = select('#ohcrud-editor-save');
+let editorSave = select('#btnCMSSave');
 // Cancel button
-let editorCancel = select('#ohcrud-editor-cancel');
+let editorCancel = select('#btnCMSCancel');
 // Delete / Restore button
-let editorDeleteRestore = select('#ohcrud-editor-delete-restore');
-editorDeleteRestore.innerHTML = editorDeleteRestore.dataset['is-deleted'] == '1' ? 'Restore' : 'Delete';
+let editorDeleteRestore = select('#btnCMSDeleteRestore');
+editorDeleteRestore.innerHTML = editorDeleteRestore.dataset['is-deleted'] == '1' ? 'RESTORE' : 'DELETE';
 
 // Utility function to insert a text snippet in the content editor
 function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
@@ -39,6 +33,10 @@ function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
 
 // Load installed themes and update the dropdown menu
 function loadThemes() {
+
+    let themeSelect = $$('#theme');
+    let layoutSelect = $$('#layout');
+
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/themes/getThemes/',
     {
         method: 'POST',
@@ -57,34 +55,44 @@ function loadThemes() {
             let option = document.createElement('option');
             option.value = theme;
             option.innerHTML = theme;
-            themeSelect.appendChild(option);
+            themeSelect.append(option);
         }
-        loadLayouts(currentTheme);
-        themeSelect.value = currentTheme;
-        layoutSelect.value = currentLayout;
-        themeSelect.addEventListener('change', function() {
-            loadLayouts(themeSelect.value);
+        loadLayouts(__CURRENT_THEME__);
+        themeSelect.val(__CURRENT_THEME__);
+        layoutSelect.val(__CURRENT_LAYOUT__)
+
+        // add event listener to the "select" to load layouts as theme changes
+        themeSelect.on('change', function() {
+            loadLayouts(themeSelect.val());
         });
     });
 }
 
 // Load the layouts associated with a theme and update the dropdown menu
 function loadLayouts(theme) {
-    let options = layoutSelect.getElementsByTagName('option');
-    while(options.length > 0) {
-        layoutSelect.remove(0);
-    }
+
+    let layoutSelect = $$('#layout');
+    let layout = '';
+    let option = '';
+
+    layoutSelect.empty();
+
     for (const layoutIndex in themes[theme]) {
-        let layout = themes[theme][layoutIndex];
-        let option = document.createElement('option');
+        layout = themes[theme][layoutIndex];
+        option = document.createElement('option');
         option.value = layout;
-        option.innerHTML = layout;
-        layoutSelect.appendChild(option);
+        option.textContent = layout;
+        layoutSelect.append(option);
     }
 }
 
 // Execute the following code when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function () {
+
+    let themeSelect = $$('#theme');
+    let layoutSelect = $$('#layout');
+    let file = document.getElementById('FILE');
+    let fileToUploadMode = '';
 
     // Load themes and layouts
     loadThemes();
@@ -92,11 +100,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize the text editor
     ohCrudEditor = new SimpleMDE(
         {
-            element: select('#editor-text'),
+            element: select('#text'),
             autofocus: true,
             autosave: {
                 enabled: true,
-                uniqueId: url,
+                uniqueId: __PATH__,
                 delay: 1000,
             },
             autoDownloadFontAwesome: false,
@@ -150,8 +158,13 @@ document.addEventListener('DOMContentLoaded', function () {
         editorSave.disabled = true;
         editorSave.classList.add('btn-disabled');
         editorSave.innerHTML = `<img class="ohcrud-loader" src="/global-assets/images/loader.svg" />`;
-        let data = Object.fromEntries(new FormData(document.getElementById('ohcrud-editor')).entries());
-        data.TEXT = ohCrudEditor.value();
+        let data = {
+            URL: __PATH__,
+            THEME: themeSelect.val(),
+            LAYOUT: layoutSelect.val(),
+            TITLE: $$('#title').val(),
+            TEXT: ohCrudEditor.value(),
+        }
 
         httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/pages/save/',
             {
@@ -166,24 +179,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 )
             },
             async function(response) {
-                select('.alert').classList.add('hidden');
-                window.location.href = url;
+                window.location.href = __PATH__;
             },
             async function(error) {
                 const json = await error.json();
-                select('.alert').innerHTML = `<p>${json.errors.join()}</p>`;
-                select('.alert').classList.add('alert-danger');
-                select('.alert').classList.remove('hidden');
+                notify({
+                    icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                    title: 'ohCRUD!',
+                    titleRightText: 'now',
+                    text: json.errors.join(),
+                    closeOnClick: true,
+                });
                 editorSave.disabled = false;
                 editorSave.classList.remove('btn-disabled');
-                editorSave.innerHTML = `Save`;
+                editorSave.innerHTML = `SAVE`;
             }
         );
     });
 
     // Handle the cancel button
     editorCancel.addEventListener('click', function() {
-        window.location.href = url;
+        window.location.href = __PATH__;
     });
 
     // Handle the delete/restore button
@@ -192,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
         editorDeleteRestore.classList.add('btn-disabled');
         editorDeleteRestore.innerHTML = `<img class="ohcrud-loader" src="/global-assets/images/loader.svg" />`;
         let data = {
-            URL: url,
+            URL: __PATH__,
         };
 
         httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/pages/restoreDeletePage/',
@@ -208,14 +224,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 )
             },
             async function(response) {
-                select('.alert').classList.add('hidden');
-                window.location.href = url;
+                window.location.href = __PATH__;
             },
             async function(error) {
                 const json = await error.json();
-                select('.alert').innerHTML = `<p>${json.errors.join()}</p>`;
-                select('.alert').classList.add('alert-danger');
-                select('.alert').classList.remove('hidden');
+                notify({
+                    icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                    title: 'ohCRUD!',
+                    titleRightText: 'now',
+                    text: json.errors.join(),
+                    closeOnClick: true,
+                });
                 editorDeleteRestore.disabled = false;
                 editorDeleteRestore.classList.remove('btn-disabled');
                 editorDeleteRestore.innerHTML = editorDeleteRestore.dataset['is-deleted'] == '1' ? 'Restore' : 'Delete';
@@ -238,7 +257,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: formData
             },
             async function(response) {
-                select('.alert').classList.add('hidden');
                 const json = await response.json();
                 if (fileToUploadMode == 'image') {
                     const alt = json.data.NAME.replace(`.${json.data.TYPE}`, '') ;
@@ -251,9 +269,13 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             async function(error) {
                 const json = await error.json();
-                select('.alert').innerHTML = `<p>${json.errors.join()}</p>`;
-                select('.alert').classList.add('alert-danger');
-                select('.alert').classList.remove('hidden');
+                notify({
+                    icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                    title: 'ohCRUD!',
+                    titleRightText: 'now',
+                    text: json.errors.join(),
+                    closeOnClick: true,
+                });
             },
             true
         );

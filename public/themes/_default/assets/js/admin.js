@@ -27,3 +27,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+function notify(options = {}) {
+    /*
+    icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+    title: 'Framework7',
+    titleRightText: 'now',
+    subtitle: 'Notification with close on click',
+    text: 'Click me to close',
+    closeOnClick: true,
+    */
+    let notificationCloseOnClick = app.notification.create(options);
+    notificationCloseOnClick.open();
+}

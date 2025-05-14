@@ -31,7 +31,7 @@ class cCMS extends \OhCrud\DB {
     // Flag indicating whether the user is logged in.
     public $loggedIn = false;
     // Request data.
-    public $request = [];
+    public object $request;
     // Instance for managing pages.
     public $pages;
     // Markdown processor.
@@ -52,14 +52,17 @@ class cCMS extends \OhCrud\DB {
 
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
+
         // Set edit mode
-        if ($this->loggedIn == true && isset($this->request->action) == true && $this->request->action == 'edit') {
+        if ($this->loggedIn == true && ($this->request->action ?? '') == 'edit') {
             $this->editMode = true;
+            $this->useCache = false;
         }
 
-        // Set cache status flag
-        if ($this->loggedIn == true || (isset($this->request->action) == true && $this->request->action == 'edit')) {
-            $this->useCache = false;
+        // Redirect to login page if not logged in
+        if ($this->loggedIn == false && ($this->request->action ?? '') == 'edit') {
+            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=edit');
+            return;
         }
 
         // Setup markdown processor and HTML purifier
@@ -93,13 +96,6 @@ class cCMS extends \OhCrud\DB {
         // Include application javascript & css files
         $this->includeCSSFile('/global-assets/css/styles.css', 2);
         $this->includeJSFile('/global-assets/js/application.js', 1);
-
-        // Add assets for page editor if needed
-        if ($this->editMode == true) {
-            $this->includeCSSFile('/global-assets/css/simplemde.min.css', 1);
-            $this->includeJSFile('/global-assets/js/simplemde.min.js', 2);
-            $this->includeJSFile('/global-assets/js/editor.js', 3);
-        }
 
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
