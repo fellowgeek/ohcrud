@@ -6,6 +6,7 @@ settings.php
 .DS_Store
 composer.phar
 public/global-assets/files
+public/global/files
 public/data.db
 public/app.log
 private/cert.pem

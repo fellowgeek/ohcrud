@@ -1,0 +1,16 @@
+#ohcrud-editor-edit {
+    position: fixed;
+    bottom: 15px;
+	right: 15px;
+    border-radius: 6px;
+    border: 2px solid var(--color-light-gray);
+	background-color: var(--color-white);
+	background-image: url('/global/images/pencil.svg');
+	background-repeat: no-repeat;
+	background-position: center;
+    text-align: center;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    z-index: 9999;
+}

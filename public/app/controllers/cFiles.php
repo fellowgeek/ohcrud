@@ -35,7 +35,7 @@ class cFiles extends \app\models\mFiles {
         // Get file information such as name, extension, and generate a unique path.
         $NAME = basename($_FILES[0]['name']);
         $TYPE = strtolower(pathinfo($NAME, PATHINFO_EXTENSION));
-        $PATH = 'global-assets/files/' . md5($NAME . microtime()) . '.' . $TYPE;
+        $PATH = 'global/files/' . md5($NAME . microtime()) . '.' . $TYPE;
 
         // Validation: Check if the file type (extension) is allowed.
         if (in_array($TYPE, $this->filesAllowed) == false) {

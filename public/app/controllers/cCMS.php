@@ -94,8 +94,8 @@ class cCMS extends \OhCrud\DB {
         }
 
         // Include application javascript & css files
-        $this->includeCSSFile('/global-assets/css/styles.css', 2);
-        $this->includeJSFile('/global-assets/js/application.js', 1);
+        $this->includeCSSFile('/global/css/global.css', 2);
+        $this->includeJSFile('/global/js/global.js', 1);
 
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
@@ -276,6 +276,8 @@ class cCMS extends \OhCrud\DB {
         $themes = [];
         foreach ($scan as $layoutFile) {
             $matches = [];
+            $theme = '';
+            $layout = '';
             preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
             if (isset($matches[1]) == true) {
                 $theme = $matches[1];
