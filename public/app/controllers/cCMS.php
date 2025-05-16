@@ -97,6 +97,11 @@ class cCMS extends \OhCrud\DB {
         $this->includeCSSFile('/global/css/global.css', 2);
         $this->includeJSFile('/global/js/global.js', 1);
 
+        // Add assets for page editor if needed
+        if ($this->editMode == true) {
+            $this->includeJSFile('/themes/admin/assets/js/editor.js', 3);
+        }
+
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
         $this->theme = $this->content->theme;

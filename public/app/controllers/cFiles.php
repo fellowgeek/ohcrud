@@ -1,8 +1,6 @@
 <?php
 namespace app\controllers;
 
-// @TODO add mime type filtering
-
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
@@ -17,6 +15,21 @@ class cFiles extends \app\models\mFiles {
 
     // Define an array of file extensions allowed for uploading.
     private $filesAllowed = ['jpg', 'jpeg', 'png', 'webp', 'svg', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip'];
+
+    // Allowed MIME types
+    private $mimeTypesAllowed = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/svg+xml',
+        'text/csv',
+        'text/plain',
+        'application/pdf',
+        'application/xml',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/json',
+        'application/zip'
+    ];
 
     // Define the 'upload' method for this controller.
     public function upload($request) {
@@ -36,17 +49,30 @@ class cFiles extends \app\models\mFiles {
         $NAME = basename($_FILES[0]['name']);
         $TYPE = strtolower(pathinfo($NAME, PATHINFO_EXTENSION));
         $PATH = 'global/files/' . md5($NAME . microtime()) . '.' . $TYPE;
+        $TEMP  = $_FILES[0]['tmp_name'];
 
-        // Validation: Check if the file type (extension) is allowed.
+        // Check allowed file extension
         if (in_array($TYPE, $this->filesAllowed) == false) {
             // If not allowed, generate an error message and respond with a 403 Forbidden status.
-            $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.', 403);
+            $this->error('This file type is not allowed.', 403);
+            $this->output();
+            return $this;
+        }
+
+        // Detect MIME type using finfo
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $detectedMime = finfo_file($finfo, $TEMP);
+        finfo_close($finfo);
+
+        // Check allowed MIME type
+        if (!in_array($detectedMime, $this->mimeTypesAllowed)) {
+            $this->error('Unsupported file type detected.', 403);
             $this->output();
             return $this;
         }
 
         // Move the uploaded file to a designated path.
-        if (move_uploaded_file($_FILES[0]['tmp_name'], __SELF__ . $PATH) == false) {
+        if (move_uploaded_file($TEMP, __SELF__ . $PATH) == false) {
             $this->error('Unable to move uploaded file.', 403);
             $this->output();
             return $this;
@@ -62,10 +88,8 @@ class cFiles extends \app\models\mFiles {
             'STATUS'    => $this::ACTIVE
         ];
 
-        // Create an instance of the mFiles model.
-        $files = new \app\models\mFiles;
         // Create a new file entry in the database using the 'create' method.
-        $filesOutput = $files->create('Files', $filesParameters);
+        $filesOutput = $this->create('Files', $filesParameters);
 
         // Check if the file creation was successful and retrieve the last inserted ID.
         if (isset($filesOutput->lastInsertId) == true) {

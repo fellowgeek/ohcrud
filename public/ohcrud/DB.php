@@ -179,6 +179,99 @@ class DB extends \OhCrud\Core {
         }
     }
 
+    // Return the details of all tables or a specific table
+    public function details($table = '') {
+
+        $schema = new \stdClass();
+
+        try {
+            if ($this->config["DRIVER"] === 'MYSQL') {
+
+                $tables = [];
+                if ($table) {
+                    $tables = [$table];
+                } else {
+                    $stmt = $this->db->query("SHOW TABLES");
+                    while ($row = $stmt->fetch(\PDO::FETCH_NUM)) {
+                        $tables[] = $row[0];
+                    }
+                }
+
+                foreach ($tables as $tableName) {
+                    $tableInfo = new \stdClass();
+                    $tableInfo->name = $tableName;
+
+                    // Get row count
+                    $rowCountStmt = $this->db->query("SELECT COUNT(*) FROM `$tableName`");
+                    $tableInfo->row_count = (int) $rowCountStmt->fetchColumn();
+
+                    // Get columns
+                    $columns = [];
+                    $fieldsStmt = $this->db->query("DESCRIBE `$tableName`");
+                    while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
+                        $field = new \stdClass();
+                        $field->name = $fieldRow['Field'];
+                        $field->type = $fieldRow['Type'];
+                        $field->nullable = ($fieldRow['Null'] === 'YES');
+                        $field->default = $fieldRow['Default'];
+                        $field->primary_key = ($fieldRow['Key'] === 'PRI');
+                        $field->extra = $fieldRow['Extra'];
+                        $columns[] = $field;
+                    }
+
+                    $tableInfo->columns = $columns;
+                    $schema->$tableName = $tableInfo;
+                }
+
+            } elseif ($this->config["DRIVER"] === 'SQLITE') {
+
+                $tables = [];
+                if ($table) {
+                    $tables = [$table];
+                } else {
+                    $stmt = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                    while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                        $tables[] = $row['name'];
+                    }
+                }
+
+                foreach ($tables as $tableName) {
+                    $tableInfo = new \stdClass();
+                    $tableInfo->name = $tableName;
+
+                    // Get row count
+                    $rowCountStmt = $this->db->query("SELECT COUNT(*) FROM `$tableName`");
+                    $tableInfo->row_count = (int) $rowCountStmt->fetchColumn();
+
+                    // Get columns
+                    $columns = [];
+                    $fieldsStmt = $this->db->query("PRAGMA table_info(`$tableName`)");
+                    while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
+                        $field = new \stdClass();
+                        $field->name = $fieldRow['name'];
+                        $field->type = $fieldRow['type'];
+                        $field->nullable = !$fieldRow['notnull']; // 0 means nullable
+                        $field->default = $fieldRow['dflt_value'];
+                        $field->primary_key = ($fieldRow['pk'] != 0);
+                        $field->extra = null; // Not available in SQLite
+                        $columns[] = $field;
+                    }
+
+                    $tableInfo->columns = $columns;
+                    $schema->$tableName = $tableInfo;
+                }
+            } else {
+                throw new \Exception('Unsupported PDO driver: ' . $this->config["DRIVER"]);
+            }
+        } catch (\Exception $e) {
+            // Handle database query execution exceptions
+            $this->error($e->getMessage());
+            return $this->output();
+        }
+
+        return $schema;
+    }
+
     // Helper method to filter valid fields for database operations
     private function filter($table, $data) {
         $fields = array();

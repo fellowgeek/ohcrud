@@ -1,19 +1,8 @@
-// Define variables to handle content editor
-
 // global variables
 let themes = {};
 const __CURRENT_THEME__ = $$('#currentTHEME').val();
 const __CURRENT_LAYOUT__ = $$('#currentLAYOUT').val();
-
-// Editor
 let ohCrudEditor = null;
-// Save button
-let editorSave = select('#btnCMSSave');
-// Cancel button
-let editorCancel = select('#btnCMSCancel');
-// Delete / Restore button
-let editorDeleteRestore = select('#btnCMSDeleteRestore');
-editorDeleteRestore.innerHTML = editorDeleteRestore.dataset['is-deleted'] == '1' ? 'RESTORE' : 'DELETE';
 
 // Utility function to insert a text snippet in the content editor
 function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
@@ -34,8 +23,8 @@ function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
 // Load installed themes and update the dropdown menu
 function loadThemes() {
 
-    let themeSelect = $$('#theme');
-    let layoutSelect = $$('#layout');
+    let themeSelect = $$('#THEME');
+    let layoutSelect = $$('#LAYOUT');
 
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/themes/getThemes/',
     {
@@ -71,7 +60,7 @@ function loadThemes() {
 // Load the layouts associated with a theme and update the dropdown menu
 function loadLayouts(theme) {
 
-    let layoutSelect = $$('#layout');
+    let layoutSelect = $$('#LAYOUT');
     let layout = '';
     let option = '';
 
@@ -89,10 +78,15 @@ function loadLayouts(theme) {
 // Execute the following code when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function () {
 
-    let themeSelect = $$('#theme');
-    let layoutSelect = $$('#layout');
+    let themeSelect = $$('#THEME');
+    let layoutSelect = $$('#LAYOUT');
     let file = document.getElementById('FILE');
     let fileToUploadMode = '';
+
+    let btnCMSSave = $$('#btnCMSSave');
+    let btnCMSCancel = $$('#btnCMSCancel');
+    let btnCMSDeleteRestore = $$('#btnCMSDeleteRestore');
+    btnCMSDeleteRestore.html(btnCMSDeleteRestore.data('is-deleted') == '1' ? 'RESTORE' : 'DELETE');
 
     // Load themes and layouts
     loadThemes();
@@ -100,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize the text editor
     ohCrudEditor = new SimpleMDE(
         {
-            element: select('#text'),
+            element: select('#TEXT'),
             autofocus: true,
             autosave: {
                 enabled: true,
@@ -154,15 +148,14 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
     // Handle the save button
-    editorSave.addEventListener('click', function() {
-        editorSave.disabled = true;
-        editorSave.classList.add('btn-disabled');
-        editorSave.innerHTML = `<img class="ohcrud-loader" src="/global/images/loader.svg" />`;
+    btnCMSSave.on('click', function() {
+        btnCMSSave.addClass('disabled');
+        btnCMSSave.html(`<img class="ohcrud-loader" src="/global/images/loader.svg" />`);
         let data = {
             URL: __PATH__,
             THEME: themeSelect.val(),
             LAYOUT: layoutSelect.val(),
-            TITLE: $$('#title').val(),
+            TITLE: $$('#TITLE').val(),
             TEXT: ohCrudEditor.value(),
         }
 
@@ -190,23 +183,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     text: json.errors.join(),
                     closeOnClick: true,
                 });
-                editorSave.disabled = false;
-                editorSave.classList.remove('btn-disabled');
-                editorSave.innerHTML = `SAVE`;
+                btnCMSSave.removeClass('disabled');
+                btnCMSSave.html(`SAVE`);
             }
         );
     });
 
     // Handle the cancel button
-    editorCancel.addEventListener('click', function() {
+    btnCMSCancel.on('click', function() {
         window.location.href = __PATH__;
     });
 
     // Handle the delete/restore button
-    editorDeleteRestore.addEventListener('click', function() {
-        editorDeleteRestore.disabled = true;
-        editorDeleteRestore.classList.add('btn-disabled');
-        editorDeleteRestore.innerHTML = `<img class="ohcrud-loader" src="/global/images/loader.svg" />`;
+    btnCMSDeleteRestore.on('click', function() {
+        btnCMSDeleteRestore.addClass('disabled');
+        btnCMSDeleteRestore.html('<img class="ohcrud-loader" src="/global/images/loader.svg" />');
         let data = {
             URL: __PATH__,
         };
@@ -235,9 +226,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     text: json.errors.join(),
                     closeOnClick: true,
                 });
-                editorDeleteRestore.disabled = false;
-                editorDeleteRestore.classList.remove('btn-disabled');
-                editorDeleteRestore.innerHTML = editorDeleteRestore.dataset['is-deleted'] == '1' ? 'Restore' : 'Delete';
+                btnCMSDeleteRestore.removeClass('disabled');
+                btnCMSDeleteRestore.html(btnCMSDeleteRestore.data('is-deleted') == '1' ? 'RESTORE' : 'DELETE');
             }
         );
     });
@@ -247,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let fileToUpload = file.files[0];
         let formData = new FormData();
         formData.append("0", fileToUpload);
-        select(`.upload-${fileToUploadMode}`).classList = `fa fa-cog fa-spin upload-${fileToUploadMode}`;
+        document.querySelector(`.upload-${fileToUploadMode}`).classList = `fa fa-cog fa-spin upload-${fileToUploadMode}`;
 
         httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/files/upload/',
             {
@@ -261,10 +251,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (fileToUploadMode == 'image') {
                     const alt = json.data.NAME.replace(`.${json.data.TYPE}`, '') ;
                     insertCodeInEditor(ohCrudEditor, `![${alt}](${json.data.PATH})`);
-                    select(`.upload-${fileToUploadMode}`).classList = `fa fa-file-image-o upload-${fileToUploadMode}`;
+                    document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
                 } else {
                     insertCodeInEditor(ohCrudEditor, `[${json.data.NAME}](${json.data.PATH})`);
-                    select(`.upload-${fileToUploadMode}`).classList = `fa fa-file upload-${fileToUploadMode}`;
+                    document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
                 }
             },
             async function(error) {
@@ -276,6 +266,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     text: json.errors.join(),
                     closeOnClick: true,
                 });
+                if (fileToUploadMode == 'image') {
+                    document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
+                } else {
+                    document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
+                }
             },
             true
         );

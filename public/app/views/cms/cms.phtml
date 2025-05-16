@@ -1,6 +1,6 @@
 <input type="hidden" id="currentTHEME" value="{{CMS:THEME}}" />
 <input type="hidden" id="currentLAYOUT" value="{{CMS:LAYOUT}}" />
-<input type="file" id="FILE" multiple style="display: none;" />
+<input type="FILE" id="FILE" multiple style="display: none;" />
 
 <div class="grid grid-gap grid-cols-1 medium-grid-cols-3 margin-top">
 
@@ -10,7 +10,7 @@
                 <div class="item-inner">
                 <div class="item-title item-label">Title</div>
                 <div class="item-input-wrap">
-                    <input type="text" id="title" name="TITLE" value="{{CMS:TITLE}}" maxlength="100" required validate pattern="[a-zA-Z0-9\- ]{3,100}" data-error-message="Page title must be alphanumeric.">
+                    <input type="text" id="TITLE" name="TITLE" value="{{CMS:TITLE}}" maxlength="100" required validate pattern="[a-zA-Z0-9\- ]{3,100}" data-error-message="Page title must be alphanumeric.">
                     <span class="input-clear-button"></span>
                 </div>
                 </div>
@@ -24,7 +24,7 @@
                 <div class="item-inner">
                 <div class="item-title item-label">Theme</div>
                 <div class="item-input-wrap input-dropdown-wrap">
-                    <select id="theme" name="THEME">
+                    <select id="THEME" name="THEME">
                     </select>
                 </div>
             </li>
@@ -37,7 +37,7 @@
                 <div class="item-inner">
                 <div class="item-title item-label">Layout</div>
                 <div class="item-input-wrap input-dropdown-wrap">
-                    <select id="layout" name="LAYOUT">
+                    <select id="LAYOUT" name="LAYOUT">
                     </select>
                 </div>
             </li>
@@ -48,7 +48,7 @@
 
 <div class="card">
     <div class="card-content">
-        <textarea id="text" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea>
+        <textarea id="TEXT" name="TEXT">{{CMS:CONTENT-TEXT}}</textarea>
     </div>
 </div>
 
