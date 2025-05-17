@@ -178,6 +178,8 @@ class cCMS extends \OhCrud\DB {
         // Try getting page content from file
         if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
             $content = $this->getContentFromFile($path);
+            // Handle special paths
+            if ($path == '/login/') $content->layout = 'login';
             return $content;
         }
 

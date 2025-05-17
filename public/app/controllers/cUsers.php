@@ -7,7 +7,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cUsers - users controller used by the OhCRUD framework
 class cUsers extends \OhCrud\DB {
 
-    // Define permissions for the controller.    
+    // Define permissions for the controller.
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
         'login' => __OHCRUD_PERMISSION_ALL__,
@@ -15,7 +15,7 @@ class cUsers extends \OhCrud\DB {
         'logout' => __OHCRUD_PERMISSION_ALL__
     ];
 
-    // This method, handles user login functionality 
+    // This method, handles user login functionality
     public function login($request) {
 
         // Sets the output type for this controller to JSON.
@@ -74,7 +74,7 @@ class cUsers extends \OhCrud\DB {
             $this->error('Missing or invalid CSRF token.');
 
         // Check for missing or incomplete verification data
-        if (isset($request->payload) == false || empty($request->payload->TOTP_CODE) == true)
+        if (isset($request->payload) == false || empty($request->payload->TOTP) == true)
             $this->error('Missing or incomplete data.');
 
         // Check if the user has logged in yet (in the current temporary session)
@@ -88,7 +88,7 @@ class cUsers extends \OhCrud\DB {
         }
 
         // Attempt two-factor authentication verification
-        $response = $Users->verify($_SESSION['tempUser']->ID, $request->payload->TOTP_CODE);
+        $response = $Users->verify($_SESSION['tempUser']->ID, $request->payload->TOTP);
 
         // If verification is unsuccessful, output an error and return
         if ($response == false) {

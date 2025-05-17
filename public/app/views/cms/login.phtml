@@ -1,30 +1,59 @@
-<?php
-    $content->theme = '_default';
-    $content->layout = 'index';
-?>
-<div class="col col-30 page center-vh">
+<input type="hidden" id="REDIRECT_FULL" name="REDIRECT_FULL" value="<?= $_REQUEST['redirect'] ?? '' ?>">
+<input type="hidden" id="REDIRECT_PATH" name="REDIRECT_PATH" value="<?= parse_url($_REQUEST['redirect'] ?? '/', PHP_URL_PATH) ?>">
 
-    <div class="alert hidden"></div>
-    <form id="ohcrud-login" name="ohcrud-login">
-        <h2>Please sign in</h2>
-        <br>
-        <input type="text" placeholder="Username" name="USERNAME">
-        <input type="password" placeholder="Password" name="PASSWORD">
-        <input type="hidden" name="REDIRECT" value="<?= $_REQUEST['redirect'] ?? '' ?>">
-        <br>
-        <button type="submit" class="btn btn-primary" id="ohcrud-login-login">Login</button>
-        <a class="btn btn-default" href="<?= parse_url($_REQUEST['redirect'] ?? '/', PHP_URL_PATH) ?>">Cancel</a>
-    </form>
+<div class="card card-login no-margin">
+    <div class="card-header">Please sign in</div>
 
-    <form id="ohcrud-totp" name="ohcrud-totp" class="hidden">
-        <h2>Please sign in</h2>
+    <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
+        <ul>
+            <li class="item-content item-input">
+                <div class="item-inner">
+                <div class="item-title item-label">Username</div>
+                <div class="item-input-wrap">
+                    <input type="text" id="USERNAME" name="USERNAME" maxlength="100" required validate data-error-message="Please enter a username.">
+                </div>
+                </div>
+            </li>
+
+            <li class="item-content item-input">
+                <div class="item-inner">
+                <div class="item-title item-label">Password</div>
+                <div class="item-input-wrap">
+                    <input type="password" id="PASSWORD" name="PASSWORD" maxlength="100" required validate data-error-message="Please enter a password.">
+                </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="grid grid-gap grid-cols-1 medium-grid-cols-4 margin margin-horizontal">
+        <button id="btnLogin" class="button button-fill">LOGIN</button>
+        <button id="btnLoginCancel" class="button button-outline">CANCEL</button>
+    </div>
+
+</div>
+
+<div class="card card-totp no-margin hidden">
+    <div class="card-header">Enter your time based code</div>
+
+    <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
         <p>Get the authentication code from the two-factor authentication app on your device.</p>
-        <br>
-        <input type="text" placeholder="TOTP Code" name="TOTP_CODE">
-        <input type="hidden" name="REDIRECT" value="<?= $_REQUEST['redirect'] ?? '' ?>">
-        <br>
-        <button type="submit" class="btn btn-primary" id="ohcrud-login-totp">Verify</button>
-        <a class="btn btn-default" href="<?= parse_url($_REQUEST['redirect'] ?? '/', PHP_URL_PATH) ?>">Cancel</a>
-    </form>
+        <ul>
+            <li class="item-content item-input">
+                <div class="item-inner">
+                <div class="item-title item-label">TOTP Code</div>
+                <div class="item-input-wrap">
+                    <input type="text" id="TOTP" name="TOTP" maxlength="6" required validate pattern="[0-9]{6}" data-error-message="Please enter a 6 digit code." oninput="maskInputNumber(this);" class="input-code">
+                </div>
+                </div>
+            </li>
+
+        </ul>
+    </div>
+
+    <div class="grid grid-gap grid-cols-1 medium-grid-cols-4 margin margin-horizontal">
+        <button id="btnLoginVerify" class="button button-fill">VERIFY</button>
+        <button id="btnLoginCancel" class="button button-outline">CANCEL</button>
+    </div>
 
 </div>

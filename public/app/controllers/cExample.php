@@ -1,6 +1,8 @@
 <?php
 namespace app\controllers;
 
+use OTPHP\TOTP;
+
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
@@ -54,8 +56,8 @@ class cExample extends \OhCrud\DB {
         // Set the output type to HTML.
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
 
-        // Debug the session data and display it.
-        $this->debug($_SESSION, 'Session:');
+        // Return a hello world message.
+        $this->data = "Hello from ohCRUD!";
 
         // Output the result.
         $this->output();

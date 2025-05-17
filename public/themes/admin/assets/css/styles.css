@@ -2,14 +2,14 @@
   Global Styles
 */
 * {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Fix for the iOS list dividers */
 .ios .list-dividers-ios .item-inner::after {
-    width: calc(100% - 15px);
+  width: calc(100% - 15px);
 }
 
 /* simplemde Styles */
@@ -19,8 +19,8 @@
 
 .CodeMirror {
   border: none !important;
-	font-family: 'Menlo', monospace;
-	font-size: 14px;
+  font-family: 'Menlo', monospace;
+  font-size: 14px;
 }
 
 .editor-statusbar {
@@ -29,12 +29,12 @@
 }
 
 .editor-statusbar span {
-	padding: 1px 4px;
-	font-family: Arial, Helvetica, sans-serif;
+  padding: 1px 4px;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 .editor-toolbar {
-	opacity: 1;
+  opacity: 1;
 }
 
 .editor-toolbar a:hover {
@@ -43,7 +43,17 @@
 }
 
 /* Helper Classes */
+.outline {
+  outline: 1px dashed #f0f;
+}
 
+.hidden {
+  display: none !important;
+}
+
+.margin-top-10rem {
+  margin-top: 10rem !important;
+}
 
 /*
 User Interface
@@ -54,5 +64,19 @@ User Interface
 }
 
 .ohcrud-loader {
-	width: 35px;
+  width: 35px;
+}
+
+.card-login,
+.card-totp {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(100% - 32px), 500px);
+}
+
+.input-code {
+  font-weight: bold;
+  letter-spacing: 10px;
 }

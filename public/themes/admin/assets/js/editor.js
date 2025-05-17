@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize the text editor
     ohCrudEditor = new SimpleMDE(
         {
-            element: select('#TEXT'),
+            element: document.getElementById('TEXT'),
             autofocus: true,
             autosave: {
                 enabled: true,
