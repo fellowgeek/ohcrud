@@ -1,9 +1,3 @@
-
-// Define a shorthand function to select a DOM element using document.querySelector
-let select = function(queryString) {
-    return document.querySelector(queryString);
-}
-
 // Function to log messages to the console when debugMode is enabled
 function debugLog(...message) {
     if (__OHCRUD_DEBUG_MODE__ == true) {
@@ -37,14 +31,14 @@ async function httpRequest(url, options, successCallback, errorCallback, isRaw =
     }
 }
 
-// Start: Execute the following code when the DOM is fully loaded
+// Execute the following code when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function () {
 
     // Handle the edit button
-    let editButton = select('#ohcrud-editor-edit');
-    if (editButton != null) {
-        editButton.addEventListener('click', function() {
-            window.location.href = editButton.dataset.url;
+    let btnCMSEdit = document.getElementById('btnCMSEdit');
+    if (btnCMSEdit != null) {
+        btnCMSEdit.addEventListener('click', function() {
+            window.location.href = btnCMSEdit.dataset.url;
         });
     }
 

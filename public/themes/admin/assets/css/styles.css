@@ -58,6 +58,10 @@
 /*
 User Interface
 */
+.page-current {
+  background-image:  url('../img/patterns/noisy_grid_2.png');
+}
+
 .container {
   height: 100%;
   overflow: scroll;

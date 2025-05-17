@@ -179,7 +179,10 @@ class cCMS extends \OhCrud\DB {
         if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
             $content = $this->getContentFromFile($path);
             // Handle special paths
-            if ($path == '/login/') $content->layout = 'login';
+            if ($path == '/login/') {
+                $content->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                $content->layout = 'login';
+            }
             return $content;
         }
 
@@ -308,9 +311,14 @@ class cCMS extends \OhCrud\DB {
         $output = '';
 
         // Fallback to default theme ans layout if file does not exist
-        if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false || $this->editMode == true) {
+        if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false) {
             $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
             $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
+        if ($this->editMode == true) {
+            $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+            $this->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
         }
 
         // Load theme and layout
@@ -333,7 +341,7 @@ class cCMS extends \OhCrud\DB {
         $output = $themeContent->html;
 
         // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
-        $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\mContent::TYPE_DB) ? '<div id="ohcrud-editor-edit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
+        $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\mContent::TYPE_DB) ? '<div id="btnCMSEdit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
 
         $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
         $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
