@@ -97,11 +97,6 @@ class cCMS extends \OhCrud\DB {
         $this->includeCSSFile('/global/css/global.css', 2);
         $this->includeJSFile('/global/js/global.js', 1);
 
-        // Add assets for page editor if needed
-        if ($this->editMode == true) {
-            $this->includeJSFile('/themes/admin/assets/js/editor.js', 3);
-        }
-
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
         $this->theme = $this->content->theme;
@@ -180,6 +175,7 @@ class cCMS extends \OhCrud\DB {
             $content = $this->getContentFromFile($path);
             // Handle special paths
             if ($path == '/login/') {
+                // Set theme and layout
                 $content->theme = __OHCRUD_CMS_ADMIN_THEME__;
                 $content->layout = 'login';
             }
@@ -267,7 +263,7 @@ class cCMS extends \OhCrud\DB {
     }
 
     // Load hard-coded content
-    private function getContentFromFile($path, $is404 = false, $isSystem = false) {
+    private function getContentFromFile($path, $is404 = false) {
         $content = new \app\models\mContent;
         $content->type = \app\models\mContent::TYPE_FILE;
         $content->title = ucwords(trim($path, '/'));
@@ -361,11 +357,21 @@ class cCMS extends \OhCrud\DB {
         $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
-
         // Include javascript assets and uncachable javascript constants
         $output = str_ireplace("{{CMS:JAVASCRIPT}}", "{{CMS:UNCACHABLE-JAVASCRIPT}}" . $this->content->javascript, $output);
-        // Include OhCRUD footer into the template
-        $output = str_ireplace("{{CMS:OHCRUD}}", '<p><a href="/">HOME</a> | CMS powered by <a href="https://github.com/fellowgeek/ohcrud">Oh CRUD!</a> - Copyright &copy; ' . date('Y') . ' justshare.me | <a href="/privacy/">PRIVACY</a> | <a href="/login/">LOGIN</a></p>', $output);
+        // Include ohCRUD footer into the template
+        $footer = '';
+        $footer .= '<p><a href="/" class="external">HOME</a>';
+        $footer .= ' | ';
+        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . __SITE__ ;
+        $footer .= ' | ';
+        $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION;
+        $footer .= ' | ';
+        $footer .= '<a href="/login/?redirect=' . $this->path . '" class="external">' . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . '</a></p>';
+        $output = str_ireplace("{{CMS:OHCRUD}}", $footer, $output);
+        // Version
+        $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
+
 
         $this->data = $output;
     }

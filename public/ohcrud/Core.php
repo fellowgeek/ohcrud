@@ -26,6 +26,7 @@ class Core {
     public $outputHeadersSent = false;
     public $outputStatusCode = 200;
     public $runtime;
+    public $version = '2.5';
 
     // Set the output type for the response.
     public function setOutputType($outputType) {

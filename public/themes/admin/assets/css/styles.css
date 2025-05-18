@@ -1,11 +1,11 @@
 /*
   Global Styles
 */
-* {
+/* * {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-}
+} */
 
 /* Fix for the iOS list dividers */
 .ios .list-dividers-ios .item-inner::after {
@@ -53,6 +53,18 @@
 
 .margin-top-10rem {
   margin-top: 10rem !important;
+}
+
+.font-small {
+  font-size: 12px !important;
+}
+
+.font-medium {
+  font-size: 14px !important;
+}
+
+.text-center {
+  text-align: center;
 }
 
 /*
