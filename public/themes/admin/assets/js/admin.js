@@ -174,7 +174,11 @@ $$(document).on('page:init', function (e, page) {
     }
 
     // If the admin page is initialized
-    if(page.name == 'admin') {
+    if(page.name == 'edit') {
+
+        setTimeout(() => {
+            app.panel.open();
+        }, 500);
 
         let themeSelect = $$('#THEME');
         let layoutSelect = $$('#LAYOUT');
@@ -188,6 +192,9 @@ $$(document).on('page:init', function (e, page) {
 
         // Load themes and layouts
         loadThemes();
+
+        // Load database details
+        loadDatabaseDetails();
 
         // Initialize the text editor
         ohCrudEditor = new SimpleMDE({
@@ -375,47 +382,50 @@ $$(document).on('page:init', function (e, page) {
 
 });
 
-// This method creates and issues a Framework7 notification
-function notify(options = {}) {
-    let notificationCloseOnClick = app.notification.create(options);
-    notificationCloseOnClick.open();
-}
+// Load database and table details
+function loadDatabaseDetails() {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getDatabaseDetails/',
+    {
+        method: 'POST',
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        headers: new Headers(
+            {
+                'Content-Type': 'application/json'
+            }
+        )
+    },
+    async function(response) {
+        const json = await response.json();
+        let listTables = $$('.listTables');
+        listTables.empty();
+        Object.entries(json.data).forEach(([table, tableData]) => {
+            if (table == 'Users') return;
+            let listTablesItem = `
+                <li>
+                    <a class="item-link item-content listTablesItem" data-table-name="${tableData.NAME}" data-table-row-count="${tableData.ROW_COUNT}">
+                        <div class="item-media">
+                            <i class="f7-icons">cube</i>
+                        </div>
+                        <div class="item-inner">
+                            <div class="item-title">${tableData.NAME}</div>
+                        </div>
+                    </a>
+                </li>
+            `;
+            listTables.append(listTablesItem);
+        });
 
-function logout() {
-    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/users/logout/',
-        {
-            method: 'POST',
-            cache: 'no-cache',
-            credentials: 'same-origin',
-            headers: new Headers(
-                {
-                    'Content-Type': 'application/json'
-                }
-            )
-        },
-        async function(response) {
-            const json = await response.json();
-        },
-        async function(error) {
-            const json = await error.json();
-        }
-    );
-}
-
-// Utility function to insert a text snippet in the content editor
-function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
-    let cm = editor.codemirror;
-    let startPoint = cm.getCursor('start');
-    let endPoint = cm.getCursor('end');
-    let selection = cm.getSelection();
-    if (text == '') { text = selection; }
-    cm.replaceSelection(preText + text + postText);
-    startPoint.ch += preText.length;
-    if (startPoint !== endPoint) {
-        endPoint.ch += postText.length;
-    }
-    cm.setSelection(startPoint, endPoint);
-    cm.focus();
+        $$('.listTablesItem').on('click', function() {
+            let tableName = $$(this).data('table-name');
+            console.log(tableName);
+            window.location.href = __PATH__ + '?action=tables&table=' + tableName;
+        });
+    },
+    async function(error) {
+        const json = await error.json();
+        console.error(json);
+    });
 }
 
 // Load installed themes and update the dropdown menu
@@ -470,6 +480,50 @@ function loadLayouts(theme) {
         option.textContent = layout;
         layoutSelect.append(option);
     }
+}
+
+// Logout the user
+function logout() {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/users/logout/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            )
+        },
+        async function(response) {
+            const json = await response.json();
+        },
+        async function(error) {
+            const json = await error.json();
+        }
+    );
+}
+
+// This method creates and issues a Framework7 notification
+function notify(options = {}) {
+    let notificationCloseOnClick = app.notification.create(options);
+    notificationCloseOnClick.open();
+}
+
+// Utility function to insert a text snippet in the content editor
+function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
+    let cm = editor.codemirror;
+    let startPoint = cm.getCursor('start');
+    let endPoint = cm.getCursor('end');
+    let selection = cm.getSelection();
+    if (text == '') { text = selection; }
+    cm.replaceSelection(preText + text + postText);
+    startPoint.ch += preText.length;
+    if (startPoint !== endPoint) {
+        endPoint.ch += postText.length;
+    }
+    cm.setSelection(startPoint, endPoint);
+    cm.focus();
 }
 
 // This function masks input number.

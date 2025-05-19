@@ -26,17 +26,70 @@
 
 				<div class="page">
 
-					<div class="navbar">
-						<div class="navbar-bg"></div>
-						<div class="navbar-inner">
-							<div class="title">Settings</div>
-						</div>
-					</div>
-
 					<div class="page-content">
 
-						<!-- Settings -->
-						<div class="block-header">GAME</div>
+						<div class="block row">
+                        	<div class="col">
+                            	<button id="btnLogout" class="button button-fill color-red">LOGOUT</button>
+                        	</div>
+                    	</div>
+
+						<!-- USERS -->
+						<div class="block-header">USERS</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li>
+									<a class="item-link item-content">
+										<div class="item-media">
+											<i class="f7-icons">person</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Users</div>
+										</div>
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<div class="block-header">TABLES</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul class="listTables">
+							</ul>
+						</div>
+
+						<div class="block-header">LOGS</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li>
+									<a class="item-link item-content">
+										<div class="item-media">
+											<i class="f7-icons">doc_text_search</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">app.log</div>
+										</div>
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<div class="block-header">SETTINGS</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li>
+									<a class="item-link item-content">
+										<div class="item-media">
+											<i class="f7-icons">gear_alt</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Settings</div>
+										</div>
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<div class="block-header">APPEARANCE</div>
 						<div class="list list-strong-ios list-dividers-ios inset-ios">
 							<ul>
 
@@ -62,13 +115,6 @@
 										</div>
 									</div>
 								</li>
-
-							</ul>
-						</div>
-
-						<div class="block-header">APPEARANCE</div>
-						<div class="list list-strong-ios list-dividers-ios inset-ios">
-							<ul>
 
 								<li class="item-content">
 									<div class="item-inner">
@@ -112,7 +158,7 @@
 
 			<!-- Your main view, should have " view-main" class -->
 			<div class="view view-main view-init safe-areas" data-url="/">
-				<div class="page" data-name="admin">
+				<div class="page" data-name="edit">
 
 					<!-- Settings -->
 					<div class="fab fab-left-bottom">

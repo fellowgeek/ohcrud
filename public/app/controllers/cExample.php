@@ -57,7 +57,10 @@ class cExample extends \OhCrud\DB {
         $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
 
         // Return a hello world message.
-        $this->data = "Hello from ohCRUD!";
+        // $this->data = "Hello from ohCRUD!";
+
+        $response = $this->details('', true);
+        $this->debug($response);
 
         // Output the result.
         $this->output();

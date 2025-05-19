@@ -24,8 +24,8 @@ class cCMS extends \OhCrud\DB {
     public $cssFiles = [];
     // JavaScript files to include.
     public $jsFiles = [];
-    // Flag indicating whether the user is in edit mode.
-    public $editMode = false;
+    // Flag indicating whether the user is in action mode.
+    public $actionMode = false;
     // Flag indicating whether should use cache.
     public $useCache = true;
     // Flag indicating whether the user is logged in.
@@ -42,6 +42,8 @@ class cCMS extends \OhCrud\DB {
     public $recursiveContentCounter = 0;
     // Max recursive content
     public $maxRecursiveContent = 7;
+    // Allowed CMS actions
+    public $allowedActions = ['edit', 'tables', 'users', 'settings'];
 
     public function __construct($request) {
         parent::__construct();
@@ -53,15 +55,17 @@ class cCMS extends \OhCrud\DB {
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
 
-        // Set edit mode
-        if ($this->loggedIn == true && ($this->request->action ?? '') == 'edit') {
-            $this->editMode = true;
-            $this->useCache = false;
+        // Set action mode
+        if ($this->loggedIn == true && isset($this->request->action) == true) {
+            if (in_array($this->request->action, $this->allowedActions) == true) {
+                $this->actionMode = $this->request->action;
+                $this->useCache = false;
+            }
         }
 
         // Redirect to login page if not logged in
-        if ($this->loggedIn == false && ($this->request->action ?? '') == 'edit') {
-            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=edit');
+        if ($this->loggedIn == false && isset($this->request->action) == true) {
+            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->request->action);
             return;
         }
 
@@ -99,8 +103,25 @@ class cCMS extends \OhCrud\DB {
 
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
+
+        // Handle admin themes and layouts
+        if ($this->loggedIn == true && isset($this->request->action) == true) {
+            switch ($this->request->action) {
+                case 'edit':
+                    $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->content->layout = 'admin';
+                    break;
+                case 'tables':
+                    $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->content->layout = 'tables';
+                    break;
+            }
+        }
+
+        // Set theme and layout
         $this->theme = $this->content->theme;
         $this->layout = $this->content->layout;
+
 
         // Process embedded content & components
         $this->content = $this->processContent($this->content);
@@ -109,7 +130,7 @@ class cCMS extends \OhCrud\DB {
         $this->processTheme();
 
         // Set cache
-        if ($this->editMode == false) {
+        if ($this->actionMode == false) {
             $this->setCache(__CLASS__ . __FUNCTION__ . $this->path . md5(json_encode($_GET ?? '')), $this->data);
         }
 
@@ -312,7 +333,7 @@ class cCMS extends \OhCrud\DB {
             $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
         }
 
-        if ($this->editMode == true) {
+        if ($this->actionMode == true) {
             $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
             $this->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
         }
@@ -342,12 +363,12 @@ class cCMS extends \OhCrud\DB {
         $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
         $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
 
-        if ($this->editMode == true) {
-            $output = str_ireplace('{{CMS:CONTENT}}',       $this->getContentFromFile('cms', false, true)->html, $output);
-            $output = str_ireplace('{{CMS:THEMES}}',        $this->getThemes(), $output);
-            $output = str_ireplace('{{CMS:THEME}}',         $this->content->theme, $output);
-            $output = str_ireplace('{{CMS:LAYOUT}}',        $this->content->layout, $output);
-            $output = str_ireplace('{{CMS-IS-DELETED}}',    $this->content->isDeleted, $output);
+        if ($this->actionMode == true) {
+            $output = str_ireplace('{{CMS:CONTENT}}', $this->getContentFromFile($this->actionMode, false, true)->html, $output);
+            $output = str_ireplace('{{CMS:THEMES}}', $this->getThemes(), $output);
+            $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
+            $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
+            $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
         }
 
         // Replace OhCRUD templates with the proccessed content from the cms
@@ -372,7 +393,6 @@ class cCMS extends \OhCrud\DB {
         // Version
         $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
 
-
         $this->data = $output;
     }
 
@@ -396,13 +416,13 @@ class cCMS extends \OhCrud\DB {
 
     // Process embedded content and components
     private function processContent($content) {
-        // Skip processing when in edit mode
-        if ($this->editMode == true) {
+        // Skip processing when in action mode
+        if ($this->actionMode == true) {
             return $content;
         }
 
         // Check for embedded content
-        $regex = '/(?<=\{{)(?!CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $regex = '/(?<=\{{)(?!CMS:VERSION|CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
         $matches = [];
         $matchCount = preg_match_all($regex, $content->html, $matches);
 
@@ -465,7 +485,7 @@ class cCMS extends \OhCrud\DB {
     // This function is used to count the number of content patterns in a text
     private function getContentPatternMatchCount($text) {
         $matchCount = 0;
-        $regex = '/(?<=\{{)(?!CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $regex = '/(?<=\{{)(?!CMS:VERSION|CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
         $matchCount += preg_match_all($regex, $text);
         $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
         $matchCount += preg_match_all($regex, $text);

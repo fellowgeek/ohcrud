@@ -180,9 +180,14 @@ class DB extends \OhCrud\Core {
     }
 
     // Return the details of all tables or a specific table
-    public function details($table = '') {
+    public function details($table = '', $returnColumnDetails = false) {
 
         $schema = new \stdClass();
+
+        if ($table != '' && preg_match('/^[a-zA-Z0-9_]+$/', $table) == false) {
+            $this->error('Invalid table name.');
+            return;
+        }
 
         try {
             if ($this->config["DRIVER"] === 'MYSQL') {
@@ -199,27 +204,29 @@ class DB extends \OhCrud\Core {
 
                 foreach ($tables as $tableName) {
                     $tableInfo = new \stdClass();
-                    $tableInfo->name = $tableName;
+                    $tableInfo->NAME = $tableName;
 
                     // Get row count
                     $rowCountStmt = $this->db->query("SELECT COUNT(*) FROM `$tableName`");
-                    $tableInfo->row_count = (int) $rowCountStmt->fetchColumn();
+                    $tableInfo->ROW_COUNT = (int) $rowCountStmt->fetchColumn();
 
                     // Get columns
-                    $columns = [];
-                    $fieldsStmt = $this->db->query("DESCRIBE `$tableName`");
-                    while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
-                        $field = new \stdClass();
-                        $field->name = $fieldRow['Field'];
-                        $field->type = $fieldRow['Type'];
-                        $field->nullable = ($fieldRow['Null'] === 'YES');
-                        $field->default = $fieldRow['Default'];
-                        $field->primary_key = ($fieldRow['Key'] === 'PRI');
-                        $field->extra = $fieldRow['Extra'];
-                        $columns[] = $field;
+                    if ($returnColumnDetails == true) {
+                        $columns = [];
+                        $fieldsStmt = $this->db->query("DESCRIBE `$tableName`");
+                        while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
+                            $field = new \stdClass();
+                            $field->NAME = $fieldRow['Field'];
+                            $field->TYPE = $fieldRow['Type'];
+                            $field->NULLABLE = ($fieldRow['Null'] === 'YES');
+                            $field->DEFAULT = $fieldRow['Default'];
+                            $field->PRIMARY_KEY = ($fieldRow['Key'] === 'PRI');
+                            $field->EXTRA = $fieldRow['Extra'];
+                            $columns[] = $field;
+                        }
+                        $tableInfo->COLUMNS = $columns;
                     }
 
-                    $tableInfo->columns = $columns;
                     $schema->$tableName = $tableInfo;
                 }
 
@@ -237,27 +244,29 @@ class DB extends \OhCrud\Core {
 
                 foreach ($tables as $tableName) {
                     $tableInfo = new \stdClass();
-                    $tableInfo->name = $tableName;
+                    $tableInfo->NAME = $tableName;
 
                     // Get row count
                     $rowCountStmt = $this->db->query("SELECT COUNT(*) FROM `$tableName`");
-                    $tableInfo->row_count = (int) $rowCountStmt->fetchColumn();
+                    $tableInfo->ROW_COUNT = (int) $rowCountStmt->fetchColumn();
 
                     // Get columns
-                    $columns = [];
-                    $fieldsStmt = $this->db->query("PRAGMA table_info(`$tableName`)");
-                    while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
-                        $field = new \stdClass();
-                        $field->name = $fieldRow['name'];
-                        $field->type = $fieldRow['type'];
-                        $field->nullable = !$fieldRow['notnull']; // 0 means nullable
-                        $field->default = $fieldRow['dflt_value'];
-                        $field->primary_key = ($fieldRow['pk'] != 0);
-                        $field->extra = null; // Not available in SQLite
-                        $columns[] = $field;
+                    if ($returnColumnDetails == true) {
+                        $columns = [];
+                        $fieldsStmt = $this->db->query("PRAGMA table_info(`$tableName`)");
+                        while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
+                            $field = new \stdClass();
+                            $field->NAME = $fieldRow['name'];
+                            $field->TYPE = $fieldRow['type'];
+                            $field->NULLABLE = !$fieldRow['notnull']; // 0 means nullable
+                            $field->DEFAULT = $fieldRow['dflt_value'];
+                            $field->PRIMARY_KEY = ($fieldRow['pk'] != 0);
+                            $field->EXTEA = null; // Not available in SQLite
+                            $columns[] = $field;
+                        }
+                        $tableInfo->COLUMNS = $columns;
                     }
 
-                    $tableInfo->columns = $columns;
                     $schema->$tableName = $tableInfo;
                 }
             } else {

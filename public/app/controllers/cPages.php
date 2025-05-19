@@ -20,6 +20,10 @@ class cPages extends \app\models\mPages {
     public function save($request) {
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
 
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
         // Check if the request payload contains the necessary data.
         if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->TITLE) == true || empty($request->payload->TEXT) == true)
             $this->error('Missing or incomplete data.');
@@ -98,6 +102,10 @@ class cPages extends \app\models\mPages {
     public function restoreDeletePage($request) {
 
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload is complete.
         if (isset($request->payload) == false || empty($request->payload->URL) == true)

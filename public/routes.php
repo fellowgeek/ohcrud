@@ -20,6 +20,7 @@ define('__OHCRUD_ALLOWED_ORIGINS__', [
 
 // Define API endpoints and their corresponding controller classes.
 define('__OHCRUD_ENDPOINTS__', [
+    __OHCRUD_BASE_API_ROUTE__ . '/admin/' => 'app\controllers\cAdmin',
     __OHCRUD_BASE_API_ROUTE__ . '/themes/' => 'app\controllers\cThemes',
     __OHCRUD_BASE_API_ROUTE__ . '/pages/' => 'app\controllers\cPages',
     __OHCRUD_BASE_API_ROUTE__ . '/users/' => 'app\controllers\cUsers',

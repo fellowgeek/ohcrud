@@ -37,6 +37,13 @@ class cFiles extends \app\models\mFiles {
         // Set the output type of this controller to JSON.
         $this->outputType = \OhCrud\Core::OUTPUT_JSON;
 
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false) {
+            $this->error('Missing or invalid CSRF token.');
+            $this->output();
+            return $this;
+        }
+
         // Validation: Check if a file with index 0 is present in the uploaded files.
         if (isset($_FILES[0]) == false) {
             // If not, generate an error message and respond with a 403 Forbidden status.
