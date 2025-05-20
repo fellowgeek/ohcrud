@@ -1,6 +1,14 @@
-<div class="card data-table">
+<?php
+
+$table = $this->purifier->purify($_REQUEST['table'] ?? '');
+
+?>
+
+<input type="hidden" id="TABLE" name="TABLE" value="<?= $table ?>" />
+
+<div class="card data-table data-table-init">
     <div class="card-header">
-        <div class="data-table-title">Nutrition</div>
+        <div class="data-table-title"><?= $table ?? '' ?></div>
         <div class="data-table-actions">
 
             <a class="link icon-only">
@@ -9,7 +17,7 @@
         </div>
     </div>
     <table>
-        <thead>
+        <thead class="tableHeader">
             <tr>
                 <th class="checkbox-cell">
                     <label class="checkbox">
@@ -24,55 +32,7 @@
                 <th></th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td class="checkbox-cell">
-                    <label class="checkbox">
-                        <input type="checkbox" /><i class="icon-checkbox"></i>
-                    </label>
-                </td>
-                <td class="label-cell">Frozen yogurt</td>
-                <td class="numeric-cell">159</td>
-                <td class="numeric-cell">6.0</td>
-                <td class="numeric-cell">24</td>
-                <td class="numeric-cell">4.0</td>
-                <td class="actions-cell">
-                    <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
-                    <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <label class="checkbox">
-                        <input type="checkbox" /><i class="icon-checkbox"></i>
-                    </label>
-                </td>
-                <td class="label-cell">Ice cream sandwich</td>
-                <td class="numeric-cell">237</td>
-                <td class="numeric-cell">9.0</td>
-                <td class="numeric-cell">37</td>
-                <td class="numeric-cell">4.4</td>
-                <td class="actions-cell">
-                    <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
-                    <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <label class="checkbox">
-                        <input type="checkbox" /><i class="icon-checkbox"></i>
-                    </label>
-                </td>
-                <td class="label-cell">Eclair</td>
-                <td class="numeric-cell">262</td>
-                <td class="numeric-cell">16.0</td>
-                <td class="numeric-cell">24</td>
-                <td class="numeric-cell">6.0</td>
-                <td class="actions-cell">
-                    <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
-                    <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
-                </td>
-            </tr>
+        <tbody class="tableBody">
             <tr>
                 <td class="checkbox-cell">
                     <label class="checkbox">

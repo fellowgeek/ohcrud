@@ -104,19 +104,22 @@ class cCMS extends \OhCrud\DB {
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
 
-        // Handle admin themes and layouts
-        if ($this->loggedIn == true && isset($this->request->action) == true) {
-            switch ($this->request->action) {
-                case 'edit':
-                    $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
-                    $this->content->layout = 'admin';
-                    break;
-                case 'tables':
-                    $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
-                    $this->content->layout = 'tables';
-                    break;
-            }
-        }
+        // // Handle admin themes and layouts
+        // if ($this->loggedIn == true && isset($this->request->action) == true) {
+        //     switch ($this->request->action) {
+        //         case 'edit':
+        //             $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
+        //             $this->content->layout = 'edit';
+        //             break;
+        //         case 'tables':
+        //             $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
+        //             $this->content->layout = 'tables';
+        //             break;
+        //         default:
+        //             $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
+        //             $this->content->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
+        //     }
+        // }
 
         // Set theme and layout
         $this->theme = $this->content->theme;
@@ -333,10 +336,23 @@ class cCMS extends \OhCrud\DB {
             $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
         }
 
-        if ($this->actionMode == true) {
-            $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
-            $this->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
+        // Handle admin themes and layouts
+        if ($this->loggedIn == true && isset($this->request->action) == true) {
+            switch ($this->request->action) {
+                case 'edit':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'edit';
+                    break;
+                case 'tables':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'tables';
+                    break;
+                default:
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
+            }
         }
+
 
         // Load theme and layout
         ob_start();

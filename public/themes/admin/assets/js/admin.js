@@ -29,7 +29,7 @@ $$(document).on('page:init', function (e, page) {
     debugLog('event: "page:init" triggered for "' + page.name + '"');
 
     // If the login page is initialized
-    if(page.name == 'login') {
+    if (page.name == 'login') {
 
         // Logout user
         logout();
@@ -47,20 +47,20 @@ $$(document).on('page:init', function (e, page) {
         let TOTP = $$('#TOTP');
 
         // Handle "Enter" key events
-        PASSWORD.on('keypress', function(e) {
+        PASSWORD.on('keypress', function (e) {
             if (e.key === 'Enter') {
                 btnLogin.trigger('click');
             }
         });
 
-        TOTP.on('keypress', function(e) {
+        TOTP.on('keypress', function (e) {
             if (e.key === 'Enter') {
                 btnLoginVerify.trigger('click');
             }
         });
 
         // Handle login button
-        btnLogin.on('click', function() {
+        btnLogin.on('click', function () {
             btnLogin.addClass('disabled');
             btnLogin.html(`<img class="ohcrud-loader" src="/global/images/loader.svg" />`);
             let data = {
@@ -81,7 +81,7 @@ $$(document).on('page:init', function (e, page) {
                         }
                     )
                 },
-                async function(response) {
+                async function (response) {
                     const json = await response.json();
                     // Handle the response based on TOTP status
                     if (json.data.TOTP === 1) {
@@ -99,7 +99,7 @@ $$(document).on('page:init', function (e, page) {
                         }
                     }
                 },
-                async function(error) {
+                async function (error) {
                     const json = await error.json();
                     // Display error messages in an alert element
                     notify({
@@ -117,7 +117,7 @@ $$(document).on('page:init', function (e, page) {
         });
 
         // Handle the cancel login button
-        btnLoginCancel.on('click', function() {
+        btnLoginCancel.on('click', function () {
             let REDIRECT_PATH = $$('#REDIRECT_PATH').val();
             if (REDIRECT_PATH != '') {
                 window.location.href = REDIRECT_PATH;
@@ -127,7 +127,7 @@ $$(document).on('page:init', function (e, page) {
         });
 
         // Handle TOTP (Time-based One-Time Password) verification button
-        btnLoginVerify.on('click', function() {
+        btnLoginVerify.on('click', function () {
 
             btnLoginVerify.addClass('disabled');
             btnLoginVerify.html(`<img class="ohcrud-loader" src="/global/images/loader.svg" />`);
@@ -148,7 +148,7 @@ $$(document).on('page:init', function (e, page) {
                         }
                     )
                 },
-                async function(response) {
+                async function (response) {
                     const json = await response.json();
                     if (data.REDIRECT != '') {
                         window.location.href = data.REDIRECT;
@@ -156,7 +156,7 @@ $$(document).on('page:init', function (e, page) {
                         window.location.href = '/';
                     }
                 },
-                async function(error) {
+                async function (error) {
                     const json = await error.json();
                     // Display error messages in an alert element
                     notify({
@@ -174,7 +174,7 @@ $$(document).on('page:init', function (e, page) {
     }
 
     // If the admin page is initialized
-    if(page.name == 'edit') {
+    if (page.name == 'edit') {
 
         setTimeout(() => {
             app.panel.open();
@@ -193,8 +193,8 @@ $$(document).on('page:init', function (e, page) {
         // Load themes and layouts
         loadThemes();
 
-        // Load database details
-        loadDatabaseDetails();
+        // Load table list
+        loadTableList();
 
         // Initialize the text editor
         ohCrudEditor = new SimpleMDE({
@@ -251,7 +251,7 @@ $$(document).on('page:init', function (e, page) {
         });
 
         // Handle the save button
-        btnCMSSave.on('click', function() {
+        btnCMSSave.on('click', function () {
             btnCMSSave.addClass('disabled');
             btnCMSSave.html(`<img class="ohcrud-loader" src="/global/images/loader.svg" />`);
             let data = {
@@ -274,10 +274,10 @@ $$(document).on('page:init', function (e, page) {
                         }
                     )
                 },
-                async function(response) {
+                async function (response) {
                     window.location.href = __PATH__;
                 },
-                async function(error) {
+                async function (error) {
                     const json = await error.json();
                     notify({
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
@@ -293,12 +293,12 @@ $$(document).on('page:init', function (e, page) {
         });
 
         // Handle the cancel button
-        btnCMSCancel.on('click', function() {
+        btnCMSCancel.on('click', function () {
             window.location.href = __PATH__;
         });
 
         // Handle the delete/restore button
-        btnCMSDeleteRestore.on('click', function() {
+        btnCMSDeleteRestore.on('click', function () {
             btnCMSDeleteRestore.addClass('disabled');
             btnCMSDeleteRestore.html('<img class="ohcrud-loader" src="/global/images/loader.svg" />');
             let data = {
@@ -317,10 +317,10 @@ $$(document).on('page:init', function (e, page) {
                         }
                     )
                 },
-                async function(response) {
+                async function (response) {
                     window.location.href = __PATH__;
                 },
-                async function(error) {
+                async function (error) {
                     const json = await error.json();
                     notify({
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
@@ -336,7 +336,7 @@ $$(document).on('page:init', function (e, page) {
         });
 
         // File input change event (for uploading files)
-        file.addEventListener('change', function() {
+        file.addEventListener('change', function () {
             let fileToUpload = file.files[0];
             let formData = new FormData();
             formData.append("0", fileToUpload);
@@ -349,10 +349,10 @@ $$(document).on('page:init', function (e, page) {
                     credentials: 'same-origin',
                     body: formData
                 },
-                async function(response) {
+                async function (response) {
                     const json = await response.json();
                     if (fileToUploadMode == 'image') {
-                        const alt = json.data.NAME.replace(`.${json.data.TYPE}`, '') ;
+                        const alt = json.data.NAME.replace(`.${json.data.TYPE}`, '');
                         insertCodeInEditor(ohCrudEditor, `![${alt}](${json.data.PATH})`);
                         document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
                     } else {
@@ -360,7 +360,7 @@ $$(document).on('page:init', function (e, page) {
                         document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
                     }
                 },
-                async function(error) {
+                async function (error) {
                     const json = await error.json();
                     notify({
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
@@ -380,28 +380,45 @@ $$(document).on('page:init', function (e, page) {
         });
     }
 
+    // If the admin page is initialized
+    if (page.name == 'tables') {
+
+        setTimeout(() => {
+            app.panel.open();
+        }, 500);
+
+        let tableName = $$('#TABLE').val();
+
+        // Load table list
+        loadTableList();
+
+        // Load table details
+        loadTableDetails(tableName);
+
+    }
+
 });
 
-// Load database and table details
-function loadDatabaseDetails() {
-    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getDatabaseDetails/',
-    {
-        method: 'POST',
-        cache: 'no-cache',
-        credentials: 'same-origin',
-        headers: new Headers(
-            {
-                'Content-Type': 'application/json'
-            }
-        )
-    },
-    async function(response) {
-        const json = await response.json();
-        let listTables = $$('.listTables');
-        listTables.empty();
-        Object.entries(json.data).forEach(([table, tableData]) => {
-            if (table == 'Users') return;
-            let listTablesItem = `
+// Load table list
+function loadTableList() {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableList/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            )
+        },
+        async function (response) {
+            const json = await response.json();
+            let listTables = $$('.listTables');
+            listTables.empty();
+            Object.entries(json.data).forEach(([table, tableData]) => {
+                if (table == 'Users') return;
+                let listTablesItem = `
                 <li>
                     <a class="item-link item-content listTablesItem" data-table-name="${tableData.NAME}" data-table-row-count="${tableData.ROW_COUNT}">
                         <div class="item-media">
@@ -413,19 +430,93 @@ function loadDatabaseDetails() {
                     </a>
                 </li>
             `;
-            listTables.append(listTablesItem);
-        });
+                listTables.append(listTablesItem);
+            });
 
-        $$('.listTablesItem').on('click', function() {
-            let tableName = $$(this).data('table-name');
-            console.log(tableName);
-            window.location.href = __PATH__ + '?action=tables&table=' + tableName;
+            $$('.listTablesItem').on('click', function () {
+                let tableName = $$(this).data('table-name');
+                console.log(tableName);
+                window.location.href = __PATH__ + '?action=tables&table=' + tableName;
+            });
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
         });
-    },
-    async function(error) {
-        const json = await error.json();
-        console.error(json);
-    });
+}
+
+// Load table details
+function loadTableDetails(table) {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableDetails/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                "TABLE": table,
+                "COLUMNS": true
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+
+            if (typeof json.data[table] != undefined) {
+                // console.log(json.data[table]);
+
+                let tableHeader = `
+                <tr>
+                    <th class="checkbox-cell">
+                        <label class="checkbox">
+                            <input type="checkbox" /><i class="icon-checkbox"></i>
+                        </label>
+                    </th>
+                `;
+
+                let tableBody = `
+                <tr>
+                    <td class="checkbox-cell">
+                        <label class="checkbox">
+                            <input type="checkbox" /><i class="icon-checkbox"></i>
+                        </label>
+                    </td>
+                `;
+
+                json.data[table].COLUMNS.forEach(column => {
+                    let tableHeaderTH = `<th class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}">${column.NAME}</th>`;
+                    tableHeader += tableHeaderTH;
+
+                    let tableBodyTD = `<td class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}">${placeholder(checkDataType(column.TYPE))}</td>`;
+                    tableBody += tableBodyTD;
+                });
+                tableHeader += `
+                    <th></th>
+                </tr>
+                `;
+                $$('.tableHeader').empty();
+                $$('.tableHeader').html(tableHeader);
+
+
+                tableBody += `
+                    <td class="actions-cell">
+                        <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
+                        <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
+                    </td>
+                </tr>
+                `;
+
+                $$('.tableBody').empty();
+                $$('.tableBody').html(tableBody + tableBody + tableBody + tableBody + tableBody + tableBody + tableBody + tableBody);
+            }
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+        });
 }
 
 // Load installed themes and update the dropdown menu
@@ -435,34 +526,34 @@ function loadThemes() {
     let layoutSelect = $$('#LAYOUT');
 
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/themes/getThemes/',
-    {
-        method: 'POST',
-        cache: 'no-cache',
-        credentials: 'same-origin',
-        headers: new Headers(
-            {
-                'Content-Type': 'application/json'
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            )
+        },
+        async function (response) {
+            const json = await response.json();
+            themes = json.data;
+            for (const theme in themes) {
+                let option = document.createElement('option');
+                option.value = theme;
+                option.innerHTML = theme;
+                themeSelect.append(option);
             }
-        )
-    },
-    async function(response) {
-        const json = await response.json();
-        themes = json.data;
-        for (const theme in themes) {
-            let option = document.createElement('option');
-            option.value = theme;
-            option.innerHTML = theme;
-            themeSelect.append(option);
-        }
-        loadLayouts(__CURRENT_THEME__);
-        themeSelect.val(__CURRENT_THEME__);
-        layoutSelect.val(__CURRENT_LAYOUT__);
+            loadLayouts(__CURRENT_THEME__);
+            themeSelect.val(__CURRENT_THEME__);
+            layoutSelect.val(__CURRENT_LAYOUT__);
 
-        // add event listener to the "select" to load layouts as theme changes
-        themeSelect.on('change', function() {
-            loadLayouts(themeSelect.val());
+            // add event listener to the "select" to load layouts as theme changes
+            themeSelect.on('change', function () {
+                loadLayouts(themeSelect.val());
+            });
         });
-    });
 }
 
 // Load the layouts associated with a theme and update the dropdown menu
@@ -495,10 +586,10 @@ function logout() {
                 }
             )
         },
-        async function(response) {
+        async function (response) {
             const json = await response.json();
         },
-        async function(error) {
+        async function (error) {
             const json = await error.json();
         }
     );
@@ -533,4 +624,60 @@ function maskInputNumber(input) {
     value = value.replace(/[^0-9]/g, '');
     // Update the input value
     input.value = value;
+}
+
+function checkDataType(typeString) {
+    if (typeof typeString !== 'string') {
+        return "text"; // Or handle as an error, depending on requirements
+    }
+
+    // Normalize the type string by taking the part before any parenthesis and converting to lowercase
+    const normalizedType = typeString.split('(')[0].toLowerCase().trim();
+
+    // Common numeric types for MySQL and SQLite
+    const numericTypes = [
+        // MySQL & SQLite Integer Types
+        "int",
+        "integer",
+        "tinyint",
+        "smallint",
+        "mediumint",
+        "bigint",
+        // MySQL Specific Integer Suffix (though often part of the base type like 'int unsigned')
+        // We are primarily checking the base type.
+        // SQLite specific integer types (often aliases)
+        "int2", // SQLite alias for SMALLINT
+        "int8", // SQLite alias for BIGINT
+
+        // MySQL & SQLite Floating-Point Types
+        "float",
+        "double",
+        "real", // SQLite, MySQL (alias for DOUBLE)
+
+        // MySQL & SQLite Fixed-Point Types
+        "decimal",
+        "dec",     // MySQL alias for DECIMAL
+        "numeric", // MySQL (alias for DECIMAL), SQLite
+
+        // MySQL & SQLite Boolean (often stored as TINYINT(1))
+        // Already covered by tinyint, but good to be aware
+        "boolean", // MySQL alias for TINYINT(1)
+        "bool"     // MySQL alias for TINYINT(1)
+    ];
+
+    if (numericTypes.includes(normalizedType)) {
+        return "numeric";
+    }
+
+    // Add other specific checks if needed, e.g., for bit
+    if (normalizedType === "bit") {
+        return "numeric"; // BIT can be treated as numeric in many contexts
+    }
+
+    return "text";
+}
+
+function placeholder(type) {
+    if (type == 'text') return 'Lorem';
+    if (type == 'numeric') return parseInt(Math.random() * 100);
 }
