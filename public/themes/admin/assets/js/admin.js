@@ -487,7 +487,11 @@ function loadTableDetails(table) {
                 `;
 
                 json.data[table].COLUMNS.forEach(column => {
-                    let tableHeaderTH = `<th class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}">${column.NAME}</th>`;
+                    let tableHeaderTH = `
+                    <th class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}">
+                        ${column.PRIMARY_KEY == true ? '<i class="fa fa-key" aria-hidden="true"></i> ' : ''}${column.NAME}
+                    </th>
+                    `;
                     tableHeader += tableHeaderTH;
 
                     let tableBodyTD = `<td class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}">${placeholder(checkDataType(column.TYPE))}</td>`;

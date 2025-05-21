@@ -1,7 +1,6 @@
 <?php
-
-$table = $this->purifier->purify($_REQUEST['table'] ?? '');
-
+// Sanitize the table name
+$table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['table'] ?? ''));
 ?>
 
 <input type="hidden" id="TABLE" name="TABLE" value="<?= $table ?>" />
@@ -18,37 +17,8 @@ $table = $this->purifier->purify($_REQUEST['table'] ?? '');
     </div>
     <table>
         <thead class="tableHeader">
-            <tr>
-                <th class="checkbox-cell">
-                    <label class="checkbox">
-                        <input type="checkbox" /><i class="icon-checkbox"></i>
-                    </label>
-                </th>
-                <th class="label-cell">Dessert (100g serving)</th>
-                <th class="numeric-cell">Calories</th>
-                <th class="numeric-cell">Fat (g)</th>
-                <th class="numeric-cell">Carbs</th>
-                <th class="numeric-cell">Protein (g)</th>
-                <th></th>
-            </tr>
         </thead>
         <tbody class="tableBody">
-            <tr>
-                <td class="checkbox-cell">
-                    <label class="checkbox">
-                        <input type="checkbox" /><i class="icon-checkbox"></i>
-                    </label>
-                </td>
-                <td class="label-cell">Cupcake</td>
-                <td class="numeric-cell">305</td>
-                <td class="numeric-cell">3.7</td>
-                <td class="numeric-cell">67</td>
-                <td class="numeric-cell">4.3</td>
-                <td class="actions-cell">
-                    <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
-                    <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
-                </td>
-            </tr>
         </tbody>
     </table>
     <div class="data-table-footer">
@@ -57,7 +27,7 @@ $table = $this->purifier->purify($_REQUEST['table'] ?? '');
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="25">25</option>
-                    <option value="all">All</option>
+                    <option value="50">50</option>
                 </select>
             </div>
         </div>

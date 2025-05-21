@@ -5,6 +5,7 @@ namespace app\controllers;
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cAdmin - admin controller used by the CMS admin interface.
+
 class cAdmin extends \OhCrud\DB {
 
     // Define permissions for the controller.
@@ -14,6 +15,8 @@ class cAdmin extends \OhCrud\DB {
         'getTableDetails' => 1,
         'getTableData' => 1,
     ];
+
+    public ?array $pagination = null;
 
     // This function returns a list of all the tables in the database.
     public function getTableList($request) {
@@ -32,6 +35,7 @@ class cAdmin extends \OhCrud\DB {
         }
 
         $this->data = $this->details();
+        unset($this->pagination);
 
         $this->output();
     }
@@ -57,6 +61,7 @@ class cAdmin extends \OhCrud\DB {
         } else {
             $this->data = $this->details('', isset($request->payload->COLUMNS) ? true : false);
         }
+        unset($this->pagination);
 
         $this->output();
     }
@@ -73,12 +78,57 @@ class cAdmin extends \OhCrud\DB {
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
             $this->error('Missing or invalid CSRF token.');
 
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->TABLE) == true ||
+            empty($request->payload->PAGE) == true ||
+            empty($request->payload->LIMIT) == true)
+            $this->error('Missing or incomplete data.');
+
         if ($this->success == false) {
             $this->output();
             return $this;
         }
 
-        // TODO: get rows with pagination
+        // Check if the requested table is restricted.
+        if ($request->payload->TABLE == 'Users') {
+            $this->error('Restricted table.');
+            $this->output();
+            return $this;
+        }
+
+        // Default values for optional parameters.
+        $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
+        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+        $order = $request->payload->ORDER ??  'DESC';
+        $orderBy = $request->payload->ORDER_BY ?? NULL;
+        $offset = ($page - 1) * $limit;
+
+        // Get total records
+        $totalRecords = $this->RUN("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;
+
+        // Build the SQL query
+        $SQL = "SELECT * FROM " . $table . "\n";
+        if ($orderBy != NULL) {
+            $SQL .= "ORDER BY " . $orderBy . " " . $order . "\n";
+        }
+        $SQL .= "LIMIT ". $limit . " OFFSET " . $offset . ";";
+        $this->data = $this->run($SQL)->data;
+
+        // Get pagination meta data
+        $totalPages = ceil($totalRecords / $limit);
+        $hasNextPage = $page < $totalPages;
+        $hasPreviousPage = $page > 1;
+
+        $this->pagination = [
+            'totalRecords' => $totalRecords,
+            'totalPages' => $totalPages,
+            'currentPage' => $page,
+            'limit' => $limit,
+            'hasNextPage' => $hasNextPage,
+            'hasPreviousPage' => $hasPreviousPage
+        ];
 
         $this->output();
     }
