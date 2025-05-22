@@ -190,13 +190,18 @@ class DB extends \OhCrud\Core {
         }
 
         try {
-            if ($this->config["DRIVER"] === 'MYSQL') {
+            if ($this->config["DRIVER"] === 'MYSQL' || $this->config["DRIVER"] === 'SQLITE') {
 
+                $isSQLite = $this->config["DRIVER"] === 'SQLITE';
                 $tables = [];
+
                 if ($table) {
                     $tables = [$table];
                 } else {
-                    $stmt = $this->db->query("SHOW TABLES");
+                    $stmt = $isSQLite
+                        ? $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+                        : $this->db->query("SHOW TABLES");
+
                     while ($row = $stmt->fetch(\PDO::FETCH_NUM)) {
                         $tables[] = $row[0];
                     }
@@ -210,70 +215,53 @@ class DB extends \OhCrud\Core {
                     $rowCountStmt = $this->db->query("SELECT COUNT(*) FROM `$tableName`");
                     $tableInfo->ROW_COUNT = (int) $rowCountStmt->fetchColumn();
 
-                    // Get columns
-                    if ($returnColumnDetails == true) {
+                    if ($returnColumnDetails === true) {
                         $columns = [];
-                        $fieldsStmt = $this->db->query("DESCRIBE `$tableName`");
+                        $fieldsStmt = $isSQLite
+                            ? $this->db->query("PRAGMA table_info(`$tableName`)")
+                            : $this->db->query("DESCRIBE `$tableName`");
+
                         while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
                             $field = new \stdClass();
-                            $field->NAME = $fieldRow['Field'];
-                            $field->TYPE = $fieldRow['Type'];
-                            $field->NULLABLE = ($fieldRow['Null'] === 'YES');
-                            $field->DEFAULT = $fieldRow['Default'];
-                            $field->PRIMARY_KEY = ($fieldRow['Key'] === 'PRI');
-                            $field->EXTRA = $fieldRow['Extra'];
+                            $field->NAME = $isSQLite ? $fieldRow['name'] : $fieldRow['Field'];
+                            $field->TYPE = $isSQLite ? $fieldRow['type'] : $fieldRow['Type'];
+                            $field->NULLABLE = $isSQLite ? !$fieldRow['notnull'] : ($fieldRow['Null'] === 'YES');
+                            $field->DEFAULT = $isSQLite ? $fieldRow['dflt_value'] : $fieldRow['Default'];
+                            $field->PRIMARY_KEY = $isSQLite ? ($fieldRow['pk'] != 0) : ($fieldRow['Key'] === 'PRI');
+                            $field->EXTRA = $isSQLite ? null : $fieldRow['Extra'];
+
+                            // Sample data from the column to detect type
+                            $sampleStmt = $this->db->prepare("SELECT `{$field->NAME}` FROM `$tableName` WHERE `{$field->NAME}` IS NOT NULL LIMIT 5");
+                            $sampleStmt->execute();
+                            $samples = $sampleStmt->fetchAll(\PDO::FETCH_COLUMN);
+
+                            $detectedTypes = [];
+                            foreach ($samples as $sampleValue) {
+                                $detectedTypes[] = $this->detectDataType((string)$sampleValue);
+                            }
+
+                            // Basic majority vote or fallback
+                            if (count($detectedTypes)) {
+                                $typeCounts = array_count_values($detectedTypes);
+                                arsort($typeCounts); // Sort by count descending
+                                $field->DETECTED_TYPE = array_key_first($typeCounts);
+                            } else {
+                                $field->DETECTED_TYPE = 'empty';
+                            }
                             $columns[] = $field;
                         }
+
                         $tableInfo->COLUMNS = $columns;
                     }
 
                     $schema->$tableName = $tableInfo;
                 }
 
-            } elseif ($this->config["DRIVER"] === 'SQLITE') {
-
-                $tables = [];
-                if ($table) {
-                    $tables = [$table];
-                } else {
-                    $stmt = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
-                    while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                        $tables[] = $row['name'];
-                    }
-                }
-
-                foreach ($tables as $tableName) {
-                    $tableInfo = new \stdClass();
-                    $tableInfo->NAME = $tableName;
-
-                    // Get row count
-                    $rowCountStmt = $this->db->query("SELECT COUNT(*) FROM `$tableName`");
-                    $tableInfo->ROW_COUNT = (int) $rowCountStmt->fetchColumn();
-
-                    // Get columns
-                    if ($returnColumnDetails == true) {
-                        $columns = [];
-                        $fieldsStmt = $this->db->query("PRAGMA table_info(`$tableName`)");
-                        while ($fieldRow = $fieldsStmt->fetch(\PDO::FETCH_ASSOC)) {
-                            $field = new \stdClass();
-                            $field->NAME = $fieldRow['name'];
-                            $field->TYPE = $fieldRow['type'];
-                            $field->NULLABLE = !$fieldRow['notnull']; // 0 means nullable
-                            $field->DEFAULT = $fieldRow['dflt_value'];
-                            $field->PRIMARY_KEY = ($fieldRow['pk'] != 0);
-                            $field->EXTEA = null; // Not available in SQLite
-                            $columns[] = $field;
-                        }
-                        $tableInfo->COLUMNS = $columns;
-                    }
-
-                    $schema->$tableName = $tableInfo;
-                }
             } else {
                 throw new \Exception('Unsupported PDO driver: ' . $this->config["DRIVER"]);
             }
+
         } catch (\Exception $e) {
-            // Handle database query execution exceptions
             $this->error($e->getMessage());
             return $this->output();
         }
@@ -365,6 +353,112 @@ class DB extends \OhCrud\Core {
             }
         }
         return $filteredData;
+    }
+
+    // Helper method to guess the type of string data based on its value
+    private function detectDataType(string $value): string {
+
+        $value = trim($value);
+
+        if ($value === '') {
+            return 'empty';
+        }
+
+        // Email
+        if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            return 'email';
+        }
+
+        // URL
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return 'URL';
+        }
+
+        // IP address
+        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return 'IPv4';
+        }
+        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return 'IPv6';
+        }
+
+        // DateTime (MySQL-like)
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value)) {
+            return 'datetime';
+        }
+
+        // Date
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return 'date';
+        }
+
+        // Time
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $value)) {
+            return 'time';
+        }
+
+        // Timestamp (Unix, 10 digits)
+        if (preg_match('/^\d{10}$/', $value)) {
+            $ts = (int)$value;
+            if ($ts > 1000000000 && $ts < 5000000000) {
+                return 'timestamp';
+            }
+        }
+
+        // UUID
+        if (preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i', $value)) {
+            return 'UUID';
+        }
+
+        // Boolean-like
+        if (in_array(strtolower($value), ['Y', 'N', 'true', 'false', 'Yes', 'No'], true)) {
+            return 'boolean-like';
+        }
+
+        // Integer
+        if (preg_match('/^-?\d+$/', $value)) {
+            return 'integer';
+        }
+
+        // Float / Decimal
+        if (preg_match('/^-?\d+\.\d+$/', $value)) {
+            return 'float';
+        }
+
+        // Known bcrypt format
+        if (preg_match('/^\$2[ayb]\$.{56}$/', $value)) {
+            return 'encrypted (bcrypt)';
+        }
+
+        // Hash (hex only)
+        if (preg_match('/^[a-f0-9]{32,64}$/i', $value)) {
+            $length = strlen($value);
+            switch ($length) {
+                case 32: return 'hash (MD5)';
+                case 40: return 'hash (SHA1)';
+                case 64: return 'hash (SHA256)';
+                default: return 'hash (unknown)';
+            }
+        }
+
+        // Base64
+        if (preg_match('/^[A-Za-z0-9+\/=]+$/', $value) && strlen($value) % 4 === 0) {
+            $decoded = base64_decode($value, true);
+            if ($decoded !== false && strlen($decoded) > 8) {
+                return 'base64';
+            }
+        }
+
+        // Guess encryption
+        $uniqueChars = count(array_unique(str_split($value)));
+        $entropy = $uniqueChars / strlen($value);
+        $hasSymbols = preg_match('/[^A-Za-z0-9]/', $value);
+
+        if (strlen($value) >= 16 && $hasSymbols && $entropy > 0.4) {
+            return 'encrypted (guessed)';
+        }
+
+        return 'string';
     }
 
 }

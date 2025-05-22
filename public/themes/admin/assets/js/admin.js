@@ -5,6 +5,7 @@ var $$ = Dom7;
 // global variables
 let themes = {};
 let ohCrudEditor = null;
+let columnDetails = {};
 const __CURRENT_THEME__ = $$('#currentTHEME').val();
 const __CURRENT_LAYOUT__ = $$('#currentLAYOUT').val();
 
@@ -383,10 +384,6 @@ $$(document).on('page:init', function (e, page) {
     // If the admin page is initialized
     if (page.name == 'tables') {
 
-        setTimeout(() => {
-            app.panel.open();
-        }, 500);
-
         let tableName = $$('#TABLE').val();
 
         // Load table list
@@ -447,6 +444,8 @@ function loadTableList() {
 
 // Load table details
 function loadTableDetails(table) {
+    columnDetails = {};
+
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableDetails/',
         {
             method: 'POST',
@@ -458,16 +457,14 @@ function loadTableDetails(table) {
                 }
             ),
             body: {
-                "TABLE": table,
-                "COLUMNS": true
+                TABLE: table,
+                COLUMNS: true
             }
         },
         async function (response) {
             const json = await response.json();
 
             if (typeof json.data[table] != undefined) {
-                // console.log(json.data[table]);
-
                 let tableHeader = `
                 <tr>
                     <th class="checkbox-cell">
@@ -477,44 +474,133 @@ function loadTableDetails(table) {
                     </th>
                 `;
 
-                let tableBody = `
-                <tr>
-                    <td class="checkbox-cell">
-                        <label class="checkbox">
-                            <input type="checkbox" /><i class="icon-checkbox"></i>
-                        </label>
-                    </td>
-                `;
-
                 json.data[table].COLUMNS.forEach(column => {
+                    let tableHeaderTHIcon = '';
+                    if (column.PRIMARY_KEY == true) {
+                        tableHeaderTHIcon = '<i class="fa fa-key" aria-hidden="true"></i> ';
+                    } else {
+                        tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
+                    }
                     let tableHeaderTH = `
-                    <th class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}">
-                        ${column.PRIMARY_KEY == true ? '<i class="fa fa-key" aria-hidden="true"></i> ' : ''}${column.NAME}
+                    <th class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}" data-detected-type="${column.DETECTED_TYPE}">
+                        ${tableHeaderTHIcon}${column.NAME}
                     </th>
                     `;
                     tableHeader += tableHeaderTH;
-
-                    let tableBodyTD = `<td class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}">${placeholder(checkDataType(column.TYPE))}</td>`;
-                    tableBody += tableBodyTD;
+                    // Update global variable with the column details
+                    columnDetails[column.NAME] = {...column};
                 });
+
                 tableHeader += `
                     <th></th>
                 </tr>
                 `;
+
                 $$('.tableHeader').empty();
                 $$('.tableHeader').html(tableHeader);
 
+                loadTableData(table);
+            }
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+        });
+}
 
-                tableBody += `
-                    <td class="actions-cell">
-                        <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
-                        <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
-                    </td>
-                </tr>
-                `;
+function loadTableData(table, page = 1, limit = 10) {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                TABLE: table,
+                PAGE: page,
+                LIMIT: limit,
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+
+            if (typeof json.data != undefined) {
+
+                let tableBodyTD = '';
+                let tableBody = '';
+
+                json.data.forEach(row => {
+
+                    console.log(row);
+                    tableBody += `
+                    <tr>
+                        <td class="checkbox-cell">
+                            <label class="checkbox">
+                                <input type="checkbox" /><i class="icon-checkbox"></i>
+                            </label>
+                        </td>
+                    `;
+
+                    tableBodyTD = '';
+                    Object.entries(row).forEach(([key, value]) => {
+                        columnValue = value;
+                        switch (columnDetails[key].DETECTED_TYPE) {
+                            case 'encrypted (bcrypt)':
+                            case 'hash (MD5)':
+                            case 'hash (SHA1)':
+                            case 'hash (SHA256)':
+                            case 'hash (unknown)':
+                            case 'base64':
+                            case 'encrypted (guessed)':
+                                columnValue = `
+                                <div class="chip">
+                                    <div class="chip-label">${columnDetails[key].DETECTED_TYPE}</div>
+                                </div>
+                                `
+                                break;
+                            default:
+                                columnValue = value;
+                                break;
+                        }
+
+
+                        if (value === null) {
+                            console.log('null: ', value);
+                            columnValue = `
+                                <div class="chip">
+                                    <div class="chip-label">NULL</div>
+                                </div>
+                            `;
+                        }
+
+                        if (value === '') {
+                            console.log('empty: ', value);
+                            columnValue = `
+                                <div class="chip">
+                                    <div class="chip-label">EMPTY</div>
+                                </div>
+                            `;
+                        }
+
+                        tableBodyTD += `<td data-detected-type="${columnDetails[key].DETECTED_TYPE}">${columnValue}</td>`;
+
+                    });
+                    tableBody += tableBodyTD;
+                    tableBody += `
+                        <td class="actions-cell">
+                            <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
+                            <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
+                        </td>
+                    </tr>
+                    `;
+                });
 
                 $$('.tableBody').empty();
-                $$('.tableBody').html(tableBody + tableBody + tableBody + tableBody + tableBody + tableBody + tableBody + tableBody);
+                $$('.tableBody').html(tableBody);
             }
         },
         async function (error) {

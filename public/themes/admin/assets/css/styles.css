@@ -96,3 +96,23 @@ User Interface
   font-weight: bold;
   letter-spacing: 10px;
 }
+
+.tableBody td {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableBody td[data-detected-type="datetime"],
+.tableBody td[data-detected-type="date"],
+.tableBody td[data-detected-type="time"],
+.tableBody td[data-detected-type="timestamp"] {
+  font-family: monospace, 'Courier New', Courier;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chip-label {
+  font-size: 12px;
+}

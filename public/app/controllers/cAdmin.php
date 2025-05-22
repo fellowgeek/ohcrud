@@ -1,6 +1,8 @@
 <?php
 namespace app\controllers;
 
+use Attribute;
+
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
@@ -63,6 +65,18 @@ class cAdmin extends \OhCrud\DB {
         }
         unset($this->pagination);
 
+        // Update the COLUMNS details and add ICON based on detected data types.
+        foreach($this->data as $outerIndex => $outerValue) {
+            if (isset($outerValue->COLUMNS) == true) {
+                if (isset($this->data->{$outerIndex}->COLUMNS) == true) {
+                    $columns = $this->data->{$outerIndex}->COLUMNS;
+                    foreach ($columns as $innerIndex => $innerValue) {
+                        $this->data->{$outerIndex}->COLUMNS[$innerIndex]->ICON = $this->getFAIconForDetectedType($this->data->{$outerIndex}->COLUMNS[$innerIndex]->DETECTED_TYPE);
+                    }
+                }
+            }
+        }
+
         $this->output();
     }
 
@@ -91,11 +105,11 @@ class cAdmin extends \OhCrud\DB {
         }
 
         // Check if the requested table is restricted.
-        if ($request->payload->TABLE == 'Users') {
-            $this->error('Restricted table.');
-            $this->output();
-            return $this;
-        }
+        // if ($request->payload->TABLE == 'Users') {
+        //     $this->error('Restricted table.');
+        //     $this->output();
+        //     return $this;
+        // }
 
         // Default values for optional parameters.
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
@@ -116,6 +130,15 @@ class cAdmin extends \OhCrud\DB {
         $SQL .= "LIMIT ". $limit . " OFFSET " . $offset . ";";
         $this->data = $this->run($SQL)->data;
 
+        // Cleanup the data and shorten long results
+        foreach ($this->data as $index => $value) {
+            foreach ($value as $key => $value) {
+                if (gettype($value) == 'string') {
+                    $this->data[$index]->{$key} = $this->shortenString($value, 100);
+                }
+            }
+        }
+
         // Get pagination meta data
         $totalPages = ceil($totalRecords / $limit);
         $hasNextPage = $page < $totalPages;
@@ -131,6 +154,70 @@ class cAdmin extends \OhCrud\DB {
         ];
 
         $this->output();
+    }
+
+    // This function returns a font-awesome icon based on a given data type.
+    private function getFAIconForDetectedType($type) {
+
+        switch ($type) {
+            case 'empty':
+                return '';
+            case 'email':
+                return 'fa-envelope-o';
+            case 'URL':
+                return 'fa-link';
+            case 'IPv4':
+                return 'fa-globe';
+            case 'IPv6':
+                return 'fa-globe';
+            case 'datetime':
+                return 'fa-calendar';
+            case 'date':
+                return 'fa-calendar';
+            case 'time':
+                return 'fa-clock-o';
+            case 'UUID':
+                return 'fa-star-o';
+            case 'boolean-like':
+                return 'fa-toggle-on';
+            case 'integer':
+                return 'fa-hashtag';
+            case 'float':
+                return 'fa-hashtag';
+            case 'encrypted (bcrypt)':
+                return 'fa-shield';
+            case 'hash (MD5)':
+                return 'fa-snowflake-o';
+            case 'hash (SHA1)':
+                return 'fa-snowflake-o';
+            case 'hash (SHA256)':
+                return 'fa-snowflake-o';
+            case 'hash (unkown)':
+                return 'fa-snowflake-o';
+            case 'base64':
+                return 'fa-snowflake-o';
+            case 'encrypted (guessed)':
+                return 'fa-shield';
+            case 'string':
+                return 'fa-font';
+            default:
+                return '';
+        }
+    }
+
+    // This function shortens a given string to a specified length.
+    private function shortenString(string $string, int $maxLength) {
+    // Check if the string is already shorter than or equal to the max length
+        if (strlen($string) <= $maxLength) {
+            return $string;
+        }
+
+        $truncatedLength = $maxLength - 3;
+        if ($truncatedLength < 0) {
+            $truncatedLength = 0; // Or handle as an error, depending on desired behavior
+        }
+
+        return substr($string, 0, $truncatedLength) . '...';
     }
 
 }
