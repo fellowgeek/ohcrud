@@ -4,6 +4,7 @@ $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['
 ?>
 
 <input type="hidden" id="TABLE" name="TABLE" value="<?= $table ?>" />
+<input type="hidden" id="PAGE_CURRENT" name="PAGE_CURRENT" value="1" />
 
 <div class="card data-table data-table-init">
     <div class="card-header">
@@ -26,18 +27,19 @@ $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['
             <div class="input input-dropdown">
                 <select id="LIMIT" name="LIMIT">
                     <option value="10">10</option>
-                    <option value="25">25</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
             </div>
         </div>
         <div class="data-table-pagination">
-            <span class="data-table-pagination-label">1-5 of 10</span>
-            <a href="#" class="link disabled">
+            <span ID="RECORDS_DISPLAYED" class="data-table-pagination-label">...</span>
+            <a ID="btnPagePrevious" href="#" class="link disabled">
                 <i class="icon icon-prev color-gray"></i>
             </a>
-            <a href="#" class="link">
+            <a ID="btnPageNext" href="#" class="link">
                 <i class="icon icon-next color-gray"></i>
             </a>
         </div>

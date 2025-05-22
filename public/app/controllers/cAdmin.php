@@ -104,23 +104,23 @@ class cAdmin extends \OhCrud\DB {
             return $this;
         }
 
-        // Check if the requested table is restricted.
-        // if ($request->payload->TABLE == 'Users') {
-        //     $this->error('Restricted table.');
-        //     $this->output();
-        //     return $this;
-        // }
-
         // Default values for optional parameters.
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
         $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
         $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
         $order = $request->payload->ORDER ??  'DESC';
         $orderBy = $request->payload->ORDER_BY ?? NULL;
-        $offset = ($page - 1) * $limit;
 
         // Get total records
         $totalRecords = $this->RUN("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;
+        $totalPages = ceil($totalRecords / $limit);
+
+        // Clamp the variable ranges
+        if ($limit > 100) $limit = 100;
+        if ($limit > $totalRecords) $limit = $totalRecords;
+        if ($page > $totalPages) $page = $totalPages;
+        $offset = ($page - 1) * $limit;
+        if ($offset < 0) $offset = 0;
 
         // Build the SQL query
         $SQL = "SELECT * FROM " . $table . "\n";
@@ -140,9 +140,14 @@ class cAdmin extends \OhCrud\DB {
         }
 
         // Get pagination meta data
-        $totalPages = ceil($totalRecords / $limit);
+
         $hasNextPage = $page < $totalPages;
         $hasPreviousPage = $page > 1;
+        $showingRangeFrom = ($offset + 1);
+        $showingRangeTo = ($offset + $limit);
+        if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
+
+        $showing = $showingRangeFrom . ' - ' . $showingRangeTo . ' of ' . $totalRecords;
 
         $this->pagination = [
             'totalRecords' => $totalRecords,
@@ -150,7 +155,8 @@ class cAdmin extends \OhCrud\DB {
             'currentPage' => $page,
             'limit' => $limit,
             'hasNextPage' => $hasNextPage,
-            'hasPreviousPage' => $hasPreviousPage
+            'hasPreviousPage' => $hasPreviousPage,
+            'showing' => $showing
         ];
 
         $this->output();

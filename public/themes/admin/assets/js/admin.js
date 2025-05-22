@@ -43,7 +43,7 @@ $$(document).on('page:init', function (e, page) {
         let btnLoginCancel = $$('#btnLoginCancel');
         let btnLoginVerify = $$('#btnLoginVerify');
 
-        // UI Inputs
+        // UI inputs
         let PASSWORD = $$('#PASSWORD');
         let TOTP = $$('#TOTP');
 
@@ -181,11 +181,13 @@ $$(document).on('page:init', function (e, page) {
             app.panel.open();
         }, 500);
 
+        // UI inputs
         let themeSelect = $$('#THEME');
         let layoutSelect = $$('#LAYOUT');
         let file = document.getElementById('FILE');
         let fileToUploadMode = '';
 
+        // UI buttons
         let btnCMSSave = $$('#btnCMSSave');
         let btnCMSCancel = $$('#btnCMSCancel');
         let btnCMSDeleteRestore = $$('#btnCMSDeleteRestore');
@@ -386,11 +388,34 @@ $$(document).on('page:init', function (e, page) {
 
         let tableName = $$('#TABLE').val();
 
+        // UI inputs
+        let limitSelect = $$('#LIMIT');
+
+        // UI buttons
+        let btnPageNext = $$('#btnPageNext');
+        let btnPagePrevious = $$('#btnPagePrevious');
+
         // Load table list
         loadTableList();
 
         // Load table details
         loadTableDetails(tableName);
+
+
+        btnPageNext.on('click', function () {
+            let page = parseInt(btnPageNext.data('page-next'));
+            loadTableData(tableName, page);
+        });
+
+        btnPagePrevious.on('click', function () {
+            let page = parseInt(btnPagePrevious.data('page-previous'));
+            loadTableData(tableName, page);
+        });
+
+        limitSelect.on('change', function() {
+            let page = parseInt($$('#PAGE_CURRENT').val());
+            loadTableData(tableName, page);
+        });
 
     }
 
@@ -482,7 +507,7 @@ function loadTableDetails(table) {
                         tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
                     }
                     let tableHeaderTH = `
-                    <th class="${checkDataType(column.TYPE) == 'text' ? 'label-cell' : 'numeric-cell'}" data-detected-type="${column.DETECTED_TYPE}">
+                    <th class="label-cell" data-detected-type="${column.DETECTED_TYPE}">
                         ${tableHeaderTHIcon}${column.NAME}
                     </th>
                     `;
@@ -508,7 +533,11 @@ function loadTableDetails(table) {
         });
 }
 
-function loadTableData(table, page = 1, limit = 10) {
+function loadTableData(table, page = 1) {
+
+    limit = parseInt($$('#LIMIT').val());
+    $$('#PAGE_CURRENT').val(page);
+
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
         {
             method: 'POST',
@@ -534,8 +563,6 @@ function loadTableData(table, page = 1, limit = 10) {
                 let tableBody = '';
 
                 json.data.forEach(row => {
-
-                    console.log(row);
                     tableBody += `
                     <tr>
                         <td class="checkbox-cell">
@@ -569,7 +596,6 @@ function loadTableData(table, page = 1, limit = 10) {
 
 
                         if (value === null) {
-                            console.log('null: ', value);
                             columnValue = `
                                 <div class="chip">
                                     <div class="chip-label">NULL</div>
@@ -578,7 +604,6 @@ function loadTableData(table, page = 1, limit = 10) {
                         }
 
                         if (value === '') {
-                            console.log('empty: ', value);
                             columnValue = `
                                 <div class="chip">
                                     <div class="chip-label">EMPTY</div>
@@ -586,9 +611,9 @@ function loadTableData(table, page = 1, limit = 10) {
                             `;
                         }
 
-                        tableBodyTD += `<td data-detected-type="${columnDetails[key].DETECTED_TYPE}">${columnValue}</td>`;
-
+                        tableBodyTD += `<td data-detected-type="${(value !== null && value !== '') ? columnDetails[key].DETECTED_TYPE : ''}">${columnValue}</td>`;
                     });
+
                     tableBody += tableBodyTD;
                     tableBody += `
                         <td class="actions-cell">
@@ -601,6 +626,22 @@ function loadTableData(table, page = 1, limit = 10) {
 
                 $$('.tableBody').empty();
                 $$('.tableBody').html(tableBody);
+
+                $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
+                if (json.pagination.hasNextPage == true) {
+                    $$('#btnPageNext').removeClass('disabled');
+                    $$('#btnPageNext').attr('data-page-next', (page + 1));
+                } else {
+                    $$('#btnPageNext').addClass('disabled');
+                    $$('#btnPageNext').removeAttr('data-page-next');
+                }
+                if (json.pagination.hasPreviousPage == true) {
+                    $$('#btnPagePrevious').removeClass('disabled');
+                    $$('#btnPagePrevious').attr('data-page-previous', (page - 1));
+                } else {
+                    $$('#btnPagePrevious').addClass('disabled');
+                    $$('#btnPagePrevious').removeAttr('data-page-previous');
+                }
             }
         },
         async function (error) {
@@ -714,60 +755,4 @@ function maskInputNumber(input) {
     value = value.replace(/[^0-9]/g, '');
     // Update the input value
     input.value = value;
-}
-
-function checkDataType(typeString) {
-    if (typeof typeString !== 'string') {
-        return "text"; // Or handle as an error, depending on requirements
-    }
-
-    // Normalize the type string by taking the part before any parenthesis and converting to lowercase
-    const normalizedType = typeString.split('(')[0].toLowerCase().trim();
-
-    // Common numeric types for MySQL and SQLite
-    const numericTypes = [
-        // MySQL & SQLite Integer Types
-        "int",
-        "integer",
-        "tinyint",
-        "smallint",
-        "mediumint",
-        "bigint",
-        // MySQL Specific Integer Suffix (though often part of the base type like 'int unsigned')
-        // We are primarily checking the base type.
-        // SQLite specific integer types (often aliases)
-        "int2", // SQLite alias for SMALLINT
-        "int8", // SQLite alias for BIGINT
-
-        // MySQL & SQLite Floating-Point Types
-        "float",
-        "double",
-        "real", // SQLite, MySQL (alias for DOUBLE)
-
-        // MySQL & SQLite Fixed-Point Types
-        "decimal",
-        "dec",     // MySQL alias for DECIMAL
-        "numeric", // MySQL (alias for DECIMAL), SQLite
-
-        // MySQL & SQLite Boolean (often stored as TINYINT(1))
-        // Already covered by tinyint, but good to be aware
-        "boolean", // MySQL alias for TINYINT(1)
-        "bool"     // MySQL alias for TINYINT(1)
-    ];
-
-    if (numericTypes.includes(normalizedType)) {
-        return "numeric";
-    }
-
-    // Add other specific checks if needed, e.g., for bit
-    if (normalizedType === "bit") {
-        return "numeric"; // BIT can be treated as numeric in many contexts
-    }
-
-    return "text";
-}
-
-function placeholder(type) {
-    if (type == 'text') return 'Lorem';
-    if (type == 'numeric') return parseInt(Math.random() * 100);
 }

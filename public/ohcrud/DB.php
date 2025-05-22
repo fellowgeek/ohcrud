@@ -449,12 +449,14 @@ class DB extends \OhCrud\Core {
             }
         }
 
-        // Guess encryption
+        // Encryption guess (excluding paths or path-like strings)
+        $hasSlashes = substr_count($value, '/') > 1 && str_starts_with($value, '/');
+
         $uniqueChars = count(array_unique(str_split($value)));
         $entropy = $uniqueChars / strlen($value);
         $hasSymbols = preg_match('/[^A-Za-z0-9]/', $value);
 
-        if (strlen($value) >= 16 && $hasSymbols && $entropy > 0.4) {
+        if (!$hasSlashes && strlen($value) >= 16 && $hasSymbols && $entropy > 0.4) {
             return 'encrypted (guessed)';
         }
 

@@ -97,7 +97,7 @@ User Interface
   letter-spacing: 10px;
 }
 
-.tableBody td {
+.tableHeader th, .tableBody td {
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
