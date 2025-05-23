@@ -113,6 +113,10 @@ User Interface
   font-weight: 600;
 }
 
+.data-table-row-selected {
+  background-color: var(--f7-button-tonal-bg-color) !important;
+}
+
 .chip-label {
   font-size: 12px;
 }

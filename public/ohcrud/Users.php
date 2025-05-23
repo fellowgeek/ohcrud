@@ -31,8 +31,6 @@ class Users extends \OhCrud\DB {
                             `GROUP`	INTEGER,
                             `PERMISSIONS` INTEGER,
                             `TOKEN` TEXT,
-                            `ACTIVATION_HASH` TEXT,
-                            `RESET_HASH` TEXT,
                             `TOTP_SECRET` TEXT,
                             `STATUS` INTEGER,
                             `TOTP` INTEGER
@@ -53,8 +51,6 @@ class Users extends \OhCrud\DB {
                         `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
                         `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOKEN` varchar(256) NOT NULL DEFAULT '',
-                        `ACTIVATION_HASH` varchar(128) NOT NULL DEFAULT '',
-                        `RESET_HASH` varchar(128) NOT NULL DEFAULT '',
                         `TOTP_SECRET` varchar(256) NOT NULL DEFAULT '',
                         `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOTP` int(10) unsigned NOT NULL DEFAULT '0',
@@ -303,138 +299,6 @@ class Users extends \OhCrud\DB {
         // Create the user session and log in the user
         $this->setSession('User', $user);
         $this->unsetSession('tempUser');
-
-        return $user;
-    }
-
-    // Handle User activation
-    public function activate($username, $activationHash) {
-
-        // Get the user
-        $user = $this->read(
-            'Users',
-            'USERNAME = :USERNAME AND ACTIVATION_HASH = :ACTIVATION_HASH AND STATUS = :STATUS',
-            [
-                ':USERNAME' => $username,
-                ':ACTIVATION_HASH' => $activationHash,
-                ':STATUS' => $this::INACTIVE
-            ],
-        )->first();
-
-        if ($user == false) {
-            $this->log('warning', 'Activation attempt failed.', [$username, $activationHash]);
-            return false;
-        }
-
-        // Remove sensitive information
-        unset($user->PASSWORD);
-        unset($user->HASH);
-        unset($user->TOKEN);
-        unset($user->TOTP_SECRET);
-        unset($user->ACTIVATION_HASH);
-        unset($user->RESET_HASH);
-
-        // Activate the user and discard the activation hash
-        $this->update(
-            'Users',
-            [
-                'STATUS' => $this::ACTIVE,
-                'ACTIVATION_HASH' => ''
-            ],
-            'ID = :ID',
-            [
-                ':ID' => $user->ID
-            ]
-        );
-
-        return $user;
-    }
-
-    // Handle creating a reset hash for when user forgot their password
-    public function forgot($username) {
-
-        // Get the user
-        $user = $this->read(
-            'Users',
-            'USERNAME = :USERNAME AND STATUS = :STATUS',
-            [
-                ':USERNAME' => $username,
-                ':STATUS' => $this::ACTIVE
-            ]
-        )->first();
-
-        if ($user == false) {
-            $this->log('warning', 'Forgot password attempt failed.', [$username]);
-            return false;
-        }
-
-        // Generate the password reset hash for the user
-        $resetHash = hash('sha1', bin2hex(random_bytes(32)));
-
-        // Remove sensitive information
-        unset($user->PASSWORD);
-        unset($user->HASH);
-        unset($user->TOKEN);
-        unset($user->TOTP_SECRET);
-        unset($user->ACTIVATION_HASH);
-
-        // Include the RESET_HASH hash in the response
-        $user->RESET_HASH = $resetHash;
-
-        // Update the user record
-        $this->update(
-            'Users',
-            [
-                'STATUS' => $this::ACTIVE,
-                'RESET_HASH' => $resetHash
-            ],
-            'ID = :ID',
-            [
-                ':ID' => $user->ID
-            ]
-        );
-
-        return $user;
-    }
-
-    // Handle resetting password
-    public function reset($resetHash, $newPassword) {
-
-        // Get the user
-        $user = $this->read(
-            'Users',
-            'RESET_HASH = :RESET_HASH AND STATUS = :STATUS',
-            [
-                ':RESET_HASH' => $resetHash,
-                ':STATUS' => $this::ACTIVE
-            ]
-        )->first();
-
-        if ($user == false) {
-            $this->log('warning', 'Reset password attempt failed.', [$resetHash]);
-            return false;
-        }
-
-        // Remove sensitive information
-        unset($user->PASSWORD);
-        unset($user->HASH);
-        unset($user->TOKEN);
-        unset($user->TOTP_SECRET);
-        unset($user->ACTIVATION_HASH);
-        unset($user->RESET_HASH);
-
-        // Update the user record
-        $this->update(
-            'Users',
-            [
-                'PASSWORD' => $newPassword,
-                'RESET_HASH' => ''
-            ],
-            'ID = :ID',
-            [
-                ':ID' => $user->ID
-            ]
-        );
 
         return $user;
     }

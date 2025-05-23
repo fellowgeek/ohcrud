@@ -177,10 +177,6 @@ $$(document).on('page:init', function (e, page) {
     // If the admin page is initialized
     if (page.name == 'edit') {
 
-        setTimeout(() => {
-            app.panel.open();
-        }, 500);
-
         // UI inputs
         let themeSelect = $$('#THEME');
         let layoutSelect = $$('#LAYOUT');
@@ -401,7 +397,7 @@ $$(document).on('page:init', function (e, page) {
         // Load table details
         loadTableDetails(tableName);
 
-
+        // Handle pagination button events
         btnPageNext.on('click', function () {
             let page = parseInt(btnPageNext.data('page-next'));
             loadTableData(tableName, page);
@@ -412,6 +408,7 @@ $$(document).on('page:init', function (e, page) {
             loadTableData(tableName, page);
         });
 
+        // Handle pagination limit select
         limitSelect.on('change', function() {
             let page = parseInt($$('#PAGE_CURRENT').val());
             loadTableData(tableName, page);
@@ -533,6 +530,7 @@ function loadTableDetails(table) {
         });
 }
 
+// Load table data
 function loadTableData(table, page = 1) {
 
     limit = parseInt($$('#LIMIT').val());
@@ -559,9 +557,13 @@ function loadTableData(table, page = 1) {
 
             if (typeof json.data != undefined) {
 
-                let tableBodyTD = '';
                 let tableBody = '';
+                let tableBodyTD = '';
+                let columnValue = '';
+                let primaryColumnName = '';
+                let primaryColumnValue = '';
 
+                // Load the table data into the data table
                 json.data.forEach(row => {
                     tableBody += `
                     <tr>
@@ -573,8 +575,19 @@ function loadTableData(table, page = 1) {
                     `;
 
                     tableBodyTD = '';
+                    primaryColumnName = '';
+                    primaryColumnValue = '';
+
                     Object.entries(row).forEach(([key, value]) => {
                         columnValue = value;
+
+                        // Get primary column key and value
+                        if (columnDetails[key].PRIMARY_KEY == true) {
+                            primaryColumnName = columnDetails[key].NAME;
+                            primaryColumnValue = value;
+                        }
+
+                        // Hash and encrypted chips
                         switch (columnDetails[key].DETECTED_TYPE) {
                             case 'encrypted (bcrypt)':
                             case 'hash (MD5)':
@@ -594,7 +607,7 @@ function loadTableData(table, page = 1) {
                                 break;
                         }
 
-
+                        // Null chips
                         if (value === null) {
                             columnValue = `
                                 <div class="chip">
@@ -603,6 +616,7 @@ function loadTableData(table, page = 1) {
                             `;
                         }
 
+                        // Empty chips
                         if (value === '') {
                             columnValue = `
                                 <div class="chip">
@@ -617,8 +631,8 @@ function loadTableData(table, page = 1) {
                     tableBody += tableBodyTD;
                     tableBody += `
                         <td class="actions-cell">
-                            <a class="link icon-only"><i class="icon f7-icons">square_pencil</i></a>
-                            <a class="link icon-only"><i class="icon f7-icons">trash</i></a>
+                            <a class="btnRowEdit link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">square_pencil</i></a>
+                            <a class="btnRowDelete link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">trash</i></a>
                         </td>
                     </tr>
                     `;
@@ -627,6 +641,27 @@ function loadTableData(table, page = 1) {
                 $$('.tableBody').empty();
                 $$('.tableBody').html(tableBody);
 
+                // Event listener for row action buttons
+                $$('.btnRowDelete').on('click', function() {
+                    console.log($$(this));
+                    let rowKeyValue = $$(this).data('row-key-value');
+                    console.log(rowKeyValue);
+
+                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
+
+                    setTimeout(() => {
+                        app.dialog.confirm('Do you really want to delete the selected record?', 'Delete Record',
+                            () => {
+                                console.log('You deleted: ' + rowKeyValue);
+                            },
+                            () => {
+                                $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+                            }
+                        );
+                    }, 250);
+                });
+
+                // Update the pagination buttons and text
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage == true) {
                     $$('#btnPageNext').removeClass('disabled');

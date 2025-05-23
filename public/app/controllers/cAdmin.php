@@ -16,6 +16,7 @@ class cAdmin extends \OhCrud\DB {
         'getTableList' => 1,
         'getTableDetails' => 1,
         'getTableData' => 1,
+        'deleteTableRow' => 1
     ];
 
     public ?array $pagination = null;
@@ -104,8 +105,10 @@ class cAdmin extends \OhCrud\DB {
             return $this;
         }
 
-        // Default values for optional parameters.
+        // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+
+        // Default values for optional parameters.
         $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
         $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
         $order = $request->payload->ORDER ??  'DESC';
@@ -159,6 +162,80 @@ class cAdmin extends \OhCrud\DB {
             'showing' => $showing
         ];
 
+        $this->output();
+    }
+
+    // This function deletes a row from a given table in the database.
+    public function deleteTableRow($request) {
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->TABLE) == true ||
+            empty($request->payload->KEY_COLUMN) == true ||
+            empty($request->payload->KEY_VALUE) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+
+        // Check for super admins if we are deleting records from the Users table
+        if ($table == 'Users') {
+            $user = $this->read(
+                $table,
+                $request->payload->KEY_COLUMN . " = :KEY_VALUE",
+                [
+                'KEY_VALUE' => $request->payload->KEY_VALUE
+                ]
+            )->first();
+
+            // Check if the user is a super admin
+            if ($user != false && $user->STATUS == 1 && $user->PERMISSIONS == 1) {
+
+                // Get the number of super admins
+                $superAdmins = $this->run(
+                    "SELECT
+                        COUNT(ID) AS `COUNT`
+                    FROM
+                        `Users`
+                    WHERE
+                        `PERMISSIONS` = 1 AND
+                        `STATUS` = 1
+                    "
+                )->first();
+
+                // Check if this is the last super admin
+                if ($superAdmins->COUNT == 1) {
+                    $this->error('You can\'t delete the only existing superuser.');
+                    $this->data = new \stdClass();
+                    $this->output();
+                    return $this;
+                }
+            }
+        }
+
+        // Delete the row from the database
+        $this->delete(
+            $table,
+            $request->payload->KEY_COLUMN . " = :KEY_VALUE",
+            [
+                'KEY_VALUE' => $request->payload->KEY_VALUE
+            ]
+        );
+
+        $this->data = new \stdClass();
         $this->output();
     }
 
