@@ -14,6 +14,7 @@ class cAdmin extends \OhCrud\DB {
         'getTableList' => 1,
         'getTableDetails' => 1,
         'getTableData' => 1,
+        'getTableRow' => 1,
         'deleteTableRow' => 1
     ];
 
@@ -163,6 +164,46 @@ class cAdmin extends \OhCrud\DB {
         $this->output();
     }
 
+    // This function returns the data for a given table row in the database.
+    public function getTableRow($request) {
+
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->TABLE) == true ||
+            empty($request->payload->KEY_COLUMN) == true ||
+            empty($request->payload->KEY_VALUE) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
+
+        // Read the row from the database
+        $this->data = $this->read(
+            $table,
+            $keyColumn . " = :KEY_VALUE",
+            [
+                'KEY_VALUE' => $request->payload->KEY_VALUE
+            ]
+        )->first();
+
+        $this->output();
+    }
+
     // This function deletes a row from a given table in the database.
     public function deleteTableRow($request) {
         $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
@@ -188,12 +229,13 @@ class cAdmin extends \OhCrud\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
 
         // Check for super admins if we are deleting records from the Users table
         if ($table == 'Users') {
             $user = $this->read(
                 $table,
-                $request->payload->KEY_COLUMN . " = :KEY_VALUE",
+                $keyColumn . " = :KEY_VALUE",
                 [
                 'KEY_VALUE' => $request->payload->KEY_VALUE
                 ]
@@ -227,7 +269,7 @@ class cAdmin extends \OhCrud\DB {
         // Delete the row from the database
         $this->delete(
             $table,
-            $request->payload->KEY_COLUMN . " = :KEY_VALUE",
+            $keyColumn . " = :KEY_VALUE",
             [
                 'KEY_VALUE' => $request->payload->KEY_VALUE
             ]

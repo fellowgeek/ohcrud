@@ -92,6 +92,10 @@ User Interface
   width: min(calc(100% - 32px), 500px);
 }
 
+input[readonly="true"] {
+  background-color: var(--f7-page-bg-color) !important;
+}
+
 .input-code {
   font-weight: bold;
   letter-spacing: 10px;
@@ -119,4 +123,8 @@ User Interface
 
 .chip-label {
   font-size: 12px;
+}
+
+#formEditRow .item-media {
+  color: var(--f7-table-head-text-color);
 }

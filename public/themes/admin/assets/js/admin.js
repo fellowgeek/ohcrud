@@ -418,6 +418,111 @@ $$(document).on('page:init', function (e, page) {
 
 });
 
+
+// -------------------------------------------------------------------------
+// Login:
+// -------------------------------------------------------------------------
+
+// Logout the user
+function logout() {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/users/logout/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            )
+        },
+        async function (response) {
+            const json = await response.json();
+        },
+        async function (error) {
+            const json = await error.json();
+        }
+    );
+}
+
+// -------------------------------------------------------------------------
+// Edit:
+// -------------------------------------------------------------------------
+
+// Load installed themes and update the dropdown menu
+function loadThemes() {
+
+    let themeSelect = $$('#THEME');
+    let layoutSelect = $$('#LAYOUT');
+
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/themes/getThemes/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            )
+        },
+        async function (response) {
+            const json = await response.json();
+            themes = json.data;
+            for (const theme in themes) {
+                let option = document.createElement('option');
+                option.value = theme;
+                option.innerHTML = theme;
+                themeSelect.append(option);
+            }
+            loadLayouts(__CURRENT_THEME__);
+            themeSelect.val(__CURRENT_THEME__);
+            layoutSelect.val(__CURRENT_LAYOUT__);
+
+            // add event listener to the "select" to load layouts as theme changes
+            themeSelect.on('change', function () {
+                loadLayouts(themeSelect.val());
+            });
+        });
+}
+
+// Load the layouts associated with a theme and update the dropdown menu
+function loadLayouts(theme) {
+
+    let layoutSelect = $$('#LAYOUT');
+    let layout = '';
+    let option = '';
+
+    layoutSelect.empty();
+    for (const layoutIndex in themes[theme]) {
+        layout = themes[theme][layoutIndex];
+        option = document.createElement('option');
+        option.value = layout;
+        option.textContent = layout;
+        layoutSelect.append(option);
+    }
+}
+
+// Utility function to insert a text snippet in the content editor
+function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
+    let cm = editor.codemirror;
+    let startPoint = cm.getCursor('start');
+    let endPoint = cm.getCursor('end');
+    let selection = cm.getSelection();
+    if (text == '') { text = selection; }
+    cm.replaceSelection(preText + text + postText);
+    startPoint.ch += preText.length;
+    if (startPoint !== endPoint) {
+        endPoint.ch += postText.length;
+    }
+    cm.setSelection(startPoint, endPoint);
+    cm.focus();
+}
+
+// -------------------------------------------------------------------------
+// Tables:
+// -------------------------------------------------------------------------
+
 // Load table list
 function loadTableList() {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableList/',
@@ -468,6 +573,9 @@ function loadTableList() {
 function loadTableDetails(table) {
     columnDetails = {};
 
+    if (typeof table == undefined || table == '') return;
+
+    // Get table details
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableDetails/',
         {
             method: 'POST',
@@ -499,10 +607,9 @@ function loadTableDetails(table) {
                 json.data[table].COLUMNS.forEach(column => {
                     let tableHeaderTHIcon = '';
                     if (column.PRIMARY_KEY == true) {
-                        tableHeaderTHIcon = '<i class="fa fa-key" aria-hidden="true"></i> ';
-                    } else {
-                        tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
+                        column.ICON = 'fa-key';
                     }
+                    tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
                     let tableHeaderTH = `
                     <th class="label-cell" data-detected-type="${column.DETECTED_TYPE}">
                         ${tableHeaderTHIcon}${column.NAME}
@@ -527,7 +634,8 @@ function loadTableDetails(table) {
         async function (error) {
             const json = await error.json();
             console.error(json);
-        });
+        }
+    );
 }
 
 // Load table data
@@ -554,9 +662,7 @@ function loadTableData(table, page = 1) {
         },
         async function (response) {
             const json = await response.json();
-
             if (typeof json.data != undefined) {
-
                 let tableBody = '';
                 let tableBodyTD = '';
                 let columnValue = '';
@@ -646,12 +752,41 @@ function loadTableData(table, page = 1) {
                     let rowKeyColumn = $$(this).data('row-key-column');
                     let rowKeyValue = $$(this).data('row-key-value');
 
-                    console.log(columnDetails);
+                    // Highlight the row
+                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
 
-                    buildFormFromAPI(columnDetails, 'formEditRow', rowData = {});
+                    // Get row data
+                    loadRowData(table, rowKeyColumn, rowKeyValue);
 
+                    // Open the popup
                     app.popup.open('.edit-row-popup');
+                });
 
+                $$('.btnFormEditSave').on('click', function() {
+                    let rowKeyColumn = $$(this).data('row-key-column');
+                    let rowKeyValue = $$(this).data('row-key-value');
+
+                    let formEditInputs = $$('.formEditInput');
+                    formEditInputs.forEach((item) => {
+                        console.log(item.id, item.value);
+                    });
+
+                    // Undo the highlight
+                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+
+                    // Close the popup
+                    app.popup.close('.edit-row-popup');
+                });
+
+                $$('.btnFormEditCancel').on('click', function() {
+                    let rowKeyColumn = $$(this).data('row-key-column');
+                    let rowKeyValue = $$(this).data('row-key-value');
+
+                    // Undo the highlight
+                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+
+                    // Close the popup
+                    app.popup.close('.edit-row-popup');
                 });
 
                 $$('.btnRowDelete').on('click', function() {
@@ -730,13 +865,10 @@ function loadTableData(table, page = 1) {
         });
 }
 
-// Load installed themes and update the dropdown menu
-function loadThemes() {
+// This function gets the row data from database
+async function loadRowData(table, keyColumn, keyValue) {
 
-    let themeSelect = $$('#THEME');
-    let layoutSelect = $$('#LAYOUT');
-
-    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/themes/getThemes/',
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableRow/',
         {
             method: 'POST',
             cache: 'no-cache',
@@ -745,99 +877,30 @@ function loadThemes() {
                 {
                     'Content-Type': 'application/json'
                 }
-            )
-        },
-        async function (response) {
-            const json = await response.json();
-            themes = json.data;
-            for (const theme in themes) {
-                let option = document.createElement('option');
-                option.value = theme;
-                option.innerHTML = theme;
-                themeSelect.append(option);
+            ),
+            body: {
+                TABLE: table,
+                KEY_COLUMN: keyColumn,
+                KEY_VALUE: keyValue,
             }
-            loadLayouts(__CURRENT_THEME__);
-            themeSelect.val(__CURRENT_THEME__);
-            layoutSelect.val(__CURRENT_LAYOUT__);
-
-            // add event listener to the "select" to load layouts as theme changes
-            themeSelect.on('change', function () {
-                loadLayouts(themeSelect.val());
-            });
-        });
-}
-
-// Load the layouts associated with a theme and update the dropdown menu
-function loadLayouts(theme) {
-
-    let layoutSelect = $$('#LAYOUT');
-    let layout = '';
-    let option = '';
-
-    layoutSelect.empty();
-    for (const layoutIndex in themes[theme]) {
-        layout = themes[theme][layoutIndex];
-        option = document.createElement('option');
-        option.value = layout;
-        option.textContent = layout;
-        layoutSelect.append(option);
-    }
-}
-
-// Logout the user
-function logout() {
-    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/users/logout/',
-        {
-            method: 'POST',
-            cache: 'no-cache',
-            credentials: 'same-origin',
-            headers: new Headers(
-                {
-                    'Content-Type': 'application/json'
-                }
-            )
         },
         async function (response) {
             const json = await response.json();
+            $$('.btnFormEditCancel').data('row-key-column', keyColumn);
+            $$('.btnFormEditCancel').data('row-key-value', keyValue);
+            $$('.btnFormEditSave').data('row-key-column', keyColumn);
+            $$('.btnFormEditSave').data('row-key-value', keyValue);
+            buildFormFromData(columnDetails, 'formEditRow', json.data);
         },
         async function (error) {
             const json = await error.json();
+            console.error(json);
         }
     );
 }
 
-// This method creates and issues a Framework7 notification
-function notify(options = {}) {
-    let notificationCloseOnClick = app.notification.create(options);
-    notificationCloseOnClick.open();
-}
-
-// Utility function to insert a text snippet in the content editor
-function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
-    let cm = editor.codemirror;
-    let startPoint = cm.getCursor('start');
-    let endPoint = cm.getCursor('end');
-    let selection = cm.getSelection();
-    if (text == '') { text = selection; }
-    cm.replaceSelection(preText + text + postText);
-    startPoint.ch += preText.length;
-    if (startPoint !== endPoint) {
-        endPoint.ch += postText.length;
-    }
-    cm.setSelection(startPoint, endPoint);
-    cm.focus();
-}
-
-// This function masks input number.
-function maskInputNumber(input) {
-    let value = input.value;
-    // Allow only valid numeric characters
-    value = value.replace(/[^0-9]/g, '');
-    // Update the input value
-    input.value = value;
-}
-
-function buildFormFromAPI(columns, elementId, rowData = {}) {
+// This function builds a form from column data and loads the form with data
+function buildFormFromData(columns, elementId, rowData = {}) {
     const container = document.getElementById(elementId);
     if (!container) {
         console.error(`Element with ID '${elementId}' not found`);
@@ -910,6 +973,11 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
         return !column.NULLABLE && column.EXTRA !== 'auto_increment';
     }
 
+    // Function to determine if a field should be readonly
+    function isReadonly(column) {
+        return column.EXTRA === 'auto_increment';
+    }
+
     // Function to get field value from row data
     function getFieldValue(column, rowData) {
         const value = rowData[column.NAME];
@@ -921,7 +989,7 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
         if (column.DETECTED_TYPE === 'datetime' && value) {
             const date = new Date(value);
             if (!isNaN(date.getTime())) {
-                return date.toISOString().slice(0, 16);
+                return value;
             }
         }
 
@@ -929,7 +997,7 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
         if (column.DETECTED_TYPE === 'date' && value) {
             const date = new Date(value);
             if (!isNaN(date.getTime())) {
-                return date.toISOString().slice(0, 10);
+                return value;
             }
         }
 
@@ -938,13 +1006,6 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
 
     // Build form fields
     Object.entries(columnDetails).forEach(([index, column]) => {
-
-        console.log(column);
-
-        // Skip auto-increment primary keys (they're usually not editable)
-        if (column.PRIMARY_KEY && column.EXTRA === 'auto_increment') {
-            return;
-        }
 
         const config = validationConfig[column.DETECTED_TYPE] || {
             pattern: '',
@@ -963,6 +1024,9 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
 
         // Determine if field is required
         const required = isRequired(column);
+
+        // Determine if field is readonly
+        const readonly = isReadonly(column);
 
         // Get field value
         const fieldValue = getFieldValue(column, rowData);
@@ -983,6 +1047,7 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
                                 type="${inputType}"
                                 ${maxLength ? `maxlength="${maxLength}"` : ''}
                                 ${required ? 'required="true"' : ''}
+                                ${readonly ? 'readonly="true"' : ''}
                                 ${config.pattern ? 'validate="true"' : ''}
                                 ${config.pattern ? `pattern="${config.pattern}"` : ''}
                                 ${config.errorMessage ? `data-error-message="${config.errorMessage}"` : ''}
@@ -991,6 +1056,7 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
                                 autocorrect="off"
                                 autocapitalize="off"
                                 ${inputType === 'number' ? 'step="any"' : ''}
+                                class="formEditInput"
                             />
                         </div>
                     </div>
@@ -1007,4 +1073,24 @@ function buildFormFromAPI(columns, elementId, rowData = {}) {
     });
 
     return container;
+}
+
+// -------------------------------------------------------------------------
+// Misc:
+// -------------------------------------------------------------------------
+
+// This method creates and issues a Framework7 notification
+function notify(options = {}) {
+    let notificationCloseOnClick = app.notification.create(options);
+    notificationCloseOnClick.open();
+}
+
+
+// This function masks input number.
+function maskInputNumber(input) {
+    let value = input.value;
+    // Allow only valid numeric characters
+    value = value.replace(/[^0-9]/g, '');
+    // Update the input value
+    input.value = value;
 }
