@@ -1,8 +1,6 @@
 <?php
 namespace app\controllers;
 
-use Attribute;
-
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
@@ -290,7 +288,7 @@ class cAdmin extends \OhCrud\DB {
 
     // This function shortens a given string to a specified length.
     private function shortenString(string $string, int $maxLength) {
-    // Check if the string is already shorter than or equal to the max length
+        // Check if the string is already shorter than or equal to the max length
         if (strlen($string) <= $maxLength) {
             return $string;
         }

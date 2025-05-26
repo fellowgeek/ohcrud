@@ -642,19 +642,64 @@ function loadTableData(table, page = 1) {
                 $$('.tableBody').html(tableBody);
 
                 // Event listener for row action buttons
-                $$('.btnRowDelete').on('click', function() {
-                    console.log($$(this));
+                $$('.btnRowEdit').on('click', function() {
+                    let rowKeyColumn = $$(this).data('row-key-column');
                     let rowKeyValue = $$(this).data('row-key-value');
-                    console.log(rowKeyValue);
 
+                    console.log(columnDetails);
+
+                    buildFormFromAPI(columnDetails, 'formEditRow', rowData = {});
+
+                    app.popup.open('.edit-row-popup');
+
+                });
+
+                $$('.btnRowDelete').on('click', function() {
+                    let rowKeyColumn = $$(this).data('row-key-column');
+                    let rowKeyValue = $$(this).data('row-key-value');
+
+                    // Highlight the row
                     $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
 
+                    // Open the confirmation dialog
                     setTimeout(() => {
                         app.dialog.confirm('Do you really want to delete the selected record?', 'Delete Record',
                             () => {
                                 console.log('You deleted: ' + rowKeyValue);
+                                httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/deleteTableRow/',
+                                    {
+                                        method: 'POST',
+                                        cache: 'no-cache',
+                                        credentials: 'same-origin',
+                                        headers: new Headers(
+                                            {
+                                                'Content-Type': 'application/json'
+                                            }
+                                        ),
+                                        body: {
+                                            TABLE: table,
+                                            KEY_COLUMN: rowKeyColumn,
+                                            KEY_VALUE: rowKeyValue,
+                                        }
+                                    },
+                                    async function (response) {
+                                        console.log('record deleted');
+                                        loadTableData(table, page);
+                                    },
+                                    async function (error) {
+                                        const json = await error.json();
+                                        notify({
+                                            icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                                            title: 'ohCRUD!',
+                                            titleRightText: 'now',
+                                            text: json.errors.join(),
+                                            closeOnClick: true,
+                                        });
+                                    }
+                                );
                             },
                             () => {
+                                // Undo the highlight
                                 $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
                             }
                         );
@@ -790,4 +835,176 @@ function maskInputNumber(input) {
     value = value.replace(/[^0-9]/g, '');
     // Update the input value
     input.value = value;
+}
+
+function buildFormFromAPI(columns, elementId, rowData = {}) {
+    const container = document.getElementById(elementId);
+    if (!container) {
+        console.error(`Element with ID '${elementId}' not found`);
+        return;
+    }
+
+    // Clear existing content
+    container.innerHTML = '';
+
+    // Validation patterns and error messages for each detected type
+    const validationConfig = {
+        email: {
+            pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
+            errorMessage: 'Please enter a valid email address',
+            inputType: 'email'
+        },
+        URL: {
+            pattern: '^https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)$',
+            errorMessage: 'Please enter a valid URL starting with http:// or https://',
+            inputType: 'url'
+        },
+        IPv4: {
+            pattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
+            errorMessage: 'Please enter a valid IPv4 address (e.g., 192.168.1.1)',
+            inputType: 'text'
+        },
+        IPv6: {
+            pattern: '^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$',
+            errorMessage: 'Please enter a valid IPv6 address',
+            inputType: 'text'
+        },
+        datetime: {
+            pattern: '',
+            errorMessage: 'Please enter a valid date and time',
+            inputType: 'datetime-local'
+        },
+        date: {
+            pattern: '',
+            errorMessage: 'Please enter a valid date',
+            inputType: 'date'
+        },
+        time: {
+            pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$',
+            errorMessage: 'Please enter a valid time in HH:MM or HH:MM:SS format',
+            inputType: 'time'
+        },
+        integer: {
+            pattern: '^-?\\d+$',
+            errorMessage: 'Please enter a valid integer number',
+            inputType: 'number'
+        },
+        float: {
+            pattern: '^-?\\d*\\.?\\d+$',
+            errorMessage: 'Please enter a valid decimal number',
+            inputType: 'number'
+        }
+    };
+
+    // Function to get max length from column type
+    function getMaxLength(columnType) {
+        const match = columnType.match(/varchar\\((\\d+)\\)|char\\((\\d+)\\)/i);
+        if (match) {
+            return parseInt(match[1] || match[2]);
+        }
+        return null;
+    }
+
+    // Function to determine if field should be required
+    function isRequired(column) {
+        return !column.NULLABLE && column.EXTRA !== 'auto_increment';
+    }
+
+    // Function to get field value from row data
+    function getFieldValue(column, rowData) {
+        const value = rowData[column.NAME];
+        if (value === null || value === undefined) {
+            return column.DEFAULT || '';
+        }
+
+        // Format datetime values for datetime-local input
+        if (column.DETECTED_TYPE === 'datetime' && value) {
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+                return date.toISOString().slice(0, 16);
+            }
+        }
+
+        // Format date values for date input
+        if (column.DETECTED_TYPE === 'date' && value) {
+            const date = new Date(value);
+            if (!isNaN(date.getTime())) {
+                return date.toISOString().slice(0, 10);
+            }
+        }
+
+        return value.toString();
+    }
+
+    // Build form fields
+    Object.entries(columnDetails).forEach(([index, column]) => {
+
+        console.log(column);
+
+        // Skip auto-increment primary keys (they're usually not editable)
+        if (column.PRIMARY_KEY && column.EXTRA === 'auto_increment') {
+            return;
+        }
+
+        const config = validationConfig[column.DETECTED_TYPE] || {
+            pattern: '',
+            errorMessage: '',
+            inputType: 'text'
+        };
+
+        // Determine input type
+        let inputType = config.inputType;
+        if (column.DETECTED_TYPE === 'boolean-like') {
+            inputType = 'checkbox';
+        }
+
+        // Get max length
+        const maxLength = getMaxLength(column.TYPE);
+
+        // Determine if field is required
+        const required = isRequired(column);
+
+        // Get field value
+        const fieldValue = getFieldValue(column, rowData);
+
+        // Create field HTML
+        const fieldHtml = `
+            <li>
+                <div class="item-content item-input">
+                    <div class="item-media">
+                        <i class="fa ${column.ICON}"></i>
+                    </div>
+                    <div class="item-inner">
+                        <div class="item-title item-label">${column.NAME}</div>
+                        <div class="item-input-wrap">
+                            <input
+                                id="${column.NAME}"
+                                name="${column.NAME}"
+                                type="${inputType}"
+                                ${maxLength ? `maxlength="${maxLength}"` : ''}
+                                ${required ? 'required="true"' : ''}
+                                ${config.pattern ? 'validate="true"' : ''}
+                                ${config.pattern ? `pattern="${config.pattern}"` : ''}
+                                ${config.errorMessage ? `data-error-message="${config.errorMessage}"` : ''}
+                                value="${fieldValue}"
+                                spellcheck="false"
+                                autocorrect="off"
+                                autocapitalize="off"
+                                ${inputType === 'number' ? 'step="any"' : ''}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </li>
+        `;
+
+        // Create a temporary element to hold the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = fieldHtml.trim();
+
+        // Append the field to the container
+        container.appendChild(tempDiv.firstChild);
+    });
+
+    return container;
 }
