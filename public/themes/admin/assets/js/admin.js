@@ -414,10 +414,34 @@ $$(document).on('page:init', function (e, page) {
             loadTableData(tableName, page);
         });
 
+        $$('.btnFormEditSave').on('click', function() {
+            let rowKeyColumn = $$(this).data('row-key-column');
+            let rowKeyValue = $$(this).data('row-key-value');
+            let formEditInputs = $$('.formEditInput');
+            let data = {};
+
+            formEditInputs.forEach((formEditInput) => {
+                data[formEditInput.id] = formEditInput.value;
+            });
+            console.table(data);
+            updateRowData(tableName, rowKeyColumn, rowKeyValue, data);
+        });
+
+        $$('.btnFormEditCancel').on('click', function() {
+            let rowKeyColumn = $$(this).data('row-key-column');
+            let rowKeyValue = $$(this).data('row-key-value');
+
+            // Undo the highlight
+            $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+
+            // Close the popup
+            app.popup.close('.edit-row-popup');
+        });
+
+
     }
 
 });
-
 
 // -------------------------------------------------------------------------
 // Login:
@@ -483,7 +507,8 @@ function loadThemes() {
             themeSelect.on('change', function () {
                 loadLayouts(themeSelect.val());
             });
-        });
+        }
+    );
 }
 
 // Load the layouts associated with a theme and update the dropdown menu
@@ -762,33 +787,6 @@ function loadTableData(table, page = 1) {
                     app.popup.open('.edit-row-popup');
                 });
 
-                $$('.btnFormEditSave').on('click', function() {
-                    let rowKeyColumn = $$(this).data('row-key-column');
-                    let rowKeyValue = $$(this).data('row-key-value');
-
-                    let formEditInputs = $$('.formEditInput');
-                    formEditInputs.forEach((item) => {
-                        console.log(item.id, item.value);
-                    });
-
-                    // Undo the highlight
-                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
-
-                    // Close the popup
-                    app.popup.close('.edit-row-popup');
-                });
-
-                $$('.btnFormEditCancel').on('click', function() {
-                    let rowKeyColumn = $$(this).data('row-key-column');
-                    let rowKeyValue = $$(this).data('row-key-value');
-
-                    // Undo the highlight
-                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
-
-                    // Close the popup
-                    app.popup.close('.edit-row-popup');
-                });
-
                 $$('.btnRowDelete').on('click', function() {
                     let rowKeyColumn = $$(this).data('row-key-column');
                     let rowKeyValue = $$(this).data('row-key-value');
@@ -862,12 +860,20 @@ function loadTableData(table, page = 1) {
         async function (error) {
             const json = await error.json();
             console.error(json);
-        });
+            // Display error messages in an alert element
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: 'Something went wrong with loading table data.',
+                closeOnClick: true,
+            });
+        }
+    );
 }
 
 // This function gets the row data from database
-async function loadRowData(table, keyColumn, keyValue) {
-
+function loadRowData(table, keyColumn, keyValue) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableRow/',
         {
             method: 'POST',
@@ -895,6 +901,56 @@ async function loadRowData(table, keyColumn, keyValue) {
         async function (error) {
             const json = await error.json();
             console.error(json);
+            // Display error messages in an alert element
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: 'Something went wrong with loading table row data.',
+                closeOnClick: true,
+            });
+        }
+    );
+}
+
+// This function update a row in the table with the form data
+function updateRowData(table, keyColumn, keyValue, data) {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/updateTableRow/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                TABLE: table,
+                KEY_COLUMN: keyColumn,
+                KEY_VALUE: keyValue,
+                ...data
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            // Undo the highlight
+            $$(`.btnRowDelete[data-row-key-value="${keyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+
+            // Close the popup
+            app.popup.close('.edit-row-popup');
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in an alert element
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: json.errors.join(),
+                closeOnClick: true,
+            });
         }
     );
 }
@@ -975,7 +1031,7 @@ function buildFormFromData(columns, elementId, rowData = {}) {
 
     // Function to determine if a field should be readonly
     function isReadonly(column) {
-        return column.EXTRA === 'auto_increment';
+        return (column.EXTRA === 'auto_increment' || ['CDATE', 'MDATE', 'CUSER', 'MUSER'].includes(column.NAME));
     }
 
     // Function to get field value from row data
@@ -1031,6 +1087,11 @@ function buildFormFromData(columns, elementId, rowData = {}) {
         // Get field value
         const fieldValue = getFieldValue(column, rowData);
 
+        // Handle exceptions for ohCRUD stamp fields
+        if (['CDATE', 'MDATE', 'CUSER', 'MUSER'].includes(column.NAME) && fieldValue == '') {
+            inputType = 'text';
+        }
+
         // Create field HTML
         const fieldHtml = `
             <li>
@@ -1080,7 +1141,8 @@ function buildFormFromData(columns, elementId, rowData = {}) {
 // -------------------------------------------------------------------------
 
 // This method creates and issues a Framework7 notification
-function notify(options = {}) {
+function notify(options = {}, closeTimeout = 3000) {
+    options.closeTimeout = closeTimeout;
     let notificationCloseOnClick = app.notification.create(options);
     notificationCloseOnClick.open();
 }

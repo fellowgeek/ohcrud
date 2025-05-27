@@ -15,6 +15,7 @@ class cAdmin extends \OhCrud\DB {
         'getTableDetails' => 1,
         'getTableData' => 1,
         'getTableRow' => 1,
+        'updateTableRow' => 1,
         'deleteTableRow' => 1
     ];
 
@@ -201,6 +202,55 @@ class cAdmin extends \OhCrud\DB {
             ]
         )->first();
 
+        $this->output();
+    }
+
+    // This function updates a row in a given table in the database.
+    public function updateTableRow($request) {
+        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->TABLE) == true ||
+            empty($request->payload->KEY_COLUMN) == true ||
+            empty($request->payload->KEY_VALUE) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
+        $keyValue = $request->payload->KEY_VALUE;
+
+        // Remove unwanted data from the payload
+        unset($request->payload->CSRF);
+        unset($request->payload->TABLE);
+        unset($request->payload->KEY_COLUMN);
+        unset($request->payload->{$keyColumn});
+        unset($request->payload->KEY_VALUE);
+
+        // Update the row in the database
+        $this->update(
+            $table,
+            (array) $request->payload,
+            $keyColumn . " = :KEY_VALUE",
+            [
+                'KEY_VALUE' => $keyValue
+            ],
+        );
+
+        $this->data = new \stdClass();
         $this->output();
     }
 

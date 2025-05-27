@@ -94,6 +94,8 @@ User Interface
 
 input[readonly="true"] {
   background-color: var(--f7-page-bg-color) !important;
+  opacity: 0.8 !important;
+  color: #666 !important;
 }
 
 .input-code {
