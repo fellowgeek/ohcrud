@@ -390,6 +390,9 @@ $$(document).on('page:init', function (e, page) {
         // UI buttons
         let btnPageNext = $$('#btnPageNext');
         let btnPagePrevious = $$('#btnPagePrevious');
+        let btnFormEditSave = $$('#btnFormEditSave');
+        let btnFormEditCancel = $$('#btnFormEditCancel');
+        let btnNewRecord = $$('#btnNewRecord');
 
         // Load table list
         loadTableList();
@@ -414,7 +417,8 @@ $$(document).on('page:init', function (e, page) {
             loadTableData(tableName, page);
         });
 
-        $$('.btnFormEditSave').on('click', function() {
+        // Handle edit popup form events
+        btnFormEditSave.on('click', function() {
             let rowKeyColumn = $$(this).data('row-key-column');
             let rowKeyValue = $$(this).data('row-key-value');
             let formEditInputs = $$('.formEditInput');
@@ -423,11 +427,10 @@ $$(document).on('page:init', function (e, page) {
             formEditInputs.forEach((formEditInput) => {
                 data[formEditInput.id] = formEditInput.value;
             });
-            console.table(data);
             updateRowData(tableName, rowKeyColumn, rowKeyValue, data);
         });
 
-        $$('.btnFormEditCancel').on('click', function() {
+        btnFormEditCancel.on('click', function() {
             let rowKeyColumn = $$(this).data('row-key-column');
             let rowKeyValue = $$(this).data('row-key-value');
 
@@ -438,9 +441,11 @@ $$(document).on('page:init', function (e, page) {
             app.popup.close('.edit-row-popup');
         });
 
+        btnNewRecord.on('click', function() {
+            console.log('Yo!');
+        });
 
     }
-
 });
 
 // -------------------------------------------------------------------------
@@ -892,10 +897,10 @@ function loadRowData(table, keyColumn, keyValue) {
         },
         async function (response) {
             const json = await response.json();
-            $$('.btnFormEditCancel').data('row-key-column', keyColumn);
-            $$('.btnFormEditCancel').data('row-key-value', keyValue);
-            $$('.btnFormEditSave').data('row-key-column', keyColumn);
-            $$('.btnFormEditSave').data('row-key-value', keyValue);
+            $$('#btnFormEditCancel').data('row-key-column', keyColumn);
+            $$('#btnFormEditCancel').data('row-key-value', keyValue);
+            $$('#btnFormEditSave').data('row-key-column', keyColumn);
+            $$('#btnFormEditSave').data('row-key-value', keyValue);
             buildFormFromData(columnDetails, 'formEditRow', json.data);
         },
         async function (error) {
@@ -936,6 +941,8 @@ function updateRowData(table, keyColumn, keyValue, data) {
             const json = await response.json();
             // Undo the highlight
             $$(`.btnRowDelete[data-row-key-value="${keyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+
+            // Reload the page
 
             // Close the popup
             app.popup.close('.edit-row-popup');

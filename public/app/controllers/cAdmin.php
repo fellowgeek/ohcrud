@@ -68,13 +68,13 @@ class cAdmin extends \OhCrud\DB {
 
         // Update the COLUMNS details and add ICON based on detected data types.
         foreach($this->data as $outerIndex => $outerValue) {
-            if (isset($outerValue->COLUMNS) == true) {
-                if (isset($this->data->{$outerIndex}->COLUMNS) == true) {
-                    $columns = $this->data->{$outerIndex}->COLUMNS;
-                    foreach ($columns as $innerIndex => $innerValue) {
-                        $this->data->{$outerIndex}->COLUMNS[$innerIndex]->ICON = $this->getFAIconForDetectedType($this->data->{$outerIndex}->COLUMNS[$innerIndex]->DETECTED_TYPE);
-                    }
-                }
+            if (isset($outerValue->COLUMNS) == false) {
+                continue;
+            }
+
+            $columns = $this->data->{$outerIndex}->COLUMNS;
+            foreach ($columns as $innerIndex => $innerValue) {
+                $this->data->{$outerIndex}->COLUMNS[$innerIndex]->ICON = $this->getFAIconForDetectedType($this->data->{$outerIndex}->COLUMNS[$innerIndex]->DETECTED_TYPE, $innerValue->NAME);
             }
         }
 
@@ -330,11 +330,19 @@ class cAdmin extends \OhCrud\DB {
     }
 
     // This function returns a font-awesome icon based on a given data type.
-    private function getFAIconForDetectedType($type) {
+    private function getFAIconForDetectedType($type, $columnName = '') {
+
+        // Handle icons for ohCRUD stamp fields
+        if (in_array($columnName, ['CDATE', 'MDATE']) == true) {
+            return 'fa-calendar';
+        }
+        if (in_array($columnName, ['CUSER', 'MUSER']) == true) {
+            return 'fa-hashtag';
+        }
 
         switch ($type) {
             case 'empty':
-                return '';
+                return 'fa-square-o';
             case 'email':
                 return 'fa-envelope-o';
             case 'URL':
@@ -374,7 +382,7 @@ class cAdmin extends \OhCrud\DB {
             case 'string':
                 return 'fa-font';
             default:
-                return '';
+                return 'fa-square-o';
         }
     }
 

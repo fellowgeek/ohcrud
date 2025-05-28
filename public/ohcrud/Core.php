@@ -169,17 +169,18 @@ class Core {
         }
 
         $hash = md5($key) . '.cache';
+        $path = __OHCRUD_CACHE_PATH__ . $hash;
 
-        if (file_exists(__OHCRUD_CACHE_PATH__ . $hash) == false) {
+        if (file_exists($path) == false) {
             return false;
         }
 
-        $age = time() - filemtime(__OHCRUD_CACHE_PATH__ . $hash);
+        $age = time() - filemtime($path);
         if ($age >= $duration) {
             return false;
         }
 
-        $data = unserialize(file_get_contents(__OHCRUD_CACHE_PATH__ . $hash));
+        $data = @unserialize(file_get_contents($path), ['allowed_classes' => false]);
         return $data;
     }
 
@@ -191,16 +192,20 @@ class Core {
         }
 
         $hash = md5($key) . '.cache';
-        $data = serialize($data);
-        return file_put_contents(__OHCRUD_CACHE_PATH__ . $hash, $data);
+        $path = __OHCRUD_CACHE_PATH__ . $hash;
+
+        $serialized = serialize($data);
+        return file_put_contents($path, $serialized, LOCK_EX);
     }
 
     // Remove data from cache.
     public function unsetCache($key) {
 
         $hash = md5($key) . '.cache';
-        if ( \file_exists(__OHCRUD_CACHE_PATH__ . $hash) == true) {
-            \unlink(__OHCRUD_CACHE_PATH__ . $hash);
+        $path = __OHCRUD_CACHE_PATH__ . $hash;
+
+        if (file_exists($path) == true) {
+            unlink($path);
             return true;
         }
         return false;
@@ -228,15 +233,15 @@ class Core {
     }
 
     // Log messages using Monolog if logging is enabled.
-    public function log($level, $message, array $context = array()) {
+    public function log($level, $message, array $context = array(), $channel = 'ohCRUD') {
 
         if (__OHCRUD_LOG_ENABLED__ == false) {
             return $this;
         }
 
-        $logger = new Logger('OHCRUD');
+        $logger = new Logger($channel);
         $stream = new StreamHandler(__OHCRUD_LOG_FILE__, Logger::DEBUG);
-        $stream->setFormatter(new \Monolog\Formatter\LineFormatter("[%datetime%] %channel%.%level_name%:\n%message%\n%context%\n----------------------------------------\n", "Y-m-d H:i:s"));
+        $stream->setFormatter(new \Monolog\Formatter\JsonFormatter());
         $logger->pushHandler($stream);
 
         try {
