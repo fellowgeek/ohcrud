@@ -1,11 +1,6 @@
 /*
   Global Styles
 */
-/* * {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-} */
 
 /* Fix for the iOS list dividers */
 .ios .list-dividers-ios .item-inner::after {
@@ -92,6 +87,10 @@ User Interface
   width: min(calc(100% - 32px), 500px);
 }
 
+input.formRecordInput {
+  padding-left: 5px !important;
+}
+
 input[readonly="true"] {
   background-color: var(--f7-page-bg-color) !important;
   opacity: 0.8 !important;
@@ -127,6 +126,42 @@ input[readonly="true"] {
   font-size: 12px;
 }
 
-#formEditRow .item-media {
+#formCreateRecord .item-media, #formEditRecord .item-media {
   color: var(--f7-table-head-text-color);
+}
+
+.ios .data-table-actions a.link.icon-only {
+  width: unset;
+  height: unset;
+}
+
+.data-table td.actions-cell, .data-table th.actions-cell {
+  padding-right: 20px;
+}
+
+
+/*
+Dark Mode
+*/
+.dark .page-current {
+  background-image:  url('../img/patterns/cartographer.png');
+}
+
+.dark input[readonly="true"] {
+  background-color: #333 !important;
+  opacity: 0.8 !important;
+  color: #666 !important;
+}
+
+.dark .CodeMirror {
+  background: unset !important;
+  color: var(--f7-input-text-color);
+}
+
+.dark .editor-toolbar a {
+  color: var(--f7-table-head-text-color) !important;
+}
+.dark .editor-toolbar i.separator {
+  border-left: 1px solid var(--f7-table-head-text-color);
+  border-right: 1px solid #333;
 }

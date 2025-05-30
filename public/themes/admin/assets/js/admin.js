@@ -29,6 +29,23 @@ $$(document).on('page:init', function (e, page) {
     // Log the page initialization event
     debugLog('event: "page:init" triggered for "' + page.name + '"');
 
+    // Global setup
+    let appDarkMode = localStorage.getItem('appDarkMode');
+    if (appDarkMode != null) {
+        $$('#appDarkMode').prop('checked', appDarkMode == 'Y' ? true : false);
+        setDarkMode(appDarkMode);
+    }
+
+    // Global events
+    $$('#btnLogout').on('click', function() {
+        logout(true);
+    });
+
+    $$('#appDarkMode').on('change', function() {
+        appDarkMode = $$(this).prop('checked');
+        setDarkMode(appDarkMode == true ? 'Y' : 'N');
+    });
+
     // If the login page is initialized
     if (page.name == 'login') {
 
@@ -393,6 +410,8 @@ $$(document).on('page:init', function (e, page) {
         let btnFormEditSave = $$('#btnFormEditSave');
         let btnFormEditCancel = $$('#btnFormEditCancel');
         let btnNewRecord = $$('#btnNewRecord');
+        let btnFormCreateSave = $$('#btnFormCreateSave');
+        let btnFormCreateCancel = $$('#btnFormCreateCancel');
 
         // Load table list
         loadTableList();
@@ -419,30 +438,55 @@ $$(document).on('page:init', function (e, page) {
 
         // Handle edit popup form events
         btnFormEditSave.on('click', function() {
+            let data = {};
             let rowKeyColumn = $$(this).data('row-key-column');
             let rowKeyValue = $$(this).data('row-key-value');
-            let formEditInputs = $$('.formEditInput');
-            let data = {};
+            let formRecordInputs = $$('.formRecordInput');
 
-            formEditInputs.forEach((formEditInput) => {
-                data[formEditInput.id] = formEditInput.value;
+            formRecordInputs.forEach((formRecordInput) => {
+                data[formRecordInput.id] = formRecordInput.value;
             });
-            updateRowData(tableName, rowKeyColumn, rowKeyValue, data);
+            saveRowData(tableName, 'update', data, rowKeyColumn, rowKeyValue);
         });
 
         btnFormEditCancel.on('click', function() {
             let rowKeyColumn = $$(this).data('row-key-column');
             let rowKeyValue = $$(this).data('row-key-value');
-
             // Undo the highlight
-            $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
-
+            $$(`.btnRecordDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
             // Close the popup
-            app.popup.close('.edit-row-popup');
+            app.popup.close('.edit-record-popup');
+            // Empty the form
+            setTimeout(() => {
+                $$('#formEditRecord').empty();
+            }, 500);
         });
 
+        // Handle create button and popup events
         btnNewRecord.on('click', function() {
-            console.log('Yo!');
+            // Build the create record form
+            buildFormFromData(columnDetails, 'formCreateRecord');
+            // Open the popup
+            app.popup.open('.create-record-popup');
+        });
+
+        btnFormCreateSave.on('click', function() {
+            let data = {};
+            let formRecordInputs = $$('.formRecordInput');
+
+            formRecordInputs.forEach((formRecordInput) => {
+                data[formRecordInput.id] = formRecordInput.value;
+            });
+            saveRowData(tableName, 'create', data);
+        });
+
+        btnFormCreateCancel.on('click', function() {
+            // Close the popup
+            app.popup.close('.create-record-popup');
+            // Empty the form
+            setTimeout(() => {
+                $$('#formCreateRecord').empty();
+            }, 500);
         });
 
     }
@@ -453,7 +497,7 @@ $$(document).on('page:init', function (e, page) {
 // -------------------------------------------------------------------------
 
 // Logout the user
-function logout() {
+function logout(redirect = false) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/users/logout/',
         {
             method: 'POST',
@@ -467,6 +511,9 @@ function logout() {
         },
         async function (response) {
             const json = await response.json();
+            if (redirect == true) {
+                window.location.href = '/login/';
+            }
         },
         async function (error) {
             const json = await error.json();
@@ -564,7 +611,8 @@ function loadTableList() {
                 {
                     'Content-Type': 'application/json'
                 }
-            )
+            ),
+            body: {}
         },
         async function (response) {
             const json = await response.json();
@@ -589,7 +637,6 @@ function loadTableList() {
 
             $$('.listTablesItem').on('click', function () {
                 let tableName = $$(this).data('table-name');
-                console.log(tableName);
                 window.location.href = __PATH__ + '?action=tables&table=' + tableName;
             });
         },
@@ -767,8 +814,8 @@ function loadTableData(table, page = 1) {
                     tableBody += tableBodyTD;
                     tableBody += `
                         <td class="actions-cell">
-                            <a class="btnRowEdit link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">square_pencil</i></a>
-                            <a class="btnRowDelete link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">trash</i></a>
+                            <a class="btnRecordEdit link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">square_pencil</i></a>
+                            <a class="btnRecordDelete link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">trash</i></a>
                         </td>
                     </tr>
                     `;
@@ -778,26 +825,26 @@ function loadTableData(table, page = 1) {
                 $$('.tableBody').html(tableBody);
 
                 // Event listener for row action buttons
-                $$('.btnRowEdit').on('click', function() {
+                $$('.btnRecordEdit').on('click', function() {
                     let rowKeyColumn = $$(this).data('row-key-column');
                     let rowKeyValue = $$(this).data('row-key-value');
 
                     // Highlight the row
-                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
+                    $$(`.btnRecordDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
 
                     // Get row data
                     loadRowData(table, rowKeyColumn, rowKeyValue);
 
                     // Open the popup
-                    app.popup.open('.edit-row-popup');
+                    app.popup.open('.edit-record-popup');
                 });
 
-                $$('.btnRowDelete').on('click', function() {
+                $$('.btnRecordDelete').on('click', function() {
                     let rowKeyColumn = $$(this).data('row-key-column');
                     let rowKeyValue = $$(this).data('row-key-value');
 
                     // Highlight the row
-                    $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
+                    $$(`.btnRecordDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
 
                     // Open the confirmation dialog
                     setTimeout(() => {
@@ -838,7 +885,7 @@ function loadTableData(table, page = 1) {
                             },
                             () => {
                                 // Undo the highlight
-                                $$(`.btnRowDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+                                $$(`.btnRecordDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
                             }
                         );
                     }, 250);
@@ -879,7 +926,7 @@ function loadTableData(table, page = 1) {
 
 // This function gets the row data from database
 function loadRowData(table, keyColumn, keyValue) {
-    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableRow/',
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/readTableRow/',
         {
             method: 'POST',
             cache: 'no-cache',
@@ -901,7 +948,7 @@ function loadRowData(table, keyColumn, keyValue) {
             $$('#btnFormEditCancel').data('row-key-value', keyValue);
             $$('#btnFormEditSave').data('row-key-column', keyColumn);
             $$('#btnFormEditSave').data('row-key-value', keyValue);
-            buildFormFromData(columnDetails, 'formEditRow', json.data);
+            buildFormFromData(columnDetails, 'formEditRecord', json.data);
         },
         async function (error) {
             const json = await error.json();
@@ -919,8 +966,38 @@ function loadRowData(table, keyColumn, keyValue) {
 }
 
 // This function update a row in the table with the form data
-function updateRowData(table, keyColumn, keyValue, data) {
-    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/updateTableRow/',
+function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
+
+    let body = {};
+    let adminAPI = '';
+    let page = parseInt($$('#PAGE_CURRENT').val());
+
+    if (mode == 'create') {
+        adminAPI = 'createTableRow';
+
+        // Remove unwanted data
+        Object.entries(columnDetails).forEach(([index, column]) => {
+            if (column.PRIMARY_KEY == true ||column.EXTRA == 'auto_increment') {
+                delete data[column.NAME];
+            }
+        });
+
+        body = {
+            TABLE: table,
+            ...data
+        };
+    }
+    if (mode == 'update') {
+        adminAPI = 'updateTableRow';
+        body = {
+            TABLE: table,
+            KEY_COLUMN: keyColumn,
+            KEY_VALUE: keyValue,
+            ...data
+        };
+    }
+
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/' + adminAPI + '/',
         {
             method: 'POST',
             cache: 'no-cache',
@@ -930,22 +1007,24 @@ function updateRowData(table, keyColumn, keyValue, data) {
                     'Content-Type': 'application/json'
                 }
             ),
-            body: {
-                TABLE: table,
-                KEY_COLUMN: keyColumn,
-                KEY_VALUE: keyValue,
-                ...data
-            }
+            body: body
         },
         async function (response) {
             const json = await response.json();
             // Undo the highlight
-            $$(`.btnRowDelete[data-row-key-value="${keyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+            $$(`.btnRecordDelete[data-row-key-value="${keyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
 
             // Reload the page
+            loadTableData(table, page);
 
             // Close the popup
-            app.popup.close('.edit-row-popup');
+            app.popup.close('.create-record-popup');
+            app.popup.close('.edit-record-popup');
+            // Empty the form
+            setTimeout(() => {
+                if (mode == 'create') $$('#formCreateRecord').empty();
+                if (mode == 'update') $$('#formEditRecord').empty();
+            }, 500);
         },
         async function (error) {
             const json = await error.json();
@@ -1124,7 +1203,7 @@ function buildFormFromData(columns, elementId, rowData = {}) {
                                 autocorrect="off"
                                 autocapitalize="off"
                                 ${inputType === 'number' ? 'step="any"' : ''}
-                                class="formEditInput"
+                                class="formRecordInput"
                             />
                         </div>
                     </div>
@@ -1154,7 +1233,6 @@ function notify(options = {}, closeTimeout = 3000) {
     notificationCloseOnClick.open();
 }
 
-
 // This function masks input number.
 function maskInputNumber(input) {
     let value = input.value;
@@ -1162,4 +1240,22 @@ function maskInputNumber(input) {
     value = value.replace(/[^0-9]/g, '');
     // Update the input value
     input.value = value;
+}
+
+// This function set the app dark/light mode theme
+function setDarkMode(appDarkMode) {
+    if (app == null) {
+        setTimeout(() => {
+            setDarkMode(appDarkMode);
+        }, 50);
+        return;
+    }
+    if (appDarkMode == 'Y') {
+        app.setDarkMode(true);
+        app.setColorTheme('#777777');
+    } else {
+        app.setDarkMode(false);
+        app.setColorTheme('#007aff');
+    }
+    localStorage.setItem('appDarkMode', appDarkMode);
 }

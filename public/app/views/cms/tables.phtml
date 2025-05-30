@@ -10,10 +10,6 @@ $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['
     <div class="card-header">
         <div class="data-table-title"><?= $table ?? '' ?></div>
         <div class="data-table-actions">
-
-            <a class="link icon-only">
-                <i class="icon f7-icons">ellipsis_circle</i>
-            </a>
             <a id="btnNewRecord" class="link icon-only">
                 <i class="icon f7-icons">plus</i>
             </a>
