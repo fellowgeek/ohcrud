@@ -1,8 +1,3 @@
-<?php
-    $content->theme = 'default';
-    $content->layout = 'plain';
-?>
-<br/>
 <h1>Understanding Hard-Coded Web Pages</h1>
 
 <p>In the ever-evolving landscape of web development, creating dynamic and interactive web pages has become the norm. However, not all web pages are created equal. Some websites still rely on a more traditional approach, where content is hard-coded directly into the page. In this article, we'll explore what it means for a web page to be hard-coded.</p>
@@ -21,15 +16,14 @@
 
 <h2>Below you can view the contents of the user's PHP session:</h2>
 
-<pre><code>
+<pre>
+    <code>
     // Display user session information using $this->debug($_SESSION);
     $this->debug($_SESSION);
-</code></pre>
+    </code>
+</pre>
 
-<p>This code will display the contents of the <code>$_SESSION</code> superglobal, which stores user-specific data for the current session. It can include information like user IDs, preferences, or authentication status.</p>
 
 <?php
     $this->debug($_SESSION);
-    $this->debug($_SERVER);
-    $this->debug($this);
 ?>

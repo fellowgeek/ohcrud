@@ -5,7 +5,7 @@ namespace app\controllers;
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cThemes - themes controller used by the CMS
-class cThemes extends \OhCrud\DB {
+class cThemes extends \ohCRUD\DB {
 
     // Define permissions for the controller.
     public $permissions = [
@@ -17,7 +17,7 @@ class cThemes extends \OhCrud\DB {
     public function getThemes() {
 
         // Set the output type for this controller to JSON
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Get a list of HTML files in the 'themes' directory and its subdirectories
         $scan = glob('themes/*/*.html');

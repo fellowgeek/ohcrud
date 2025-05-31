@@ -30,7 +30,7 @@ $$(document).on('page:init', function (e, page) {
     debugLog('event: "page:init" triggered for "' + page.name + '"');
 
     // Global setup
-    let appDarkMode = localStorage.getItem('appDarkMode');
+    let appDarkMode = localStorage.getItem('app:dark-mode');
     if (appDarkMode != null) {
         $$('#appDarkMode').prop('checked', appDarkMode == 'Y' ? true : false);
         setDarkMode(appDarkMode);
@@ -616,7 +616,7 @@ function loadTableList() {
         },
         async function (response) {
             const json = await response.json();
-            let listTables = $$('.listTables');
+            let listTables = $$('#listTables');
             listTables.empty();
             Object.entries(json.data).forEach(([table, tableData]) => {
                 if (table == 'Users') return;
@@ -692,7 +692,13 @@ function loadTableDetails(table) {
                         ${tableHeaderTHIcon}${column.NAME}
                     </th>
                     `;
-                    tableHeader += tableHeaderTH;
+
+                    // Check if we should render the column
+                    let columnEnabled = window.localStorage.getItem(`table:${table},column:${column.NAME}`);
+                    if (columnEnabled == null || columnEnabled != 'N' || column.PRIMARY_KEY == true) {
+                        tableHeader += tableHeaderTH;
+                    }
+
                     // Update global variable with the column details
                     columnDetails[column.NAME] = {...column};
                 });
@@ -705,6 +711,7 @@ function loadTableDetails(table) {
                 $$('.tableHeader').empty();
                 $$('.tableHeader').html(tableHeader);
 
+                loadTableColumnToggles(table);
                 loadTableData(table);
             }
         },
@@ -713,6 +720,56 @@ function loadTableDetails(table) {
             console.error(json);
         }
     );
+}
+
+// Load table column toggles
+function loadTableColumnToggles(table) {
+
+    let listColumnsToggle = $$('#listColumnsToggle');
+    listColumnsToggle.empty();
+
+    Object.entries(columnDetails).forEach(([index, column]) => {
+        // Skip primary key(s)
+        if (column.PRIMARY_KEY == true) return;
+
+        // Check if column is enabled
+        let columnEnabled = window.localStorage.getItem(`table:${table},column:${column.NAME}`);
+        if (columnEnabled == null || columnEnabled != 'N') {
+            columnEnabled = true;
+        } else {
+            columnEnabled = false;
+        }
+
+        let listColumnsToggleLI = `
+            <li class="item-content">
+                <div class="item-inner">
+                    <div class="item-title">${column.NAME}</div>
+                    <div class="item-after">
+                        <label class="toggle">
+                            <input type="checkbox" data-column-name="${column.NAME}" class="listColumnsToggleItem" ${columnEnabled === true ? 'checked="true"' : ''}>
+                            <span class="toggle-icon"></span>
+                        </label>
+                    </div>
+                </div>
+            </li>
+        `;
+
+        // Create a temporary element to hold the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = listColumnsToggleLI.trim();
+
+        // Append the field to the container
+        listColumnsToggle.append(tempDiv.firstChild);
+    });
+
+    $$('.listColumnsToggleItem').on('click', function() {
+        let columnName = $$(this).data('column-name');
+        let columnEnabled = $$(this).prop('checked');
+        window.localStorage.setItem(`table:${table},column:${columnName}`, columnEnabled === true ? 'Y' : 'N');
+
+        loadTableDetails(table);
+    });
+
 }
 
 // Load table data
@@ -745,6 +802,7 @@ function loadTableData(table, page = 1) {
                 let columnValue = '';
                 let primaryColumnName = '';
                 let primaryColumnValue = '';
+                let pageURL = '';
 
                 // Load the table data into the data table
                 json.data.forEach(row => {
@@ -808,13 +866,22 @@ function loadTableData(table, page = 1) {
                             `;
                         }
 
-                        tableBodyTD += `<td data-detected-type="${(value !== null && value !== '') ? columnDetails[key].DETECTED_TYPE : ''}">${columnValue}</td>`;
+                        // Handle special cases for ohCRUD tables ('Users', 'Pages', 'Files')
+                        if (table == 'Pages' && key == 'URL') {
+                            pageURL = value;
+                        }
+
+                        // Check if we should render the column
+                        let columnEnabled = window.localStorage.getItem(`table:${table},column:${columnDetails[key].NAME}`);
+                        if (columnEnabled == null || columnEnabled != 'N' || columnDetails[key].PRIMARY_KEY == true) {
+                            tableBodyTD += `<td data-detected-type="${(value !== null && value !== '') ? columnDetails[key].DETECTED_TYPE : ''}">${columnValue}</td>`;
+                        }
                     });
 
                     tableBody += tableBodyTD;
                     tableBody += `
                         <td class="actions-cell">
-                            <a class="btnRecordEdit link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">square_pencil</i></a>
+                            <a class="btnRecordEdit link icon-only" data-table="${table}" ${pageURL != '' ? 'data-page-url="' + pageURL + '?action=edit"' : ''} data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">square_pencil</i></a>
                             <a class="btnRecordDelete link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">trash</i></a>
                         </td>
                     </tr>
@@ -828,6 +895,13 @@ function loadTableData(table, page = 1) {
                 $$('.btnRecordEdit').on('click', function() {
                     let rowKeyColumn = $$(this).data('row-key-column');
                     let rowKeyValue = $$(this).data('row-key-value');
+                    let rowTable = $$(this).data('table');
+
+                    // Handle special cases for ohCRUD tables
+                    if (rowTable == 'Pages') {
+                        window.location.href = $$(this).data('page-url');
+                        return;
+                    }
 
                     // Highlight the row
                     $$(`.btnRecordDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
@@ -1252,10 +1326,10 @@ function setDarkMode(appDarkMode) {
     }
     if (appDarkMode == 'Y') {
         app.setDarkMode(true);
-        app.setColorTheme('#777777');
+        app.setColorTheme('#2564aa');
     } else {
         app.setDarkMode(false);
         app.setColorTheme('#007aff');
     }
-    localStorage.setItem('appDarkMode', appDarkMode);
+    localStorage.setItem('app:dark-mode', appDarkMode);
 }

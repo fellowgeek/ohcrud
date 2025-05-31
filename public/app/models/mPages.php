@@ -4,8 +4,8 @@ namespace app\models;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Model mPages - Represents a pages model extending the \OhCrud\DB class.
-class mPages extends \OhCrud\DB {
+// Model mPages - Represents a pages model extending the \ohCRUD\DB class.
+class mPages extends \ohCRUD\DB {
 
     function __construct() {
         parent::__construct();

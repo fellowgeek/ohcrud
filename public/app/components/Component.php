@@ -4,7 +4,7 @@ namespace app\components;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-class Component extends \OhCrud\DB {
+class Component extends \ohCRUD\DB {
 
     public $path;
     public $content;

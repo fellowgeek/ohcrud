@@ -18,7 +18,7 @@ class cPages extends \app\models\mPages {
 
     // Method to save or edit a page.
     public function save($request) {
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
@@ -101,7 +101,7 @@ class cPages extends \app\models\mPages {
     // Method to restore or delete a page.
     public function restoreDeletePage($request) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)

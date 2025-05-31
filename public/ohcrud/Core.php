@@ -1,5 +1,5 @@
 <?php
-namespace OhCrud;
+namespace ohCRUD;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -8,7 +8,7 @@ use stdClass;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Class Core - core operations class for OhCrud, all other OhCrud classed inherit from this class
+// Class Core - core operations class for ohCRUD, all other ohCRUD classed inherit from this class
 class Core {
 
     const ACTIVE = 1;

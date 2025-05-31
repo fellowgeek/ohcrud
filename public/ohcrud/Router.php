@@ -1,11 +1,11 @@
 <?php
-namespace OhCrud;
+namespace ohCRUD;
 
 // Prevent direct access to this class
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Class Router - routing operations class for OhCrud, all incoming request processed by this class
-class Router extends \OhCrud\Core {
+// Class Router - routing operations class for ohCRUD, all incoming request processed by this class
+class Router extends \ohCRUD\Core {
 
     private $request;
 
@@ -94,8 +94,8 @@ class Router extends \OhCrud\Core {
         }
 
         // Set the output type to JSON and return a 404 error response.
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
-        $this->error('Oh CRUD! You just got 404\'d.', 404);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+        $this->error('ohCRUD! You just got 404\'d.', 404);
         $this->output();
 
     }
@@ -132,7 +132,7 @@ class Router extends \OhCrud\Core {
     private function authorize() {
 
         // Variables
-        $users = new \OhCrud\Users;
+        $users = new \ohCRUD\Users;
         $httpHeaders = getallheaders();
         $userHasLoggedIn = false;
 
@@ -203,7 +203,7 @@ class Router extends \OhCrud\Core {
     // Handle forbidden access and return a 403 error response.
     private function forbidden() {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
         $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.', 403);
         $this->output();
     }

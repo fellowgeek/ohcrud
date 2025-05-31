@@ -15,7 +15,7 @@ define('__DOMAIN__', implode('.', array_slice(explode('.', __SITE__), -2)));
 define('__SUB_DOMAIN__', (count($parts = explode('.', $_SERVER['HTTP_HOST'])) > 2) ? $parts[0] : '');
 
 // Define the name of the application.
-define('__APP__', 'Oh CRUD!');
+define('__APP__', 'ohCRUD!');
 
 // Define the base API route for OhCRUD core functionality
 define('__OHCRUD_BASE_API_ROUTE__', '/ohcrud');

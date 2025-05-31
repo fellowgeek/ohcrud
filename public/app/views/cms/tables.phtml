@@ -10,6 +10,9 @@ $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['
     <div class="card-header">
         <div class="data-table-title"><?= $table ?? '' ?></div>
         <div class="data-table-actions">
+            <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">
+                <i class="icon f7-icons">table_badge_more</i>
+            </a>
             <a id="btnNewRecord" class="link icon-only">
                 <i class="icon f7-icons">plus</i>
             </a>
@@ -35,12 +38,23 @@ $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['
         </div>
         <div class="data-table-pagination">
             <span ID="RECORDS_DISPLAYED" class="data-table-pagination-label">...</span>
-            <a ID="btnPagePrevious" href="#" class="link disabled">
-                <i class="icon icon-prev color-gray"></i>
-            </a>
-            <a ID="btnPageNext" href="#" class="link">
-                <i class="icon icon-next color-gray"></i>
-            </a>
+            <div class="pagination-wrapper">
+                <a ID="btnPagePrevious" href="#" class="link disabled">
+                    <i class="icon icon-prev color-gray"></i>
+                </a>
+                <a ID="btnPageNext" href="#" class="link">
+                    <i class="icon icon-next color-gray"></i>
+                </a>
+            </div>
         </div>
+    </div>
+</div>
+
+<!-- Columns Toggle Popover -->
+<div class="popover columns-toggle-popover">
+    <div class="popover-angle"></div>
+    <div class="popover-inner list list-strong-ios list-dividers-ios inset-ios">
+        <ul id="listColumnsToggle">
+        </ul>
     </div>
 </div>

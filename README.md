@@ -2,23 +2,23 @@
 
 # Introduction
 
-OhCrud is a PHP micro framework that helps you quickly write simple yet powerful applications and create APIs. At its core, it provides the basic *C*reate *R*ead *U*pdate *D*elete methods to interact with MySQL or SQLITE.
+ohCRUD is a PHP micro framework that helps you quickly write simple yet powerful applications and create APIs. At its core, it provides the basic *C*reate *R*ead *U*pdate *D*elete methods to interact with MySQL or SQLITE.
 
 > Ninety percent of everything is crud.
 >
 > <footer>Theodore Sturgeon</footer>
 
-OhCrud uses composer and fully supports PSR-4 autoloading so you can reference your classes using the name spaces, You can easily define API or HTML endpoints and map incomming requests to your classes to handle, or you can use a catch all *__OHCRUD_DEFAULT_PATH_HANDLER__* to catch all the other requests.
+ohCRUD uses composer and fully supports PSR-4 autoloading so you can reference your classes using the name spaces, You can easily define API or HTML endpoints and map incomming requests to your classes to handle, or you can use a catch all *__OHCRUD_DEFAULT_PATH_HANDLER__* to catch all the other requests.
 
 Framework comes with a secure users and permissions handling, you can define per method permissions for all your API endpoints.
 
-OhCrud uses [Monolog](https://github.com/Seldaek/monolog) liberary to handle logs, all PDO exceptions are automatically logged into the designated log file in a well formated way.
+ohCRUD uses [Monolog](https://github.com/Seldaek/monolog) liberary to handle logs, all PDO exceptions are automatically logged into the designated log file in a well formated way.
 
 While I belive any programming language that comes with fulctions like _money_format_, or _ucwords_ and so on... right out of the box is CRUD, my goal is to make things less shitty with my framework, but as a rule still contains ninety percent crud!
 
 # Getting Started
 
-The OhCrud framework has a few system requirements and you can run it on a Raspberry Pi 1 with SQLITE database, you will need to make sure your server meets the following requirements:
+The ohCRUD framework has a few system requirements and you can run it on a Raspberry Pi 1 with SQLITE database, you will need to make sure your server meets the following requirements:
 
 *   PHP >= 5.6.0 (PHP 7 Recommended)
 *   PDO PHP Extension
@@ -28,17 +28,17 @@ The OhCrud framework has a few system requirements and you can run it on a Raspb
 
 ## Installation
 
-OhCrud utilizes [Composer](https://getcomposer.org/) to manage its dependencies. So, before using OhCrud, make sure you have Composer installed on your machine.
+ohCRUD utilizes [Composer](https://getcomposer.org/) to manage its dependencies. So, before using ohCRUD, make sure you have Composer installed on your machine.
 
-To install OhCrud, first create a directory for your project in your webserver's root directory:
+To install ohCRUD, first create a directory for your project in your webserver's root directory:
 
-<pre>mkdir /var/www/OhCrud
+<pre>mkdir /var/www/ohCRUD
 </pre>
 
 Then run the following commands:
 
-<pre>git clone https://github.com/fellowgeek/OhCrud.git /var/www/OhCrud
-rm -rf /var/www/OhCrud/.git
+<pre>git clone https://github.com/fellowgeek/ohCRUD.git /var/www/ohCRUD
+rm -rf /var/www/ohCRUD/.git
 composer update
 composer dump-autoload
 </pre>
@@ -47,7 +47,7 @@ After all the files are copied in place you need to configure your webserver to 
 
 ### Apache configuration
 
-Make sure apache has the *mod_rewrite* enabled, there is a *.htaccess* file included in OhCrud package that should take care of everything for you but if you need to make one make sure it looks like this:
+Make sure apache has the *mod_rewrite* enabled, there is a *.htaccess* file included in ohCRUD package that should take care of everything for you but if you need to make one make sure it looks like this:
 
 <pre>
 &lt;IfModule mod_rewrite.c&gt;
@@ -112,21 +112,21 @@ Use the table below to define the following settings constants in the *<span cla
 | --- | --- | --- |
 | __SELF__ | String | Same as *<span class="monospace">$_SERVER['DOCUMENT_ROOT']</span>*, contains the path to application's root folder. |
 | __SITE__ | String | Enter yout applications domain here i.e. *example.com* |
-| __OHCRUD_DEBUG_MODE__ | Boolean | If this is enabled, every OhCrud response will contain a *<span class="monospace">runtime</span>* and *<span class="monospace">SQL</span>* property if applicaple. This hsould be set to *<span class="monospace">false</span>* for production. |
+| __OHCRUD_DEBUG_MODE__ | Boolean | If this is enabled, every ohCRUD response will contain a *<span class="monospace">runtime</span>* and *<span class="monospace">SQL</span>* property if applicaple. This hsould be set to *<span class="monospace">false</span>* for production. |
 | __OHCRUD_DEBUG_EXPANDED_LEVEL__ | Integer | This sets the initally expanded levels in the output of the *<span class="monospace">debug()</span>* method. |
 | __OHCRUD_LOG_FILE__ | String | Path to the defualt log file, initally set to *<span class="monospace">/logs/app.log</span>* |
 | __OHCRUD_SECRET__ | String | Secret string used to generate passwords, you must change this to a random string for each project. |
 | __OHCRUD_SESSION_LIFETIME__ | Integer | Application session cookie lifetime in seconds, defualt 3600 seconds. |
-| __OHCRUD_DB_STAMP__ | Boolean | This will determione if OhCrud should add CDATE (create date), MDATE (midified date), CUSER (created by user id), MUSER (modified by user id) columns to every table. |
+| __OHCRUD_DB_STAMP__ | Boolean | This will determione if ohCRUD should add CDATE (create date), MDATE (midified date), CUSER (created by user id), MUSER (modified by user id) columns to every table. |
 | __OHCRUD_DB_CONFIG__ | Serialize Array | Database settings for SQLITE or MYSQL should be entered here in the form of a serialized array. *If you are using a SQLITE database, it is strongly recommended that you move the databse file outside of your web application directory.* |
-| __OHCRUD_ENDPOINTS__ | Serialize Array | API or HTML endpoints should be entered here in the form of a serialized array. You can map any arbitary URL path to a OhCrud or OhCrud compatible class to handle. |
-| __OHCRUD_DEFAULT_PATH_HANDLER__ | String | Use this setting to map any URL path that is not handled by the *<span class="monospace">__OHCRUD_DEFAULT_PATH_HANDLER__</span>*. This needs to be a OhCrud or OhCrud compatible classs. This is usefull if you have a content managment class to handle all the web pages. |
+| __OHCRUD_ENDPOINTS__ | Serialize Array | API or HTML endpoints should be entered here in the form of a serialized array. You can map any arbitary URL path to a ohCRUD or ohCRUD compatible class to handle. |
+| __OHCRUD_DEFAULT_PATH_HANDLER__ | String | Use this setting to map any URL path that is not handled by the *<span class="monospace">__OHCRUD_DEFAULT_PATH_HANDLER__</span>*. This needs to be a ohCRUD or ohCRUD compatible classs. This is usefull if you have a content managment class to handle all the web pages. |
 
 ## Directory Structure
 
-OhCrud utilizes [Composer](https://getcomposer.org/) to manage its dependencies, all classes should be [PSR-4](http://www.php-fig.org/psr/psr-4/) compliant to work with autoloading.
+ohCRUD utilizes [Composer](https://getcomposer.org/) to manage its dependencies, all classes should be [PSR-4](http://www.php-fig.org/psr/psr-4/) compliant to work with autoloading.
 
-Below you can see a breakdown of the OhCrud folders in alphabetical order.
+Below you can see a breakdown of the ohCRUD folders in alphabetical order.
 
 | Directory | Description |
 | --- | --- |
@@ -134,27 +134,27 @@ Below you can see a breakdown of the OhCrud folders in alphabetical order.
 | /app/controllers/ | By default, this directory is namespaced under *\app\controllers* and is autoloaded by Composer using the PSR-4 autoloading standard. Ideally your controller classes should exists under this directory. |
 | /app/models/ | By default, this directory is namespaced under *\app\models* and is autoloaded by Composer using the PSR-4 autoloading standard. Ideally your model classes should exists under this directory. |
 | /app/views/ | This directory is for your application views. |
-| /assets/css/ | CSS assets are located here, by default OhCrud comes with boostrap framework. |
+| /assets/css/ | CSS assets are located here, by default ohCRUD comes with boostrap framework. |
 | /assets/db/ | We used this directory to include a default SQLITE databse file. |
 | /assets/fonts/ | Font assets are located here. |
-| /assets/images/ | Image assets including the awesome OhCrud logo are located here. |
-| /assets/js/ | Javascript assets are located here, by default OhCrud includes a copy of jQuery. |
+| /assets/images/ | Image assets including the awesome ohCRUD logo are located here. |
+| /assets/js/ | Javascript assets are located here, by default ohCRUD includes a copy of jQuery. |
 | /logs/ | This is the defualt applicstion logs directory. |
-| /OhCrud/ | This directory contains the OhCrud framework which consists of *Core.php*, *DB.php*, *Router.php*, and *Users.php*. We will discuss these files in detail in [The Basics](#section3) section of this documentaion. |
+| /ohCRUD/ | This directory contains the ohCRUD framework which consists of *Core.php*, *DB.php*, *Router.php*, and *Users.php*. We will discuss these files in detail in [The Basics](#section3) section of this documentaion. |
 | /vendor/ | The vendor directory contains your Composer dependencies. |
 | /composer.json | This file describes the dependencies of your project and may contain other metadata as well. You may add other classes you wish to include in autoloading under psr-4 key. |
-| /index.php | OhCrud index file, all web, API, and console requests will hit this file first. |
-| /settings.php | OhCrud settings are defined here. You should use the *settings.sample.php* to generate this. |
+| /index.php | ohCRUD index file, all web, API, and console requests will hit this file first. |
+| /settings.php | ohCRUD settings are defined here. You should use the *settings.sample.php* to generate this. |
 
 ## The Basics
 
-All OhCrud classes inherit from the Core class. Ideally all of your models and controllers should do the same. If a class needs databse functions should inherit from the DB class, which itself inherits from Core.
+All ohCRUD classes inherit from the Core class. Ideally all of your models and controllers should do the same. If a class needs databse functions should inherit from the DB class, which itself inherits from Core.
 
 API and WEB endpoints are handled by the Router class, the Router checks if user has the correct permissions to access the end point and Routes the request to the correct class to handle.
 
-OhCrud uses the Users class to authenticate users and check permissions, when *__OHCRUD_DEBUG_MODE__* set to *TRUE* if the Users table does not exists, OhCrud will auto create the table and insert a default admin user into it.
+ohCRUD uses the Users class to authenticate users and check permissions, when *__OHCRUD_DEBUG_MODE__* set to *TRUE* if the Users table does not exists, ohCRUD will auto create the table and insert a default admin user into it.
 
-### OhCrud default username and password
+### ohCRUD default username and password
 
 <pre>Username : admin
 Password : admin
@@ -162,7 +162,7 @@ Password : admin
 
 ## Core Object
 
-Every class in OhCrud inherits from the Core object, This class is responsible for setting the output type and http headers and performing tasks like logging, errors handling, remote requests, and debug.
+Every class in ohCRUD inherits from the Core object, This class is responsible for setting the output type and http headers and performing tasks like logging, errors handling, remote requests, and debug.
 
 ### Properties
 
@@ -186,16 +186,16 @@ $this->log('info', 'This is a test log.')->debug($_SERVER)->request('https://www
 
 | Method | Description | Return Value |
 | --- | --- | --- |
-| setOutputType($outputType) | Output can be set to *'HTML'*, *'JSON'* or *NULL*. | OhCrud Object |
-| setOutputHeaders($outputHeaders = array()) | You can set HTML headers here. | OhCrud Object |
-| setOutputStatusCode($outputStatusCode) | This is set automatically if operation is successfull or if any errors happen. You can set your own HTTP status code here as well. | OhCrud Object |
-| setSession($key, $value) | This method sets a PHP session value and unlocks session data. | OhCrud Object |
-| unsetSession($key) | This method unsets a PHP session value and unlocks session data. | OhCrud Object |
-| output() | This method causes the class to produce the output based on the *outputType* | OhCrud Object |
-| log($level = 'debug', $message, array $context = array()) | This method is a wrapper for [Monolog](https://seldaek.github.io/monolog/) and will produce an entry into the defualt log file. | OhCrud Object |
-| error($message, $outputStatusCode = 500) | This method will throw an error and logs the error into the defualt log file. Calling this method also cause *success* to be *FALSE*. | OhCrud Object |
-| request($url, $method = 'GET', $data = '', array $headers = array()) | This is a wrapper method for php-curl, this allows you to call remote APIs and receive the response in OhCrud friendly way. | OhCrud Object |
-| debug($expression = null) | If called without any parameters will output *$this* class. If an experssion is passed, this method will output that expression instead. Here an example of the *debug()* method: |  OhCrud Object |
+| setOutputType($outputType) | Output can be set to *'HTML'*, *'JSON'* or *NULL*. | ohCRUD Object |
+| setOutputHeaders($outputHeaders = array()) | You can set HTML headers here. | ohCRUD Object |
+| setOutputStatusCode($outputStatusCode) | This is set automatically if operation is successfull or if any errors happen. You can set your own HTTP status code here as well. | ohCRUD Object |
+| setSession($key, $value) | This method sets a PHP session value and unlocks session data. | ohCRUD Object |
+| unsetSession($key) | This method unsets a PHP session value and unlocks session data. | ohCRUD Object |
+| output() | This method causes the class to produce the output based on the *outputType* | ohCRUD Object |
+| log($level = 'debug', $message, array $context = array()) | This method is a wrapper for [Monolog](https://seldaek.github.io/monolog/) and will produce an entry into the defualt log file. | ohCRUD Object |
+| error($message, $outputStatusCode = 500) | This method will throw an error and logs the error into the defualt log file. Calling this method also cause *success* to be *FALSE*. | ohCRUD Object |
+| request($url, $method = 'GET', $data = '', array $headers = array()) | This is a wrapper method for php-curl, this allows you to call remote APIs and receive the response in ohCRUD friendly way. | ohCRUD Object |
+| debug($expression = null) | If called without any parameters will output *$this* class. If an experssion is passed, this method will output that expression instead. Here an example of the *debug()* method: |  ohCRUD Object |
 
 ![](https://erfan.me/assets/images/debug001.png)
 
@@ -213,7 +213,7 @@ Same as Core object plus the following:
 
 | Method | Description | Return Value |
 | --- | --- | --- |
-| run($sql, $bind=array()) | This method will execute any SQL query agaist the database and will return the resulting dataset or a simple *TRUE* or *FALSE* if dataset is not present. While it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | OhCrud Object |
+| run($sql, $bind=array()) | This method will execute any SQL query agaist the database and will return the resulting dataset or a simple *TRUE* or *FALSE* if dataset is not present. While it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | ohCRUD Object |
 
 ```php
 $this->run(
@@ -226,7 +226,7 @@ $this->run(
 
 | Method | Description | Return Value |
 | --- | --- | --- |
-| create($table, $data=array()) | Use this method to insert a new record into the database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | OhCrud Object |
+| create($table, $data=array()) | Use this method to insert a new record into the database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | ohCRUD Object |
 
 ```php
 $this->create(
@@ -250,7 +250,7 @@ $this->create(
 
 | Method | Description | Return Value |
 | --- | --- | --- |
-| read($table, $where="", $bind=array(), $fields="*") | Use this method to read records from database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | OhCrud Object |
+| read($table, $where="", $bind=array(), $fields="*") | Use this method to read records from database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | ohCRUD Object |
 
 ```php
 $this->read(
@@ -265,7 +265,7 @@ $this->read(
 
 | Method | Description | Return Value |
 | --- | --- | --- |
-| update($table, $data, $where, $bind=array()) | Use this method to update records in database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | OhCrud Object |
+| update($table, $data, $where, $bind=array()) | Use this method to update records in database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | ohCRUD Object |
 
 ```php
 $this->update(
@@ -283,7 +283,7 @@ $this->update(
 
 | Method | Description | Return Value |
 | --- | --- | --- |
-| delete($table, $where, $bind=array()) | Use this method to delete records from database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | OhCrud Object |
+| delete($table, $where, $bind=array()) | Use this method to delete records from database, while it is optional, you should use the *$bind* array to bind your data to your SQL placeholders. see example below: | ohCRUD Object |
 
 ```php
 $this->delete(
@@ -320,7 +320,7 @@ Before calling objects and methods Router checks the target class for the public
 ```php
 namespace app\models;
 
-class Example extends \OhCrud\DB {
+class Example extends \ohCRUD\DB {
 
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
@@ -339,13 +339,13 @@ the *'object'* key in the *$permissions* array controls the global access to the
 
 To grant full access to a method or object without requiring user to login use *__OHCRUD_PERMISSION_ALL__* constant.
 
-When accessing a protected method, if user is not logged in, OhCrud will ask for the login credentians via basic authentication.
+When accessing a protected method, if user is not logged in, ohCRUD will ask for the login credentians via basic authentication.
 
 ## Users Object
 
-Users object is the OhCrud's way of handling users and permissions, if *__OHCRUD_DEBUG_MODE__* is set to *TRUE*, OhCrud will create a Users table and will insert a defualt admin user into it as the starting point.
+Users object is the ohCRUD's way of handling users and permissions, if *__OHCRUD_DEBUG_MODE__* is set to *TRUE*, ohCRUD will create a Users table and will insert a defualt admin user into it as the starting point.
 
-### OhCrud default username and password
+### ohCRUD default username and password
 
 <pre>Username : admin
 Password : admin
@@ -366,13 +366,13 @@ Same as DB object plus the following:
 
 ## Errors & Logging
 
-OhCrud objects inherit from Core object, which means they all have a *error($message, $outputStatusCode = 500)* and *log($level = 'debug', $message, array $context = array())* method. Use this method to throw errors and set the HTTP status code.
+ohCRUD objects inherit from Core object, which means they all have a *error($message, $outputStatusCode = 500)* and *log($level = 'debug', $message, array $context = array())* method. Use this method to throw errors and set the HTTP status code.
 
 Database object (DB) will call the *error* method when a PDO exception occurs.
 
-OhCrud uses [Monolog](https://github.com/Seldaek/monolog) liberary to handle logs, the *log* method in Core is a wrapper for Monolog. Use this method to record PSR-3 compliant log messages. The error method will also record a log.
+ohCRUD uses [Monolog](https://github.com/Seldaek/monolog) liberary to handle logs, the *log* method in Core is a wrapper for Monolog. Use this method to record PSR-3 compliant log messages. The error method will also record a log.
 
-In OhCrud logs are fomatted like the examples below (output is trimmed to fit in this documentation page) :
+In ohCRUD logs are fomatted like the examples below (output is trimmed to fit in this documentation page) :
 
 <pre>[2017-07-25 15:01:16] OHCRUD.WARNING:
 Login attempt was not successful
@@ -390,7 +390,7 @@ I'm sorry Dave, I'm afraid I can't do that.
 
 ## Command Line Interface
 
-You can call OhCrud paths and endpoints from your server's command line. When calling an endpoint from command line OhCrud will bypass the permissions array completely. If the otput type is not defined, OhCrud will print a debug output in the console. See example output below:
+You can call ohCRUD paths and endpoints from your server's command line. When calling an endpoint from command line ohCRUD will bypass the permissions array completely. If the otput type is not defined, ohCRUD will print a debug output in the console. See example output below:
 
 <pre>php path_to/index.php "/endpont/example/"
 </pre>

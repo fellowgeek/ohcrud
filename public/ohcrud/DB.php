@@ -1,11 +1,11 @@
 <?php
-namespace OhCrud;
+namespace ohCRUD;
 
 // Prevent direct access to this class
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-//  Class DB - Database operations class for OhCrud.
-class DB extends \OhCrud\Core {
+//  Class DB - Database operations class for ohCRUD.
+class DB extends \ohCRUD\Core {
 
     // Stores the most recently generated auto-increment ID from a successful INSERT query.
     public $lastInsertId;

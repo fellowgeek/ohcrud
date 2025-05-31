@@ -1,13 +1,13 @@
 <?php
-namespace OhCrud;
+namespace ohCRUD;
 
 use OTPHP\TOTP;
 
 // Prevent direct access to this class
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Class Users - Users class for OhCrud, this class handles creation and authentication of the OhCrud framework users.
-class Users extends \OhCrud\DB {
+// Class Users - Users class for ohCRUD, this class handles creation and authentication of the ohCRUD framework users.
+class Users extends \ohCRUD\DB {
 
     function __construct() {
         parent::__construct();

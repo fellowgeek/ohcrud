@@ -7,6 +7,11 @@
   width: calc(100% - 15px);
 }
 
+.ios .data-table-pagination a.link, .ios .data-table-rows-select a.link {
+  width: 38px !important;
+  height: 38px !important;
+}
+
 /* simplemde Styles */
 .editor-toolbar {
   border: none !important;
@@ -40,6 +45,7 @@
 /* Helper Classes */
 .outline {
   outline: 1px dashed #f0f;
+  background-color: rgba(255,0,255, 0.1);
 }
 
 .hidden {
@@ -139,6 +145,9 @@ input[readonly="true"] {
   padding-right: 20px;
 }
 
+.pagination-wrapper {
+  margin-right: 10px;
+}
 
 /*
 Dark Mode
@@ -151,6 +160,14 @@ Dark Mode
   background-color: #333 !important;
   opacity: 0.8 !important;
   color: #666 !important;
+}
+
+.dark input:autofill,
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  color: var(--f7-input-text-color) !important;
+  -webkit-text-fill-color: var(--f7-input-text-color) !important;
 }
 
 .dark .CodeMirror {

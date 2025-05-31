@@ -30,5 +30,5 @@
         $GLOBALS['PATH_RAW'] = $_SERVER['REQUEST_URI'];
     }
 
-    // Create an instance of the OhCrud\Router class to handle the request.
-    new OhCrud\Router($GLOBALS['PATH_RAW']);
+    // Create an instance of the ohCRUD\Router class to handle the request.
+    new ohCRUD\Router($GLOBALS['PATH_RAW']);

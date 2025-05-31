@@ -35,7 +35,7 @@ class cFiles extends \app\models\mFiles {
     public function upload($request) {
 
         // Set the output type of this controller to JSON.
-        $this->outputType = \OhCrud\Core::OUTPUT_JSON;
+        $this->outputType = \ohCRUD\Core::OUTPUT_JSON;
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false) {

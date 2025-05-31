@@ -6,7 +6,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cAdmin - admin controller used by the CMS admin interface.
 
-class cAdmin extends \OhCrud\DB {
+class cAdmin extends \ohCRUD\DB {
 
     // Define permissions for the controller.
     public $permissions = [
@@ -24,7 +24,7 @@ class cAdmin extends \OhCrud\DB {
 
     // This function returns a list of all the tables in the database.
     public function getTableList($request) {
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
         $this->data = new \stdClass();
@@ -46,7 +46,7 @@ class cAdmin extends \OhCrud\DB {
 
     // This function returns information about the table(s) in the database and their columns.
     public function getTableDetails($request) {
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
         $this->data = new \stdClass();
@@ -85,7 +85,7 @@ class cAdmin extends \OhCrud\DB {
     // This function returns the data for a given table in the database.
     public function getTableData($request) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
         $this->data = new \stdClass();
@@ -169,7 +169,7 @@ class cAdmin extends \OhCrud\DB {
     // This function inserts a new row into a given table in the database.
     public function createTableRow($request) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
         $this->data = new \stdClass();
@@ -214,7 +214,7 @@ class cAdmin extends \OhCrud\DB {
     // This function returns the data for a given table row in the database.
     public function readTableRow($request) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
         $this->data = new \stdClass();
@@ -253,7 +253,7 @@ class cAdmin extends \OhCrud\DB {
 
     // This function updates a row in a given table in the database.
     public function updateTableRow($request) {
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
         $this->data = new \stdClass();
@@ -308,7 +308,7 @@ class cAdmin extends \OhCrud\DB {
 
     // This function deletes a row from a given table in the database.
     public function deleteTableRow($request) {
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
         $this->data = new \stdClass();

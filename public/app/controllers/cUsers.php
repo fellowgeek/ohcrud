@@ -5,7 +5,7 @@ namespace app\controllers;
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cUsers - users controller used by the OhCRUD framework
-class cUsers extends \OhCrud\DB {
+class cUsers extends \ohCRUD\DB {
 
     // Define permissions for the controller.
     public $permissions = [
@@ -19,11 +19,11 @@ class cUsers extends \OhCrud\DB {
     public function login($request) {
 
         // Sets the output type for this controller to JSON.
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
-        // Initializes variables and creates an instance of the 'OhCrud\Users' class.
+        // Initializes variables and creates an instance of the 'ohCRUD\Users' class.
         $this->data = new \stdClass();
-        $Users = new \OhCrud\Users;
+        $Users = new \ohCRUD\Users;
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
@@ -63,11 +63,11 @@ class cUsers extends \OhCrud\DB {
     public function verify($request) {
 
         // Sets the output type for this controller to JSON.
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
-        // Initializes variables and creates an instance of the 'OhCrud\Users' class.
+        // Initializes variables and creates an instance of the 'ohCRUD\Users' class.
         $this->data = new \stdClass();
-        $Users = new \OhCrud\Users;
+        $Users = new \ohCRUD\Users;
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
         if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
@@ -108,7 +108,7 @@ class cUsers extends \OhCrud\DB {
     public function logout($request) {
 
         // Sets the output type for this controller to JSON.
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Unset the User and tempUser sessions (user logout)
         $this->unsetSession('User');

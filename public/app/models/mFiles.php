@@ -4,8 +4,8 @@ namespace app\models;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Model mFiles - Represents a file model extending the \OhCrud\DB class.
-class mFiles extends \OhCrud\DB {
+// Model mFiles - Represents a file model extending the \ohCRUD\DB class.
+class mFiles extends \ohCRUD\DB {
 
     // The permissions associated with the model.
     public $permissions = [

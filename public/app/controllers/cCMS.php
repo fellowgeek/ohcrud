@@ -8,7 +8,7 @@ use HTMLPurifier;
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cCMS - CMS controller used by the OhCRUD framework
-class cCMS extends \OhCrud\DB {
+class cCMS extends \ohCRUD\DB {
 
     // The path of the requested content.
     public $path;
@@ -63,6 +63,11 @@ class cCMS extends \OhCrud\DB {
             }
         }
 
+        // Disable cache for login pages
+        if ($GLOBALS['PATH'] == '/login/') {
+            $this->useCache = false;
+        }
+
         // Redirect to login page if not logged in
         if ($this->loggedIn == false && isset($this->request->action) == true) {
             $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->request->action);
@@ -79,22 +84,21 @@ class cCMS extends \OhCrud\DB {
     // Handler for all incoming requests
     public function defaultPathHandler($path) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_HTML);
 
         // Normalize path
         $this->path = \strtolower($path);
 
         // Get cached response (if any)
-        $cachedResponse = $this->getCache(__CLASS__ . __FUNCTION__ . $this->path . md5(json_encode($_GET ?? '')), 3600);
+        $cacheKey = __CLASS__ . $this->path . md5(http_build_query($_GET ?? ''));
+        $cachedResponse = $this->getCache($cacheKey, 3600);
         if ($this->useCache == true && $cachedResponse != false) {
             $this->data = $cachedResponse;
             // Inject the uncachable content
-            $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContent(), $this->data);
+            $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContentJS(), $this->data);
             // Output the HTML page
             $this->output();
             return;
-        } else {
-            $this->unsetCache(__CLASS__ . __FUNCTION__ . $this->path);
         }
 
         // Include application javascript & css files
@@ -104,27 +108,9 @@ class cCMS extends \OhCrud\DB {
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
 
-        // // Handle admin themes and layouts
-        // if ($this->loggedIn == true && isset($this->request->action) == true) {
-        //     switch ($this->request->action) {
-        //         case 'edit':
-        //             $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
-        //             $this->content->layout = 'edit';
-        //             break;
-        //         case 'tables':
-        //             $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
-        //             $this->content->layout = 'tables';
-        //             break;
-        //         default:
-        //             $this->content->theme = __OHCRUD_CMS_ADMIN_THEME__;
-        //             $this->content->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
-        //     }
-        // }
-
         // Set theme and layout
         $this->theme = $this->content->theme;
         $this->layout = $this->content->layout;
-
 
         // Process embedded content & components
         $this->content = $this->processContent($this->content);
@@ -133,12 +119,12 @@ class cCMS extends \OhCrud\DB {
         $this->processTheme();
 
         // Set cache
-        if ($this->actionMode == false) {
-            $this->setCache(__CLASS__ . __FUNCTION__ . $this->path . md5(json_encode($_GET ?? '')), $this->data);
+        if ($this->actionMode == false && $this->content->is404 == false) {
+            $this->setCache($cacheKey, $this->data);
         }
 
         // Inject the uncachable content
-        $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContent(), $this->data);
+        $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContentJS(), $this->data);
 
         // Output the HTML page
         $this->output();
@@ -242,7 +228,7 @@ class cCMS extends \OhCrud\DB {
             $content->text = $page->TEXT;
             $content->html = $this->purifier->purify($this->parsedown->text($page->TEXT));
         } else {
-            $content->html = '<mark>Oh CRUD! You are not allowed to see this.</mark>';
+            $content->html = '<mark>ohCRUD! You are not allowed to see this.</mark>';
         }
 
         return $content;
@@ -353,7 +339,6 @@ class cCMS extends \OhCrud\DB {
             }
         }
 
-
         // Load theme and layout
         ob_start();
         include __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
@@ -404,7 +389,11 @@ class cCMS extends \OhCrud\DB {
         $footer .= ' | ';
         $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION;
         $footer .= ' | ';
-        $footer .= '<a href="/login/?redirect=' . $this->path . '" class="external">' . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . '</a></p>';
+        $loginUrl = '/login/';
+        if ($this->path !== '/login/') {
+            $loginUrl .= '?redirect=' . urlencode($this->path);
+        }
+        $footer .= '<a href="' . $loginUrl . '" class="external">' . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . '</a></p>';
         $output = str_ireplace("{{CMS:OHCRUD}}", $footer, $output);
         // Version
         $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
@@ -412,7 +401,7 @@ class cCMS extends \OhCrud\DB {
         $this->data = $output;
     }
 
-    private function getUnCachableContent() {
+    private function getUnCachableContentJS() {
 
         $output = '';
 
@@ -447,12 +436,12 @@ class cCMS extends \OhCrud\DB {
             $this->recursiveContentCounter++;
             foreach ($matches[0] as $match) {
                 if ($this->path == '/' . $match . '/' || $this->recursiveContentCounter > $this->maxRecursiveContent) {
-                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>Oh CRUD! Recursive content not allowed.</mark>', $content->html);
+                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>ohCRUD! Recursive content not allowed.</mark>', $content->html);
                     continue;
                 }
                 $embeddedContent = $this->getContent('/' . $match . '/', false);
                 if ($embeddedContent->is404 == true) {
-                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>Oh CRUD! Content not found.</mark>', $content->html);
+                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>ohCRUD! Content not found.</mark>', $content->html);
                     continue;
                 }
                 $content->html = str_ireplace('{{' . $match . '}}', $embeddedContent->html, $content->html);
@@ -474,12 +463,12 @@ class cCMS extends \OhCrud\DB {
             $this->recursiveContentCounter++;
             foreach ($matches[0] as $match) {
                 if ($this->recursiveContentCounter > $this->maxRecursiveContent) {
-                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>Oh CRUD! Recursive content not allowed.</mark>', $content->html);
+                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>ohCRUD! Recursive content not allowed.</mark>', $content->html);
                     continue;
                 }
                 $embeddedContent = $this->getComponent($match, false);
                 if ($embeddedContent->is404 == true) {
-                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>Oh CRUD! Component not found.</mark>', $content->html);
+                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>ohCRUD! Component not found.</mark>', $content->html);
                     continue;
                 }
                 // Cleanup parsedown extra paragraphs (if exists)
