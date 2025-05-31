@@ -694,8 +694,7 @@ function loadTableDetails(table) {
                     `;
 
                     // Check if we should render the column
-                    let columnEnabled = window.localStorage.getItem(`table:${table},column:${column.NAME}`);
-                    if (columnEnabled == null || columnEnabled != 'N' || column.PRIMARY_KEY == true) {
+                    if (isColumnVisible(table, column.NAME) == true || column.PRIMARY_KEY == true) {
                         tableHeader += tableHeaderTH;
                     }
 
@@ -733,12 +732,7 @@ function loadTableColumnToggles(table) {
         if (column.PRIMARY_KEY == true) return;
 
         // Check if column is enabled
-        let columnEnabled = window.localStorage.getItem(`table:${table},column:${column.NAME}`);
-        if (columnEnabled == null || columnEnabled != 'N') {
-            columnEnabled = true;
-        } else {
-            columnEnabled = false;
-        }
+        let columnEnabled = isColumnVisible(table, column.NAME);
 
         let listColumnsToggleLI = `
             <li class="item-content">
@@ -765,7 +759,7 @@ function loadTableColumnToggles(table) {
     $$('.listColumnsToggleItem').on('click', function() {
         let columnName = $$(this).data('column-name');
         let columnEnabled = $$(this).prop('checked');
-        window.localStorage.setItem(`table:${table},column:${columnName}`, columnEnabled === true ? 'Y' : 'N');
+        setColumnVisibility(table, columnName, columnEnabled);
 
         loadTableDetails(table);
     });
@@ -872,8 +866,7 @@ function loadTableData(table, page = 1) {
                         }
 
                         // Check if we should render the column
-                        let columnEnabled = window.localStorage.getItem(`table:${table},column:${columnDetails[key].NAME}`);
-                        if (columnEnabled == null || columnEnabled != 'N' || columnDetails[key].PRIMARY_KEY == true) {
+                        if (isColumnVisible(table, columnDetails[key].NAME) == true || columnDetails[key].PRIMARY_KEY == true) {
                             tableBodyTD += `<td data-detected-type="${(value !== null && value !== '') ? columnDetails[key].DETECTED_TYPE : ''}">${columnValue}</td>`;
                         }
                     });
@@ -942,7 +935,6 @@ function loadTableData(table, page = 1) {
                                         }
                                     },
                                     async function (response) {
-                                        console.log('record deleted');
                                         loadTableData(table, page);
                                     },
                                     async function (error) {
@@ -1332,4 +1324,64 @@ function setDarkMode(appDarkMode) {
         app.setColorTheme('#007aff');
     }
     localStorage.setItem('app:dark-mode', appDarkMode);
+}
+
+// This function sets column visibility settings for a given table and column
+function setColumnVisibility(tableName, columnName, isVisible) {
+
+    const storageKey = `columns:${tableName}`;
+    const storedString = localStorage.getItem(storageKey);
+    let columns = {};
+
+    // Parse existing settings if they exist
+    if (storedString) {
+        const match = storedString.match(/\((.*)\)/);
+        if (match && match[1]) {
+            match[1].split(',').forEach(setting => {
+                const parts = setting.split(':');
+                if (parts.length === 2) {
+                    columns[parts[0].trim()] = parts[1].trim() === 'Y';
+                }
+            });
+        }
+    }
+
+    // Update the specific column's visibility
+    columns[columnName.replace(/[(),:]/g, '')] = isVisible; // Clean column name
+
+    // Convert the updated columns object back to the desired string format
+    const columnEntries = Object.entries(columns)
+        .map(([colName, colIsVisible]) => `${colName}:${colIsVisible ? 'Y' : 'N'}`)
+        .join(',');
+
+    const newStorageString = `${tableName}(${columnEntries})`;
+    localStorage.setItem(storageKey, newStorageString);
+}
+
+// This function gets column visibility settings for a given table and column
+function isColumnVisible(tableName, columnName) {
+
+    const storedString = localStorage.getItem(`columns:${tableName}`);
+
+    if (!storedString) return true; // No settings, default to visible
+
+    const match = storedString.match(/\((.*)\)/);
+    if (!match || !match[1]) return true; // Malformed string, default to visible
+
+    const columnSettingsString = match[1];
+    const settingsArray = columnSettingsString.split(',');
+
+    for (const setting of settingsArray) {
+        const parts = setting.split(':');
+        if (parts.length === 2) {
+            const storedColumnName = parts[0].trim();
+            const visibilityChar = parts[1].trim();
+
+            if (storedColumnName === columnName) {
+                return visibilityChar === 'Y';
+            }
+        }
+    }
+    // Column not found, default to visible
+    return true;
 }
