@@ -84,6 +84,10 @@ User Interface
   width: 35px;
 }
 
+.CodeMirror-cursor {
+  border-left: 2px solid #000;
+}
+
 .card-login,
 .card-totp {
   position: absolute;
@@ -181,4 +185,31 @@ Dark Mode
 .dark .editor-toolbar i.separator {
   border-left: 1px solid var(--f7-table-head-text-color);
   border-right: 1px solid #333;
+}
+
+.editor-toolbar.disabled-for-preview a {
+  color: var(--f7-table-head-text-color) !important;
+  background-color: var(--f7-list-strong-bg-color) !important;
+}
+
+.editor-toolbar.disabled-for-preview a:hover, .editor-toolbar.disabled-for-preview a.active {
+  border: 1px solid transparent !important;
+  background-color: var(--f7-page-bg-color) !important
+}
+
+.dark .editor-toolbar.disabled-for-preview {
+  background-color: var(--f7-list-strong-bg-color) !important;
+
+}
+
+.dark .editor-preview, .editor-preview-side {
+  background-color: #333 !important;
+}
+
+.dark .CodeMirror-cursor {
+  border-left: 2px solid #fff;
+}
+
+.dark .CodeMirror-selected {
+  background: #587ca4 !important;
 }

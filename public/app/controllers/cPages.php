@@ -25,12 +25,15 @@ class cPages extends \app\models\mPages {
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
-        if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->TITLE) == true || empty($request->payload->TEXT) == true)
+        if (isset($request->payload) == false ||
+            empty($request->payload->URL) == true ||
+            empty($request->payload->TITLE) == true ||
+            empty($request->payload->TEXT) == true)
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
         if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
-            $this->error('You can\'t edit this page.');
+            $this->error('You can\'t edit a hard coded page.');
 
         if ($this->success == false) {
             $this->output();
@@ -95,6 +98,10 @@ class cPages extends \app\models\mPages {
             );
         }
 
+        // Invalidate the cache
+        $cacheKey = 'cCMS:' . $request->payload->URL;
+        $this->unsetCache($cacheKey);
+
         $this->output();
     }
 
@@ -113,7 +120,7 @@ class cPages extends \app\models\mPages {
 
         // Check if the page is hard-coded as a file.
         if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
-            $this->error('You can\'t delete hard coded page.');
+            $this->error('You can\'t delete a hard coded page.');
 
         if ($this->success == false) {
             $this->output();
@@ -146,6 +153,10 @@ class cPages extends \app\models\mPages {
                 ]
             );
         }
+
+        // Invalidate the cache
+        $cacheKey = 'cCMS:' . $request->payload->URL;
+        $this->unsetCache($cacheKey);
 
         $this->output();
     }

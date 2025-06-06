@@ -56,22 +56,20 @@ class cCMS extends \ohCRUD\DB {
         $this->loggedIn = isset($_SESSION['User']);
 
         // Set action mode
-        if ($this->loggedIn == true && isset($this->request->action) == true) {
-            if (in_array($this->request->action, $this->allowedActions) == true) {
-                $this->actionMode = $this->request->action;
-                $this->useCache = false;
-            }
+        if ($this->loggedIn == true && in_array($this->request->action ?? '', $this->allowedActions) == true) {
+            $this->actionMode = $this->request->action;
+            $this->useCache = false;
+        }
+
+        // Redirect to login page if not logged in
+        if ($this->loggedIn == false && in_array($this->request->action ?? '', $this->allowedActions) == true) {
+            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->request->action);
+            return;
         }
 
         // Disable cache for login pages
         if ($GLOBALS['PATH'] == '/login/') {
             $this->useCache = false;
-        }
-
-        // Redirect to login page if not logged in
-        if ($this->loggedIn == false && isset($this->request->action) == true) {
-            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->request->action);
-            return;
         }
 
         // Setup markdown processor and HTML purifier
@@ -90,12 +88,13 @@ class cCMS extends \ohCRUD\DB {
         $this->path = \strtolower($path);
 
         // Get cached response (if any)
-        $cacheKey = __CLASS__ . $this->path . md5(http_build_query($_GET ?? ''));
+        $cacheKey = 'cCMS:' . $this->path . http_build_query($_GET ?? '');
         $cachedResponse = $this->getCache($cacheKey, 3600);
         if ($this->useCache == true && $cachedResponse != false) {
             $this->data = $cachedResponse;
             // Inject the uncachable content
-            $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContentJS(), $this->data);
+            $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
+            $this->data = str_ireplace("{{CMS:UNCACHABLE-JS}}", $this->getUnCachableContentJS(), $this->data);
             // Output the HTML page
             $this->output();
             return;
@@ -124,7 +123,8 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Inject the uncachable content
-        $this->data = str_ireplace("{{CMS:UNCACHABLE-JAVASCRIPT}}", $this->getUnCachableContentJS(), $this->data);
+        $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
+        $this->data = str_ireplace("{{CMS:UNCACHABLE-JS}}", $this->getUnCachableContentJS(), $this->data);
 
         // Output the HTML page
         $this->output();
@@ -234,44 +234,6 @@ class cCMS extends \ohCRUD\DB {
         return $content;
     }
 
-    // Load component(s)
-    private function getComponent($componentString, $shouldSetOutputStatusCode = true) {
-
-        $content = new \app\models\mContent;
-        $componentParameters = [];
-
-        parse_str(str_replace('|', '&', $componentString), $componentParameters);
-        $componentClassFile = key($componentParameters);
-        $componentClass = '\app\components\\' . str_replace('/', '\\', $componentClassFile);
-        array_shift($componentParameters);
-
-        // Check if the component exists
-        if (\file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
-
-            $component = new $componentClass($this->request, $this->path);
-            $component->output($componentParameters);
-            $content = $component->content;
-
-            // Get content meta tags
-            foreach ($component->metaTags as $metaTag => $value) {
-                $this->includeMetaTags($metaTag, $value);
-            }
-            // Get component CSS assets
-            foreach ($component->cssFiles as $cssFile => $priority) {
-                $this->includeCSSFile($cssFile, $priority);
-            }
-            // Get component Javascript assets
-            foreach ($component->jsFiles as $jsFile => $priority) {
-                $this->includeJSFile($jsFile, $priority);
-            }
-
-        } else {
-            $content->is404 = true;
-        }
-
-        return $content;
-    }
-
     // Load hard-coded content
     private function getContentFromFile($path, $is404 = false) {
         $content = new \app\models\mContent;
@@ -283,140 +245,6 @@ class cCMS extends \ohCRUD\DB {
         $content->html = $content->text;
 
         return $content;
-    }
-
-    // Get themes and layouts
-    private function getThemes() {
-        $scan = glob('themes/*/*.html');
-
-        $themes = [];
-        foreach ($scan as $layoutFile) {
-            $matches = [];
-            $theme = '';
-            $layout = '';
-            preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
-            if (isset($matches[1]) == true) {
-                $theme = $matches[1];
-            }
-
-            $matches = [];
-            preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
-            if (isset($matches[2]) == true) {
-                $layout = $matches[2];
-            }
-
-            $themes[$theme][] = $layout;
-        }
-
-        return \base64_encode(json_encode($themes));
-    }
-
-    // Process theme
-    private function processTheme() {
-
-        $output = '';
-
-        // Fallback to default theme ans layout if file does not exist
-        if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false) {
-            $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
-            $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
-        }
-
-        // Handle admin themes and layouts
-        if ($this->loggedIn == true && isset($this->request->action) == true) {
-            switch ($this->request->action) {
-                case 'edit':
-                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
-                    $this->layout = 'edit';
-                    break;
-                case 'tables':
-                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
-                    $this->layout = 'tables';
-                    break;
-                default:
-                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
-                    $this->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
-            }
-        }
-
-        // Load theme and layout
-        ob_start();
-        include __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
-        $output = ob_get_clean();
-
-        // Process embedded content in the theme
-        $themeContent = new \app\models\mContent;
-        $themeContent->text = $output;
-        $themeContent->html = $output;
-        $themeContent = $this->processContent($themeContent);
-
-        // gather CSS and JS assets
-        $this->getMetaTags();
-        $this->getCSSAssets();
-        $this->getJSAssets();
-
-        // Set HTML output
-        $output = $themeContent->html;
-
-        // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
-        $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\mContent::TYPE_DB) ? '<div id="btnCMSEdit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
-
-        $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
-        $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
-
-        if ($this->actionMode == true) {
-            $output = str_ireplace('{{CMS:CONTENT}}', $this->getContentFromFile($this->actionMode, false, true)->html, $output);
-            $output = str_ireplace('{{CMS:THEMES}}', $this->getThemes(), $output);
-            $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
-            $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
-            $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
-        }
-
-        // Replace OhCRUD templates with the proccessed content from the cms
-        $output = str_ireplace("{{CMS:PATH}}", $this->path, $output);
-        $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
-        $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . $editIconHTML, $output);
-        $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
-        $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
-        $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
-        // Include javascript assets and uncachable javascript constants
-        $output = str_ireplace("{{CMS:JAVASCRIPT}}", "{{CMS:UNCACHABLE-JAVASCRIPT}}" . $this->content->javascript, $output);
-        // Include ohCRUD footer into the template
-        $footer = '';
-        $footer .= '<p><a href="/" class="external">HOME</a>';
-        $footer .= ' | ';
-        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . __SITE__ ;
-        $footer .= ' | ';
-        $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION;
-        $footer .= ' | ';
-        $loginUrl = '/login/';
-        if ($this->path !== '/login/') {
-            $loginUrl .= '?redirect=' . urlencode($this->path);
-        }
-        $footer .= '<a href="' . $loginUrl . '" class="external">' . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . '</a></p>';
-        $output = str_ireplace("{{CMS:OHCRUD}}", $footer, $output);
-        // Version
-        $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
-
-        $this->data = $output;
-    }
-
-    private function getUnCachableContentJS() {
-
-        $output = '';
-
-        // Include Javascript constants and assets
-        $output .= "<script>\n";
-        $output .= "const __SITE__ = '" . __SITE__ . "';\n";
-        $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
-        $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
-        $output .= "const __PATH__ = '" . $this->path . "';\n";
-        $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
-        $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
-        $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
-        $output .= "</script>\n";
-
-        return $output;
     }
 
     // Process embedded content and components
@@ -496,6 +324,170 @@ class cCMS extends \ohCRUD\DB {
         $matchCount += preg_match_all($regex, $text);
 
         return $matchCount;
+    }
+
+    // Load component(s)
+    private function getComponent($componentString, $shouldSetOutputStatusCode = true) {
+
+        $content = new \app\models\mContent;
+        $componentParameters = [];
+
+        parse_str(str_replace('|', '&', $componentString), $componentParameters);
+        $componentClassFile = key($componentParameters);
+        $componentClass = '\app\components\\' . str_replace('/', '\\', $componentClassFile);
+        array_shift($componentParameters);
+
+        // Check if the component exists
+        if (\file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
+
+            $component = new $componentClass($this->request, $this->path);
+            $component->output($componentParameters);
+            $content = $component->content;
+
+            // Get content meta tags
+            foreach ($component->metaTags as $metaTag => $value) {
+                $this->includeMetaTags($metaTag, $value);
+            }
+            // Get component CSS assets
+            foreach ($component->cssFiles as $cssFile => $priority) {
+                $this->includeCSSFile($cssFile, $priority);
+            }
+            // Get component Javascript assets
+            foreach ($component->jsFiles as $jsFile => $priority) {
+                $this->includeJSFile($jsFile, $priority);
+            }
+
+        } else {
+            $content->is404 = true;
+        }
+
+        return $content;
+    }
+
+    // Get uncachable content HTML
+    private function getUnCachableContentHTML() {
+        $output = '';
+
+        if ($this->loggedIn == true) {
+            $output.= '<div id="btnCMSEdit" data-url="' . $this->path . '?action=edit"></div>';
+        }
+
+        return $output;
+    }
+
+    // Get uncachable content JS
+    private function getUnCachableContentJS() {
+        $output = '';
+
+        // Include Javascript constants and assets
+        $output .= "<script>\n";
+        $output .= "const __SITE__ = '" . __SITE__ . "';\n";
+        $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
+        $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
+        $output .= "const __PATH__ = '" . $this->path . "';\n";
+        $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
+        $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
+        $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
+        $output .= "const __LOGGED_IN__ = " . ($this->loggedIn ? 'true' : 'false') . ";\n";
+        $output .= "document.querySelector('.cmsLogin').textContent = '" . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . "';\n";
+        $output .= "</script>\n";
+
+        return $output;
+    }
+
+    // Get footer
+    private function getFooter() {
+        $footer = '';
+        $footer .= '<p><a href="/" class="external">HOME</a>';
+        $footer .= ' | ';
+        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . __SITE__ ;
+        $footer .= ' | ';
+        $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION;
+        $footer .= ' | ';
+        $loginUrl = '/login/';
+        if ($this->path !== '/login/') {
+            $loginUrl .= '?redirect=' . urlencode($this->path);
+        }
+        $footer .= '<a href="' . $loginUrl . '" class="external cmsLogin"></a></p>';
+        return $footer;
+    }
+
+    // Process theme
+    private function processTheme() {
+
+        $output = '';
+
+        // Fallback to default theme ans layout if file does not exist
+        if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false) {
+            $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
+            $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
+        // Handle admin themes and layouts
+        if ($this->loggedIn == true && isset($this->request->action) == true) {
+            switch ($this->request->action) {
+                case 'edit':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'edit';
+                    break;
+                case 'tables':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'tables';
+                    break;
+                default:
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
+            }
+        }
+
+        // Load theme and layout
+        ob_start();
+        include __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
+        $output = ob_get_clean();
+
+        // Process embedded content in the theme
+        $themeContent = new \app\models\mContent;
+        $themeContent->text = $output;
+        $themeContent->html = $output;
+        $themeContent = $this->processContent($themeContent);
+
+        // gather CSS and JS assets
+        $this->getMetaTags();
+        $this->getCSSAssets();
+        $this->getJSAssets();
+
+        // Set HTML output
+        $output = $themeContent->html;
+
+        // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
+        $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
+        $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
+
+        if ($this->actionMode == true) {
+            $output = str_ireplace('{{CMS:CONTENT}}', $this->getContentFromFile($this->actionMode, false, true)->html, $output);
+            $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
+            $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
+            $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
+        }
+
+        // Replace OhCRUD templates with the proccessed content from the cms
+        $output = str_ireplace("{{CMS:PATH}}", $this->path, $output);
+        $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
+        $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . "{{CMS:UNCACHABLE-HTML}}", $output);
+        $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
+        $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
+        $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
+
+        // Include javascript assets and uncachable javascript constants
+        $output = str_ireplace("{{CMS:JAVASCRIPT}}", "{{CMS:UNCACHABLE-JS}}" . $this->content->javascript, $output);
+
+        // Include ohCRUD footer into the template
+        $output = str_ireplace("{{CMS:OHCRUD}}", $this->getFooter(), $output);
+
+        // Version
+        $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
+
+        $this->data = $output;
     }
 
 }
