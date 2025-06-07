@@ -10,7 +10,8 @@ class cFiles extends \app\models\mFiles {
     // Define permissions for the controller.
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
-        'upload' => 1
+        'image' => __OHCRUD_PERMISSION_ALL__,
+        'upload' => 1,
     ];
 
     // Define an array of file extensions allowed for uploading.
@@ -38,7 +39,7 @@ class cFiles extends \app\models\mFiles {
         $this->outputType = \ohCRUD\Core::OUTPUT_JSON;
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false) {
+        if ($this->checkCSRF($request->CSRF ?? '') == false) {
             $this->error('Missing or invalid CSRF token.');
             $this->output();
             return $this;
@@ -108,4 +109,161 @@ class cFiles extends \app\models\mFiles {
         $this->output();
     }
 
+    /**
+     * Resizes, caches, and serves an image based on GET parameters.
+     *
+     * @param object $request The request object containing filename and optional parameters.
+     * - filename: The name of the image.
+     * - w: Target width (optional, integer, 1-2000).
+     * - h: Target height (optional, integer, 1-2000).
+     * - q: Quality for JPEG images (optional, integer, 1-100).
+     */
+    public function image($request) {
+
+        // Validation & File Setup ---
+        if (empty($request->filename)) {
+            $this->error('Filename is required.', 400);
+        }
+
+        $basePath = 'global/files/';
+        $originalFilePath = $basePath . basename($request->filename); // Use basename for security
+
+        if (!file_exists($originalFilePath)) {
+            $this->error('Image not found.', 404);
+        }
+
+        // Validate optional parameters
+        $width = isset($request->w) ? (int)$request->w : null;
+        $height = isset($request->h) ? (int)$request->h : null;
+        $quality = isset($request->q) ? (int)$request->q : null;
+
+        if ($width !== null && ($width <= 0 || $width > 2000)) {
+            $this->error('Width must be a positive integer up to 2000.', 400);
+        }
+        if ($height !== null && ($height <= 0 || $height > 2000)) {
+            $this->error('Height must be a positive integer up to 2000.', 400);
+        }
+        if ($quality !== null && ($quality < 1 || $quality > 100)) {
+            $this->error('Quality must be an integer between 1 and 100.', 400);
+        }
+
+        // No transformations needed
+        if ($width === null && $height === null && $quality === null) {
+            $this->serveImage($originalFilePath);
+            return;
+        }
+
+        // Generate New Filename & Check Cache
+        $path_info = pathinfo($originalFilePath);
+        $original_filename = $path_info['filename'];
+        $extension = $path_info['extension'];
+
+        $suffix = '';
+        if ($width) $suffix .= "_w{$width}";
+        if ($height) $suffix .= "_h{$height}";
+        if ($quality) $suffix .= "_q{$quality}";
+
+        $newFilename = "{$original_filename}{$suffix}.{$extension}";
+        $newFilePath = $basePath . $newFilename;
+
+        if (file_exists($newFilePath)) {
+            $this->serveImage($newFilePath);
+            return;
+        }
+
+        // Image Processing
+        $imageInfo = getimagesize($originalFilePath);
+        $mime = $imageInfo['mime'];
+
+        $sourceImage = null;
+        switch ($mime) {
+            case 'image/jpeg':
+                $sourceImage = imagecreatefromjpeg($originalFilePath);
+                break;
+            case 'image/png':
+                $sourceImage = imagecreatefrompng($originalFilePath);
+                break;
+            case 'image/gif':
+                $sourceImage = imagecreatefromgif($originalFilePath);
+                break;
+             case 'image/webp':
+                $sourceImage = imagecreatefromwebp($originalFilePath);
+                break;
+            default:
+                $this->error('Unsupported image format.', 415);
+        }
+
+        if (!$sourceImage) {
+            $this->error('Failed to process image.', 500);
+        }
+
+        list($originalWidth, $originalHeight) = [$imageInfo[0], $imageInfo[1]];
+
+        // Calculate new dimensions
+        if ($width && !$height) { // Width only, maintain aspect ratio
+            $newWidth = $width;
+            $newHeight = floor($originalHeight * ($width / $originalWidth));
+        } elseif (!$width && $height) { // Height only, maintain aspect ratio
+            $newHeight = $height;
+            $newWidth = floor($originalWidth * ($height / $originalHeight));
+        } elseif ($width && $height) { // Exact dimensions
+            $newWidth = $width;
+            $newHeight = $height;
+        } else { // No dimensions, but quality might be set
+            $newWidth = $originalWidth;
+            $newHeight = $originalHeight;
+        }
+
+        $newImage = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Preserve transparency for PNG and WebP formats
+        if ($mime == 'image/png' || $mime == 'image/webp') {
+            imagealphablending($newImage, false);
+            imagesavealpha($newImage, true);
+            $transparentColor = imagecolorallocatealpha($newImage, 0, 0, 0, 127);
+            imagefill($newImage, 0, 0, $transparentColor);
+        }
+
+        imagecopyresampled($newImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
+
+        // Save & Output New Image
+        switch ($mime) {
+            case 'image/jpeg':
+                // Default quality 75 if not set
+                imagejpeg($newImage, $newFilePath, $quality ?? 75);
+                break;
+            case 'image/webp':
+                // Default quality 80 if not set
+                imagewebp($newImage, $newFilePath, $quality ?? 80);
+                break;
+            case 'image/png':
+                imagepng($newImage, $newFilePath);
+                break;
+            case 'image/gif':
+                imagegif($newImage, $newFilePath);
+                break;
+        }
+
+        imagedestroy($sourceImage);
+        imagedestroy($newImage);
+
+        $this->serveImage($newFilePath);
+    }
+
+    /**
+     * Helper to send an image as the response with correct headers.
+     *
+     * @param string $filePath Path to the image file.
+     */
+    private function serveImage($filePath) {
+        $imageInfo = getimagesize($filePath);
+        $mime = $imageInfo['mime'];
+
+        header("Content-Type: {$mime}");
+        header("Content-Length: " . filesize($filePath));
+        header("Cache-Control: public, max-age=2592000"); // Cache for 30 days
+        header("Expires: " . gmdate("D, d M Y H:i:s", time() + 2592000) . " GMT");
+        readfile($filePath);
+        exit;
+    }
 }

@@ -356,6 +356,7 @@ $$(document).on('page:init', function (e, page) {
             let fileToUpload = file.files[0];
             let formData = new FormData();
             formData.append("0", fileToUpload);
+            formData.append("CSRF", __CSRF__);
             document.querySelector(`.upload-${fileToUploadMode}`).classList = `fa fa-cog fa-spin upload-${fileToUploadMode}`;
 
             httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/files/upload/',

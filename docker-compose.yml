@@ -21,6 +21,7 @@ services:
       dockerfile: ./private/PHP.Dockerfile
     volumes:
       - ./public:/app
+      - ./logs:/logs
   composer_installation:
     image: composer
     volumes:

@@ -233,14 +233,14 @@ class Core {
     }
 
     // Log messages using Monolog if logging is enabled.
-    public function log($level, $message, array $context = array(), $channel = 'ohCRUD') {
+    public function log($level, $message, array $context = array(), $channel = 'ohCRUD', $logFile = 'app.log') {
 
         if (__OHCRUD_LOG_ENABLED__ == false) {
             return $this;
         }
 
         $logger = new Logger($channel);
-        $stream = new StreamHandler(__OHCRUD_LOG_FILE__, Logger::DEBUG);
+        $stream = new StreamHandler(__OHCRUD_LOG_PATH__ . $logFile, Logger::DEBUG);
         $stream->setFormatter(new \Monolog\Formatter\JsonFormatter());
         $logger->pushHandler($stream);
 
