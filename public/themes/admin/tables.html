@@ -16,7 +16,6 @@
 		<link rel="icon" type="image/png" href="/assets/img/favicon.png" />
 	</head>
 	<body>
-
 		<div id="app">
 			<!-- Status bar overlay for fullscreen mode-->
 			<div class="statusbar-overlay"></div>
@@ -34,12 +33,12 @@
                         	</div>
                     	</div>
 
-						<!-- USERS -->
-						<div class="block-header">USERS</div>
+						<!-- SYSTEM -->
+						<div class="block-header">SYSTEM</div>
 						<div class="list list-strong-ios list-dividers-ios inset-ios">
 							<ul>
 								<li>
-									<a class="item-link item-content">
+									<a class="item-link item-content external" href="/?action=tables&table=Users">
 										<div class="item-media">
 											<i class="f7-icons">person</i>
 										</div>
@@ -48,15 +47,37 @@
 										</div>
 									</a>
 								</li>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Pages">
+										<div class="item-media">
+											<i class="f7-icons">doc_richtext</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Pages</div>
+										</div>
+									</a>
+								</li>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Files">
+										<div class="item-media">
+											<i class="f7-icons">doc</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Files</div>
+										</div>
+									</a>
+								</li>
 							</ul>
 						</div>
 
+						<!-- TABLES -->
 						<div class="block-header">TABLES</div>
 						<div class="list list-strong-ios list-dividers-ios inset-ios">
 							<ul id="listTables">
 							</ul>
 						</div>
 
+						<!-- LOGS -->
 						<div class="block-header">LOGS</div>
 						<div class="list list-strong-ios list-dividers-ios inset-ios">
 							<ul>
@@ -73,6 +94,7 @@
 							</ul>
 						</div>
 
+						<!-- SETTINGS -->
 						<div class="block-header">SETTINGS</div>
 						<div class="list list-strong-ios list-dividers-ios inset-ios">
 							<ul>
@@ -89,6 +111,7 @@
 							</ul>
 						</div>
 
+						<!-- APPEARANCE -->
 						<div class="block-header">APPEARANCE</div>
 						<div class="list list-strong-ios list-dividers-ios inset-ios">
 							<ul>
@@ -170,6 +193,280 @@
 									</div>
 								</div>
 							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Edit User Popup -->
+			<div class="popup popup-push edit-user-popup" data-close-on-escape="true">
+				<div class="view">
+					<div class="page">
+						<div class="navbar">
+							<div class="navbar-bg"></div>
+							<div class="navbar-inner">
+								<div class="title">Edit User</div>
+								<div class="right">
+									<!-- Link to close popup -->
+									<a class="link popup-close"><i class="f7-icons">xmark</i></a>
+								</div>
+							</div>
+						</div>
+						<div id="formUserEditRecord" class="page-content">
+
+							<div class="block-header">GENERAL</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-key"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">ID</div>
+												<div class="item-input-wrap">
+													<input id="Users-ID" name="ID" type="number" readonly="true" validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-font"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">USERNAME</div>
+												<div class="item-input-wrap">
+													<input id="Users-USERNAME" name="USERNAME" type="text" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-envelope-o"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">EMAIL</div>
+												<div class="item-input-wrap">
+													<input id="Users-EMAIL" name="EMAIL" type="email" required validate pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" data-error-message="Please enter a valid email address" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-snowflake-o"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">HASH</div>
+												<div class="item-input-wrap">
+													<input id="Users-HASH" name="HASH" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-font"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">NAME</div>
+												<div class="item-input-wrap">
+													<input id="Users-NAME" name="NAME" type="text" required value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+								</ul>
+							</div>
+
+							<div class="block-header">ACCESS</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">GROUP</div>
+												<div class="item-input-wrap">
+													<input id="Users-GROUP" name="GROUP" type="number" required validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">PERMISSIONS</div>
+												<div class="item-input-wrap">
+													<input id="Users-PERMISSIONS" name="PERMISSIONS" type="number" required validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-toggle-on"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">STATUS</div>
+												<div class="item-after">
+													<label class="toggle">
+														<input id="Users-STATUS" name="STATUS" type="checkbox" required value="0" class="settings">
+														<span class="toggle-icon"></span>
+													</label>
+												</div>
+											</div>
+										</div>
+									</li>
+								</ul>
+							</div>
+
+							<div class="block-header">SECURITY</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-shield"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">PASSWORD</div>
+												<div class="item-input-wrap">
+													<input id="Users-PASSWORD" name="PASSWORD" type="password" required value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-font"></i>
+											</div>
+											<div class="item-inner">
+												<button class="button block-icon block-icon-1" onclick="">
+													<span class="f7-icons">eye</span>
+												</button>
+												<div class="item-title item-label">TOKEN</div>
+												<div class="item-input-wrap">
+													<input id="Users-TOKEN" name="TOKEN" type="password" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-toggle-on"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">TOTP</div>
+												<div class="item-after">
+													<label class="toggle">
+														<input id="Users-TOTP" name="TOTP" type="checkbox" required value="0" class="settings">
+														<span class="toggle-icon"></span>
+													</label>
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-snowflake-o"></i>
+											</div>
+											<div class="item-inner">
+												<button class="button block-icon block-icon-1" onclick="">
+													<span class="f7-icons">qrcode</span>
+												</button>
+												<div class="item-title item-label">TOTP_SECRET</div>
+												<div class="item-input-wrap">
+													<input id="Users-TOTP_SECRET" name="TOTP_SECRET" type="password" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+
+								</ul>
+							</div>
+
+							<div class="block-header">OHCRUD DB STAMP</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-calendar"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">CDATE</div>
+												<div class="item-input-wrap">
+													<input id="Users-CDATE" name="CDATE" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-calendar"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">MDATE</div>
+												<div class="item-input-wrap">
+													<input id="Users-MDATE" name="MDATE" type="text" readonly="true" data-error-message="Please enter a valid date and time" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">CUSER</div>
+												<div class="item-input-wrap">
+													<input id="Users-CUSER" name="CUSER" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">MUSER</div>
+												<div class="item-input-wrap">
+													<input id="Users-MUSER" name="MUSER" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+								</ul>
+							</div>
+
+							<div class="block inset">
+								<div class="grid grid-cols-2 grid-gap">
+									<button id="btnUserFormEditSave" class="button button-fill" data-row-key-column="" data-row-key-value="">SAVE</button>
+									<button id="btnUserFormEditCancel" class="button button-outline" data-row-key-column="" data-row-key-value="">CANCEL</button>
+								</div>
+							</div>
+
 						</div>
 					</div>
 				</div>

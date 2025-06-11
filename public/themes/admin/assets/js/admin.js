@@ -445,7 +445,11 @@ $$(document).on('page:init', function (e, page) {
             let formRecordInputs = $$('.formRecordInput');
 
             formRecordInputs.forEach((formRecordInput) => {
-                data[formRecordInput.id] = formRecordInput.value;
+                if (formRecordInput.type == 'checkbox') {
+                    data[formRecordInput.name] = formRecordInput.checked ? 1 : 0;
+                } else {
+                    data[formRecordInput.name] = formRecordInput.value;
+                }
             });
             saveRowData(tableName, 'update', data, rowKeyColumn, rowKeyValue);
         });
@@ -466,7 +470,7 @@ $$(document).on('page:init', function (e, page) {
         // Handle create button and popup events
         btnNewRecord.on('click', function() {
             // Build the create record form
-            buildFormFromData(columnDetails, 'formCreateRecord');
+            buildFormFromData(tableName ,columnDetails, 'formCreateRecord');
             // Open the popup
             app.popup.open('.create-record-popup');
         });
@@ -620,7 +624,7 @@ function loadTableList() {
             let listTables = $$('#listTables');
             listTables.empty();
             Object.entries(json.data).forEach(([table, tableData]) => {
-                if (table == 'Users') return;
+                if (['Users', 'Pages', 'Files'].includes(table)) return;
                 let listTablesItem = `
                 <li>
                     <a class="item-link item-content listTablesItem" data-table-name="${tableData.NAME}" data-table-row-count="${tableData.ROW_COUNT}">
@@ -838,6 +842,13 @@ function loadTableData(table, page = 1) {
                                 </div>
                                 `
                                 break;
+                            case 'boolean':
+                                columnValue = `
+                                    <div class="chip ${value == 1 ? 'color-blue' : ''}">
+                                        <div class="chip-label">${value == 1 ? 'TRUE' : 'FALSE'}</div>
+                                    </div>
+                                `;
+                                break;
                             default:
                                 columnValue = value;
                                 break;
@@ -891,20 +902,33 @@ function loadTableData(table, page = 1) {
                     let rowKeyValue = $$(this).data('row-key-value');
                     let rowTable = $$(this).data('table');
 
-                    // Handle special cases for ohCRUD tables
-                    if (rowTable == 'Pages') {
-                        window.location.href = $$(this).data('page-url');
-                        return;
-                    }
-
                     // Highlight the row
                     $$(`.btnRecordDelete[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
 
-                    // Get row data
-                    loadRowData(table, rowKeyColumn, rowKeyValue);
+                    // Handle special cases for ohCRUD tables
+                    switch (rowTable) {
+                        case 'Pages':
+                            window.location.href = $$(this).data('page-url');
+                            return;
 
-                    // Open the popup
-                    app.popup.open('.edit-record-popup');
+                        case 'Users':
+
+                            // Get row data
+                            loadUserRowData(rowKeyValue);
+
+                            // Open the popup
+                            app.popup.open('.edit-user-popup');
+
+                            break;
+
+                        default:
+                            // Get row data
+                            loadRowData(table, rowKeyColumn, rowKeyValue);
+
+                            // Open the popup
+                            app.popup.open('.edit-record-popup');
+                        break;
+                    }
                 });
 
                 $$('.btnRecordDelete').on('click', function() {
@@ -991,6 +1015,55 @@ function loadTableData(table, page = 1) {
     );
 }
 
+// This function gets the user row data from database
+function loadUserRowData(keyValue) {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/readTableRow/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                TABLE: 'Users',
+                KEY_COLUMN: 'ID',
+                KEY_VALUE: keyValue,
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            $$('#btnUserFormEditCancel').data('row-key-column', 'ID');
+            $$('#btnUserFormEditCancel').data('row-key-value', keyValue);
+            $$('#btnUserFormEditSave').data('row-key-column', 'ID');
+            $$('#btnUserFormEditSave').data('row-key-value', keyValue);
+            console.log(json.data);
+
+
+            Object.entries(json.data).forEach(([key, value]) => {
+                console.log(key, value);
+                console.log('#Users-' + key);
+                $$('#Users-' + key).val(value);
+
+            });
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in an alert element
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: 'Something went wrong with loading table row data.',
+                closeOnClick: true,
+            });
+        }
+    );
+}
+
 // This function gets the row data from database
 function loadRowData(table, keyColumn, keyValue) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/readTableRow/',
@@ -1015,7 +1088,7 @@ function loadRowData(table, keyColumn, keyValue) {
             $$('#btnFormEditCancel').data('row-key-value', keyValue);
             $$('#btnFormEditSave').data('row-key-column', keyColumn);
             $$('#btnFormEditSave').data('row-key-value', keyValue);
-            buildFormFromData(columnDetails, 'formEditRecord', json.data);
+            buildFormFromData(table, columnDetails, 'formEditRecord', json.data);
         },
         async function (error) {
             const json = await error.json();
@@ -1109,7 +1182,7 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
 }
 
 // This function builds a form from column data and loads the form with data
-function buildFormFromData(columns, elementId, rowData = {}) {
+function buildFormFromData(table, columns, elementId, rowData = {}) {
     const container = document.getElementById(elementId);
     if (!container) {
         console.error(`Element with ID '${elementId}' not found`);
@@ -1224,7 +1297,7 @@ function buildFormFromData(columns, elementId, rowData = {}) {
 
         // Determine input type
         let inputType = config.inputType;
-        if (column.DETECTED_TYPE === 'boolean-like') {
+        if (column.DETECTED_TYPE === 'boolean') {
             inputType = 'checkbox';
         }
 
@@ -1245,6 +1318,50 @@ function buildFormFromData(columns, elementId, rowData = {}) {
             inputType = 'text';
         }
 
+        let fieldHtmlInner = `
+            <div class="item-title item-label">${column.NAME}</div>
+            <div class="item-input-wrap">
+                <input
+                    id="${table}-${column.NAME}"
+                    name="${column.NAME}"
+                    type="${inputType}"
+                    ${maxLength ? `maxlength="${maxLength}"` : ''}
+                    ${required ? 'required="true"' : ''}
+                    ${readonly ? 'readonly="true"' : ''}
+                    ${config.pattern ? 'validate="true"' : ''}
+                    ${config.pattern ? `pattern="${config.pattern}"` : ''}
+                    ${config.errorMessage ? `data-error-message="${config.errorMessage}"` : ''}
+                    value="${fieldValue}"
+                    spellcheck="false"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    ${inputType === 'number' ? 'step="any"' : ''}
+                    class="formRecordInput"
+                />
+            </div>
+        `;
+
+        if (column.DETECTED_TYPE === 'boolean'){
+            fieldHtmlInner = `
+                <div class="item-title item-label">${column.NAME}</div>
+                <div class="item-after">
+                    <label class="toggle">
+                        <input
+                            id="${column.NAME}"
+                            name="${column.NAME}"
+                            type="${inputType}"
+                            ${required ? 'required="true"' : ''}
+                            ${readonly ? 'readonly="true"' : ''}
+                            ${fieldValue == true ? 'checked="true"' : ''}
+                            value="${fieldValue}"
+                            class="formRecordInput"
+                        />
+                        <span class="toggle-icon"></span>
+                    </label>
+                </div>
+            `;
+        }
+
         // Create field HTML
         const fieldHtml = `
             <li>
@@ -1253,26 +1370,7 @@ function buildFormFromData(columns, elementId, rowData = {}) {
                         <i class="fa ${column.ICON}"></i>
                     </div>
                     <div class="item-inner">
-                        <div class="item-title item-label">${column.NAME}</div>
-                        <div class="item-input-wrap">
-                            <input
-                                id="${column.NAME}"
-                                name="${column.NAME}"
-                                type="${inputType}"
-                                ${maxLength ? `maxlength="${maxLength}"` : ''}
-                                ${required ? 'required="true"' : ''}
-                                ${readonly ? 'readonly="true"' : ''}
-                                ${config.pattern ? 'validate="true"' : ''}
-                                ${config.pattern ? `pattern="${config.pattern}"` : ''}
-                                ${config.errorMessage ? `data-error-message="${config.errorMessage}"` : ''}
-                                value="${fieldValue}"
-                                spellcheck="false"
-                                autocorrect="off"
-                                autocapitalize="off"
-                                ${inputType === 'number' ? 'step="any"' : ''}
-                                class="formRecordInput"
-                            />
-                        </div>
+                        ${fieldHtmlInner}
                     </div>
                 </div>
             </li>

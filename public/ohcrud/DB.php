@@ -231,13 +231,13 @@ class DB extends \ohCRUD\Core {
                             $field->EXTRA = $isSQLite ? null : $fieldRow['Extra'];
 
                             // Sample data from the column to detect type
-                            $sampleStmt = $this->db->prepare("SELECT `{$field->NAME}` FROM `$tableName` WHERE `{$field->NAME}` IS NOT NULL LIMIT 5");
+                            $sampleStmt = $this->db->prepare("SELECT `{$field->NAME}` FROM `$tableName` WHERE `{$field->NAME}` IS NOT NULL AND `{$field->NAME}` <> '' LIMIT 5");
                             $sampleStmt->execute();
                             $samples = $sampleStmt->fetchAll(\PDO::FETCH_COLUMN);
 
                             $detectedTypes = [];
                             foreach ($samples as $sampleValue) {
-                                $detectedTypes[] = $this->detectDataType((string)$sampleValue);
+                                $detectedTypes[] = $this->detectDataType((string)$sampleValue, $field->TYPE);
                             }
 
                             // Basic majority vote or fallback
@@ -356,13 +356,9 @@ class DB extends \ohCRUD\Core {
     }
 
     // Helper method to guess the type of string data based on its value
-    private function detectDataType(string $value): string {
+    private function detectDataType(string $value, string $type): string {
 
         $value = trim($value);
-
-        // if ($value === '') {
-        //     return 'empty';
-        // }
 
         // Email
         if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
@@ -411,12 +407,15 @@ class DB extends \ohCRUD\Core {
         }
 
         // Boolean-like
-        if (in_array(strtolower($value), ['Y', 'N', 'true', 'false', 'Yes', 'No'], true)) {
+        if (in_array(strtolower($value), ['true', 'false'], true)) {
             return 'boolean-like';
         }
 
         // Integer
         if (preg_match('/^-?\d+$/', $value)) {
+            if (in_array(strtolower($type), ['tinyint(1)','boolean','bool','bit(1)']) == true) {
+                return 'boolean';
+            }
             return 'integer';
         }
 

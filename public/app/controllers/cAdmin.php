@@ -75,7 +75,11 @@ class cAdmin extends \ohCRUD\DB {
 
             $columns = $this->data->{$outerIndex}->COLUMNS;
             foreach ($columns as $innerIndex => $innerValue) {
-                $this->data->{$outerIndex}->COLUMNS[$innerIndex]->ICON = $this->getFAIconForDetectedType($this->data->{$outerIndex}->COLUMNS[$innerIndex]->DETECTED_TYPE, $innerValue->NAME);
+                $this->data->{$outerIndex}->COLUMNS[$innerIndex]->ICON = $this->getFAIconForDetectedType(
+                    $this->data->{$outerIndex}->COLUMNS[$innerIndex]->TYPE,
+                    $this->data->{$outerIndex}->COLUMNS[$innerIndex]->DETECTED_TYPE,
+                    $innerValue->NAME
+                );
             }
         }
 
@@ -134,8 +138,16 @@ class cAdmin extends \ohCRUD\DB {
         $SQL .= "LIMIT ". $limit . " OFFSET " . $offset . ";";
         $this->data = $this->run($SQL)->data;
 
-        // Cleanup the data and shorten long results
+        // Cleanup the data and shorten long results and obfuscate ohCRUD secrets
         foreach ($this->data as $index => $value) {
+
+            // Obfuscate secrets
+            if ($table == 'Users') {
+                $this->data[$index]->PASSWORD = '**********';
+                $this->data[$index]->TOKEN = '**********';
+                $this->data[$index]->TOTP_SECRET = '**********';
+            }
+
             foreach ($value as $key => $value) {
                 if (gettype($value) == 'string') {
                     $this->data[$index]->{$key} = $this->shortenString($value, 100);
@@ -247,6 +259,13 @@ class cAdmin extends \ohCRUD\DB {
                 'KEY_VALUE' => $request->payload->KEY_VALUE
             ]
         )->first();
+
+        // Obfuscate secrets
+        if ($table == 'Users') {
+            $this->data->PASSWORD = '**********';
+            $this->data->TOKEN = '**********';
+            $this->data->TOTP_SECRET = '**********';
+        }
 
         $this->output();
     }
@@ -382,7 +401,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns a font-awesome icon based on a given data type.
-    private function getFAIconForDetectedType($type, $columnName = '') {
+    private function getFAIconForDetectedType($type, $detectedType, $columnName = '') {
 
         // Handle icons for ohCRUD stamp fields
         if (in_array($columnName, ['CDATE', 'MDATE']) == true) {
@@ -392,7 +411,22 @@ class cAdmin extends \ohCRUD\DB {
             return 'fa-hashtag';
         }
 
+        // Handle icons for ohCRUD columns
+        if (in_array($columnName, ['STATUS', 'TOTP']) == true) {
+            return 'fa-toggle-on';
+        }
+
+        // Get icons based on type
         switch ($type) {
+            case 'tinyint(1)':
+            case 'boolean':
+            case 'bool':
+            case 'bit(1)':
+                return 'fa-toggle-on';
+        }
+
+        // Get icons based on detected type
+        switch ($detectedType) {
             case 'empty':
                 return 'fa-square-o';
             case 'email':

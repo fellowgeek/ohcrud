@@ -13,3 +13,5 @@ private/cert.pem
 private/key.pem
 @TODO
 public/data_justshareme.db
+logs/
+logs/app.log
