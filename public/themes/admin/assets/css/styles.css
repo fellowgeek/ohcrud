@@ -52,6 +52,10 @@
   display: none !important;
 }
 
+.margin-top-15px {
+  margin-top: 15px !important;
+}
+
 .margin-top-10rem {
   margin-top: 10rem !important;
 }
@@ -165,8 +169,24 @@ input[readonly="true"] {
 }
 
 .block-icon-1 {
-  top: 30px;
+  top: -5px;
   right: 20px;
+}
+
+.block-icon-2 {
+  top: -5px;
+  right: 55px;
+}
+
+.totp-qr-code {
+  margin: auto;
+  margin-top: 15px;
+  margin-bottom: 5px;
+  padding: 10px;
+  max-width: 200px;
+  border-radius: 12px;
+  outline: 1px solid #000;
+  background-color: whitesmoke;
 }
 
 /*
@@ -228,4 +248,8 @@ Dark Mode
 
 .dark .CodeMirror-selected {
   background: #587ca4 !important;
+}
+
+.dark .totp-qr-code {
+  opacity: 0.8;
 }

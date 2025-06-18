@@ -350,15 +350,18 @@
 											</div>
 										</div>
 									</li>
-									<li>
+									<li class="margin-top">
+										<button id="btnUserFormToken" class="button block-icon block-icon-1">
+											<span class="f7-icons">eye</span>
+										</button>
+										<button id="btnUserFormRefreshToken" class="button block-icon block-icon-2">
+											<span class="f7-icons">arrow_2_circlepath_circle</span>
+										</button>
 										<div class="item-content item-input">
 											<div class="item-media">
 												<i class="fa fa-font"></i>
 											</div>
 											<div class="item-inner">
-												<button class="button block-icon block-icon-1" onclick="">
-													<span class="f7-icons">eye</span>
-												</button>
 												<div class="item-title item-label">TOKEN</div>
 												<div class="item-input-wrap">
 													<input id="Users-TOKEN" name="TOKEN" type="password" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
@@ -382,15 +385,18 @@
 											</div>
 										</div>
 									</li>
-									<li>
+									<li class="margin-top">
+										<button id="btnUserFormTOTPQRCode" class="button block-icon block-icon-1">
+											<span class="f7-icons">qrcode</span>
+										</button>
+										<button id="btnUserFormTOTPRefresh" class="button block-icon block-icon-2">
+											<span class="f7-icons">arrow_2_circlepath_circle</span>
+										</button>
 										<div class="item-content item-input">
 											<div class="item-media">
 												<i class="fa fa-snowflake-o"></i>
 											</div>
 											<div class="item-inner">
-												<button class="button block-icon block-icon-1" onclick="">
-													<span class="f7-icons">qrcode</span>
-												</button>
 												<div class="item-title item-label">TOTP_SECRET</div>
 												<div class="item-input-wrap">
 													<input id="Users-TOTP_SECRET" name="TOTP_SECRET" type="password" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
@@ -461,7 +467,7 @@
 							</div>
 
 							<div class="block inset">
-								<div class="grid grid-cols-2 grid-gap">
+								<div class="grid grid-cols-2 grid-gap margin-horizontal">
 									<button id="btnUserFormEditSave" class="button button-fill" data-row-key-column="" data-row-key-value="">SAVE</button>
 									<button id="btnUserFormEditCancel" class="button button-outline" data-row-key-column="" data-row-key-value="">CANCEL</button>
 								</div>
@@ -496,6 +502,7 @@
 
 		<script src="/assets/js/framework7-bundle.min.js"></script>
 		<script src="/assets/js/simplemde.min.js"></script>
+		<script src="/assets/js/qrcode.min.js"></script>
 		<script src="/assets/js/admin.js"></script>
 		{{CMS:JAVASCRIPT}}
 	</body>

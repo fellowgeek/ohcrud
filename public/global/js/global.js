@@ -7,14 +7,12 @@ function debugLog(...message) {
 
 // Define a function for making an AJAX call using the fetch API
 async function httpRequest(url, options, successCallback, errorCallback, isRaw = false) {
-    if (typeof options == 'undefined')
-        options = {};
-
-    // Auto add CSRF token and stringify the body
-    if (typeof options.body != 'undefined' && isRaw == false) {
+    // Auto add CSRF token and stringify the body if needed
+    if (options.body && !isRaw) {
         options.body.CSRF = __CSRF__;
         options.body = JSON.stringify(options.body);
     }
+
     try {
         const fetchResult = fetch(url, options);
         const response = await fetchResult;

@@ -119,7 +119,7 @@ $$(document).on('page:init', function (e, page) {
                 },
                 async function (error) {
                     const json = await error.json();
-                    // Display error messages in an alert element
+                    // Display error messages in notification
                     notify({
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
@@ -176,7 +176,7 @@ $$(document).on('page:init', function (e, page) {
                 },
                 async function (error) {
                     const json = await error.json();
-                    // Display error messages in an alert element
+                    // Display error messages in notification
                     notify({
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
@@ -413,6 +413,12 @@ $$(document).on('page:init', function (e, page) {
         let btnNewRecord = $$('#btnNewRecord');
         let btnFormCreateSave = $$('#btnFormCreateSave');
         let btnFormCreateCancel = $$('#btnFormCreateCancel');
+        let btnUserFormEditSave = $$('#btnUserFormEditSave');
+        let btnUserFormEditCancel = $$('#btnUserFormEditCancel');
+        let btnUserFormToken = $$('#btnUserFormToken');
+        let btnUserFormRefreshToken = $$('#btnUserFormRefreshToken');
+        let btnUserFormTOTPQRCode = $$('#btnUserFormTOTPQRCode');
+        let btnUserFormTOTPRefresh = $$('#btnUserFormTOTPRefresh');
 
         // Load table list
         loadTableList();
@@ -437,7 +443,7 @@ $$(document).on('page:init', function (e, page) {
             loadTableData(tableName, page);
         });
 
-        // Handle edit popup form events
+        // Handle edit popup events
         btnFormEditSave.on('click', function() {
             let data = {};
             let rowKeyColumn = $$(this).data('row-key-column');
@@ -467,7 +473,7 @@ $$(document).on('page:init', function (e, page) {
             }, 500);
         });
 
-        // Handle create button and popup events
+        // Handle create popup events
         btnNewRecord.on('click', function() {
             // Build the create record form
             buildFormFromData(tableName ,columnDetails, 'formCreateRecord');
@@ -494,6 +500,26 @@ $$(document).on('page:init', function (e, page) {
             }, 500);
         });
 
+        // Handle edit user popup events
+        btnUserFormToken.on('click', function() {
+            let id = btnUserFormToken.data('row-key-value');
+            showUserSecrets(id, 'TOKEN');
+        });
+
+        btnUserFormRefreshToken.on('click', function() {
+            console.log(btnUserFormRefreshToken.data('row-key-value'));
+        });
+
+        btnUserFormTOTPQRCode.on('click', function() {
+            let id = btnUserFormTOTPQRCode.data('row-key-value');
+            showUserSecrets(id, 'TOTP_SECRET');
+        });
+
+        btnUserFormTOTPRefresh.on('click', function() {
+            console.log(btnUserFormTOTPRefresh.data('row-key-value'));
+        });
+
+        // Handle create user popup events
     }
 });
 
@@ -912,19 +938,15 @@ function loadTableData(table, page = 1) {
                             return;
 
                         case 'Users':
-
                             // Get row data
                             loadUserRowData(rowKeyValue);
-
                             // Open the popup
                             app.popup.open('.edit-user-popup');
-
                             break;
 
                         default:
                             // Get row data
                             loadRowData(table, rowKeyColumn, rowKeyValue);
-
                             // Open the popup
                             app.popup.open('.edit-record-popup');
                         break;
@@ -1003,7 +1025,7 @@ function loadTableData(table, page = 1) {
         async function (error) {
             const json = await error.json();
             console.error(json);
-            // Display error messages in an alert element
+            // Display error messages in notification
             notify({
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
@@ -1039,20 +1061,19 @@ function loadUserRowData(keyValue) {
             $$('#btnUserFormEditCancel').data('row-key-value', keyValue);
             $$('#btnUserFormEditSave').data('row-key-column', 'ID');
             $$('#btnUserFormEditSave').data('row-key-value', keyValue);
-            console.log(json.data);
-
+            $$('#btnUserFormToken').data('row-key-value', keyValue);
+            $$('#btnUserFormRefreshToken').data('row-key-value', keyValue);
+            $$('#btnUserFormTOTPQRCode').data('row-key-value', keyValue);
+            $$('#btnUserFormTOTPRefresh').data('row-key-value', keyValue);
 
             Object.entries(json.data).forEach(([key, value]) => {
-                console.log(key, value);
-                console.log('#Users-' + key);
                 $$('#Users-' + key).val(value);
-
             });
         },
         async function (error) {
             const json = await error.json();
             console.error(json);
-            // Display error messages in an alert element
+            // Display error messages in notification
             notify({
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
@@ -1093,7 +1114,7 @@ function loadRowData(table, keyColumn, keyValue) {
         async function (error) {
             const json = await error.json();
             console.error(json);
-            // Display error messages in an alert element
+            // Display error messages in notification
             notify({
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
@@ -1169,7 +1190,7 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
         async function (error) {
             const json = await error.json();
             console.error(json);
-            // Display error messages in an alert element
+            // Display error messages in notification
             notify({
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
@@ -1385,6 +1406,109 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
     });
 
     return container;
+}
+
+// This function gets user secrets from API and displays to the admins
+function showUserSecrets(id, type = 'TOKEN') {
+
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getUserSecrets/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                ID: id
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            console.log(json.data);
+
+            if (type == 'TOKEN') {
+                if (json.data.TOKEN == false) {
+                    // Display error messages in notification
+                    notify({
+                        icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                        title: 'ohCRUD!',
+                        titleRightText: 'now',
+                        text: 'This user does not have an API access token.',
+                        closeOnClick: true,
+                    });
+                    return;
+                }
+                // Display the API access token
+                notify({
+                    icon: '<i class="f7-icons icon color-blue">info_circle</i>',
+                    title: 'ohCRUD! - API access token',
+                    text: `
+                        Below is the API access token for user <strong>${json.data.USERNAME}</strong>:
+                        <div class="list list-strong-ios list-dividers-ios inset-ios no-margin">
+                            <div class="item-content item-input">
+                                <div class="item-inner">
+                                    <div class="item-input-wrap">
+                                        <input id="" name="" type="text" readonly value="${json.data.TOKEN}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    closeButton: true,
+                }, null);
+                return;
+            }
+
+            if (type == 'TOTP_SECRET') {
+                if (json.data.TOTP_SECRET == false || json.data.QR_CODE == false) {
+                    // Display error messages in notification
+                    notify({
+                        icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                        title: 'ohCRUD!',
+                        titleRightText: 'now',
+                        text: 'This user does not have a TOTP secret, or it has not been enabled.',
+                        closeOnClick: true,
+                    });
+                    return;
+                }
+                // Display the TOTP QR Code
+                let totpQRCode = new QRCode({
+                    content: json.data.QR_CODE,
+                    container: 'svg-viewbox',
+                    padding: 0,
+                    join: true
+                });
+                let totpQRCodeSVG = totpQRCode.svg();
+
+                notify({
+                    icon: '<i class="f7-icons icon color-blue">info_circle</i>',
+                    title: 'ohCRUD! - TOTP secret',
+                    text: `
+                        Below is the TOTP secret for user <strong>${json.data.USERNAME}</strong>:
+                        <div class="totp-qr-code">${totpQRCodeSVG}</div>
+                    `,
+                    closeButton: true,
+                }, null);
+                return;
+            }
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in notification
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: 'Something went wrong with getting user secrets.',
+                closeOnClick: true,
+            });
+        }
+    );
+
 }
 
 // -------------------------------------------------------------------------

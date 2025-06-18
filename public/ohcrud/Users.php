@@ -122,24 +122,58 @@ class Users extends \ohCRUD\DB {
     }
 
     // Enable or re-generate TOTP for a user
-    public function enableTOTP($id) {
+    public function enableTOTP($id, $activateTOTP = true) {
         $user = $this->read(
             'Users',
-            'ID = :ID AND STATUS = :STATUS',
+            'ID = :ID',
             [
-                ':ID' => $id,
-                ':STATUS' => $this::ACTIVE
+                ':ID' => $id
             ]
         )->first();
 
         if ($user != false) {
             $totp = TOTP::generate();
 
+            $data = [
+                'TOTP_SECRET' => $this->encryptText($totp->getSecret())
+            ];
+
+            if ($activateTOTP == true) {
+                $data['TOTP'] = $this::ACTIVE;
+            }
+
+            $output = $this->Update(
+                'Users',
+                $data,
+                'ID = :ID',
+                [
+                    ':ID' => $id
+                ]
+            )->success;
+
+            return $output;
+        } else {
+            return false;
+        }
+    }
+
+    // Enable or re-generate TOKEN for a user
+    public function enableTOKEN($id) {
+        $user = $this->read(
+            'Users',
+            'ID = :ID',
+            [
+                ':ID' => $id
+            ]
+        )->first();
+
+        if ($user != false) {
+            $token = $this->encryptText($this->generateToken($user->USERNAME));
+
             $output = $this->Update(
                 'Users',
                 [
-                    'TOTP' => $this::ACTIVE,
-                    'TOTP_SECRET' => $this->encryptText($totp->getSecret())
+                    'TOKEN' => $token
                 ],
                 'ID = :ID',
                 [

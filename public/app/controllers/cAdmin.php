@@ -1,6 +1,8 @@
 <?php
 namespace app\controllers;
 
+use OTPHP\TOTP;
+
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
@@ -17,7 +19,9 @@ class cAdmin extends \ohCRUD\DB {
         'createTableRow' => 1,
         'readTableRow' => 1,
         'updateTableRow' => 1,
-        'deleteTableRow' => 1
+        'deleteTableRow' => 1,
+        'getUserSecrets' => 1,
+        'rekeyUserSecrets' => 1,
     ];
 
     public ?array $pagination = null;
@@ -397,6 +401,138 @@ class cAdmin extends \ohCRUD\DB {
         );
 
         $this->data = new \stdClass();
+        $this->output();
+    }
+
+    // This function returns the secrets for a given user.
+    public function getUserSecrets($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->ID) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $id = (int) $request->payload->ID;
+
+        // Read the user secrets from the database
+        $user = $this->data = $this->read(
+            'Users',
+            'ID = :ID',
+            [
+                ':ID' => $id
+            ],
+            'USERNAME, HASH ,TOKEN, TOTP_SECRET'
+        )->first();
+
+        if ($user == false) {
+            $this->error('User not found.');
+            $this->output();
+            return $this;
+        }
+
+        // Process HASH
+        if (empty($user->HASH) == true) {
+            $this->data->HASH = false;
+        } else {
+            $this->data->HASH = $user->HASH;
+        }
+
+        // Process TOKEN
+        if (empty($user->HASH) == true || empty($user->TOKEN) == true) {
+            $this->data->TOKEN = false;
+        } else {
+            $this->data->TOKEN = $user->HASH . $this->decryptText($user->TOKEN);
+        }
+
+        // Process TOTP_SECRET
+        if (empty($user->TOTP_SECRET) == true) {
+            $this->data->TOTP_SECRET = false;
+            $this->data->QR_CODE = false;
+        } else {
+            $this->data->TOTP_SECRET = $this->decryptText($user->TOTP_SECRET);
+            $this->data->QR_CODE = 'otpauth://totp/' . $user->USERNAME . '@' . __SITE__ . '?secret=' . $user->TOTP_SECRET;
+        }
+
+        $this->output();
+    }
+
+    // This function re-generates secrets for a given user.
+    public function rekeyUserSecrets($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->ID) == true ||
+            empty($request->payload->SECRET_TYPE) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $id = (int) $request->payload->ID;
+        $secretType = $request->payload->SECRET_TYPE ?? '';
+
+        // Check if the secret type is valid
+        if (in_array($secretType, ['TOKEN', 'TOTP_SECRET']) == false) {
+            $this->error('Invalid secret type.');
+            $this->output();
+            return $this;
+        }
+
+        // Check if user exists
+        $userExists = $this->data = $this->read(
+            'Users',
+            'ID = :ID',
+            [
+                ':ID' => $id
+            ],
+            'ID'
+        )->first();
+
+        if ($userExists == false) {
+            $this->error('User not found.');
+            $this->output();
+            return $this;
+        }
+
+        // Get user model instance
+        $User = new \ohCRUD\Users();
+
+        // Re-generate the secret
+        switch ($secretType) {
+            case 'TOKEN':
+                $User->enableTOKEN($id);
+                break;
+
+            case 'TOTP_SECRET':
+                $User->enableTOTP($id, false);
+                break;
+        }
+
         $this->output();
     }
 
