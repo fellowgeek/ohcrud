@@ -20,8 +20,10 @@ class cAdmin extends \ohCRUD\DB {
         'readTableRow' => 1,
         'updateTableRow' => 1,
         'deleteTableRow' => 1,
+        'createUserRow' => 1,
+        'updateUserRow' => 1,
         'getUserSecrets' => 1,
-        'rekeyUserSecrets' => 1,
+        'refreshUserSecrets' => 1,
     ];
 
     public ?array $pagination = null;
@@ -329,6 +331,296 @@ class cAdmin extends \ohCRUD\DB {
         $this->output();
     }
 
+    // This function creates a new user row in the database.
+    public function createUserRow($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        // if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        //     $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->ID) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $id = (int) $request->payload->ID;
+
+        // Remove unwanted data from the payload
+        unset($request->payload->CSRF);
+        unset($request->payload->HASH);
+        unset($request->payload->TOKEN);
+        unset($request->payload->TOTP_SECRET);
+
+        // Remove ohCRUD stamp from the payload
+        unset($request->payload->CDATE);
+        unset($request->payload->MDATE);
+        unset($request->payload->CUSER);
+        unset($request->payload->MUSER);
+
+        // Prepare the data : USERNAME
+        if (isset($request->payload->USERNAME) == true) {
+            $request->payload->USERNAME = trim(strtolower($request->payload->USERNAME));
+            if (strlen($request->payload->USERNAME) < 3) {
+                $this->error('Username must be at least 3 characters long.');
+            }
+            if (strlen($request->payload->USERNAME) > 32) {
+                $this->error('Username must be at most 32 characters long.');
+            }
+            if (preg_match('/^[a-z0-9]+$/', $request->payload->USERNAME) == false) {
+                $this->error('Invalid username.');
+            }
+        }
+
+        // Prepare the data : EMAIL
+        if (isset($request->payload->EMAIL) == true) {
+            $request->payload->EMAIL = trim(strtolower($request->payload->EMAIL));
+            if (filter_var($request->payload->EMAIL, FILTER_VALIDATE_EMAIL) == true) {
+                $request->payload->HASH = hash('sha1', $request->payload->EMAIL);
+            } else {
+                $this->error('Invalid email address.');
+            }
+        }
+        // Prepare the data : NAME
+        if (isset($request->payload->NAME) == true) {
+            $request->payload->NAME = trim($request->payload->NAME);
+            if (strlen($request->payload->NAME) > 32) {
+                $this->error('Name must be at most 32 characters long.');
+            }
+            if (preg_match('/^[ a-zA-Z0-9]+$/', $request->payload->NAME) == false) {
+                $this->error('Invalid name.');
+            }
+        }
+
+        // Prepare the data : GROUP
+        if (isset($request->payload->GROUP) == true) {
+            if (is_numeric($request->payload->GROUP) == false) {
+                $this->error('Invalid group.');
+            } else {
+                $request->payload->GROUP = (int) $request->payload->GROUP;
+                if ($request->payload->GROUP  < 1) {
+                    $this->error('Invalid group.');
+                }
+            }
+        }
+
+        // Prepare the data : PERMISSIONS
+        if (isset($request->payload->PERMISSIONS) == true) {
+            if (is_numeric($request->payload->PERMISSIONS) == false) {
+                $this->error('Invalid permissions.');
+            } else {
+                $request->payload->PERMISSIONS = (int) $request->payload->PERMISSIONS;
+                if ($request->payload->PERMISSIONS < 1) {
+                    $this->error('Invalid permissions.');
+                }
+            }
+        }
+
+        // Prepare the data : STATUS
+        if (isset($request->payload->STATUS) == true) {
+            $request->payload->STATUS = (int) $request->payload->STATUS;
+            if ($request->payload->STATUS != $this::ACTIVE && $request->payload->STATUS != $this::INACTIVE) {
+                $this->error('Invalid status.');
+            }
+        }
+
+        // Prepare the data : PASSWORD
+        if (isset($request->payload->PASSWORD) == true && $request->payload->PASSWORD != '**********') {
+            $checkPasswordSecurity = $this->checkPasswordSecurity($request->payload->PASSWORD);
+            if ($checkPasswordSecurity == 'secure') {
+                $request->payload->PASSWORD = password_hash(
+                    $request->payload->PASSWORD,
+                    PASSWORD_BCRYPT,
+                    [
+                        'cost' => 14
+                    ]
+                );
+            } else {
+                $this->error($checkPasswordSecurity);
+            }
+        }
+
+        // Prepare the data : TOTP
+        if (isset($request->payload->TOTP) == true) {
+            $request->payload->TOTP = (int) $request->payload->TOTP;
+            if ($request->payload->TOTP != $this::ACTIVE && $request->payload->TOTP != $this::INACTIVE) {
+                $this->error('Invalid TOTP status.');
+            }
+        }
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Update the row in the database
+        $this->update(
+            'Users',
+            (array) $request->payload,
+            "ID = :ID",
+            [
+                ':ID' => $id
+            ],
+        );
+
+        $this->data = new \stdClass();
+        $this->output();
+    }
+
+    // This function update a user row in the database.
+    public function updateUserRow($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        // if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        //     $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->ID) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $id = (int) $request->payload->ID;
+
+        // Remove unwanted data from the payload
+        unset($request->payload->CSRF);
+        unset($request->payload->HASH);
+        unset($request->payload->TOKEN);
+        unset($request->payload->TOTP_SECRET);
+
+        // Remove ohCRUD stamp from the payload
+        unset($request->payload->CDATE);
+        unset($request->payload->MDATE);
+        unset($request->payload->CUSER);
+        unset($request->payload->MUSER);
+
+        // Prepare the data : USERNAME
+        if (isset($request->payload->USERNAME) == true) {
+            $request->payload->USERNAME = trim(strtolower($request->payload->USERNAME));
+            if (strlen($request->payload->USERNAME) < 3) {
+                $this->error('Username must be at least 3 characters long.');
+            }
+            if (strlen($request->payload->USERNAME) > 32) {
+                $this->error('Username must be at most 32 characters long.');
+            }
+            if (preg_match('/^[a-z0-9]+$/', $request->payload->USERNAME) == false) {
+                $this->error('Invalid username.');
+            }
+        }
+
+        // Prepare the data : EMAIL
+        if (isset($request->payload->EMAIL) == true) {
+            $request->payload->EMAIL = trim(strtolower($request->payload->EMAIL));
+            if (filter_var($request->payload->EMAIL, FILTER_VALIDATE_EMAIL) == true) {
+                $request->payload->HASH = hash('sha1', $request->payload->EMAIL);
+            } else {
+                $this->error('Invalid email address.');
+            }
+        }
+        // Prepare the data : NAME
+        if (isset($request->payload->NAME) == true) {
+            $request->payload->NAME = trim($request->payload->NAME);
+            if (strlen($request->payload->NAME) > 32) {
+                $this->error('Name must be at most 32 characters long.');
+            }
+            if (preg_match('/^[ a-zA-Z0-9]+$/', $request->payload->NAME) == false) {
+                $this->error('Invalid name.');
+            }
+        }
+
+        // Prepare the data : GROUP
+        if (isset($request->payload->GROUP) == true) {
+            if (is_numeric($request->payload->GROUP) == false) {
+                $this->error('Invalid group.');
+            } else {
+                $request->payload->GROUP = (int) $request->payload->GROUP;
+                if ($request->payload->GROUP  < 1) {
+                    $this->error('Invalid group.');
+                }
+            }
+        }
+
+        // Prepare the data : PERMISSIONS
+        if (isset($request->payload->PERMISSIONS) == true) {
+            if (is_numeric($request->payload->PERMISSIONS) == false) {
+                $this->error('Invalid permissions.');
+            } else {
+                $request->payload->PERMISSIONS = (int) $request->payload->PERMISSIONS;
+                if ($request->payload->PERMISSIONS < 1) {
+                    $this->error('Invalid permissions.');
+                }
+            }
+        }
+
+        // Prepare the data : STATUS
+        if (isset($request->payload->STATUS) == true) {
+            $request->payload->STATUS = (int) $request->payload->STATUS;
+            if ($request->payload->STATUS != $this::ACTIVE && $request->payload->STATUS != $this::INACTIVE) {
+                $this->error('Invalid status.');
+            }
+        }
+
+        // Prepare the data : PASSWORD
+        if (isset($request->payload->PASSWORD) == true && $request->payload->PASSWORD != '**********') {
+            $checkPasswordSecurity = $this->checkPasswordSecurity($request->payload->PASSWORD);
+            if ($checkPasswordSecurity == 'secure') {
+                $request->payload->PASSWORD = password_hash(
+                    $request->payload->PASSWORD,
+                    PASSWORD_BCRYPT,
+                    [
+                        'cost' => 10
+                    ]
+                );
+            } else {
+                $this->error($checkPasswordSecurity);
+            }
+        }
+
+        // Prepare the data : TOTP
+        if (isset($request->payload->TOTP) == true) {
+            $request->payload->TOTP = (int) $request->payload->TOTP;
+            if ($request->payload->TOTP != $this::ACTIVE && $request->payload->TOTP != $this::INACTIVE) {
+                $this->error('Invalid TOTP status.');
+            }
+        }
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Update the row in the database
+        $this->update(
+            'Users',
+            (array) $request->payload,
+            "ID = :ID",
+            [
+                ':ID' => $id
+            ],
+        );
+
+        $this->data = new \stdClass();
+        $this->output();
+    }
+
     // This function deletes a row from a given table in the database.
     public function deleteTableRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -471,7 +763,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function re-generates secrets for a given user.
-    public function rekeyUserSecrets($request) {
+    public function refreshUserSecrets($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Initializes variables
@@ -621,6 +913,40 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         return substr($string, 0, $truncatedLength) . '...';
+    }
+
+    // Checks if a given password is secure based on basic criteria.
+    private function checkPasswordSecurity($password) {
+        // Define minimum length for the password
+        $minLength = 8;
+
+        // Initialize an array to hold the security status and message
+        $output = 'secure';
+
+        // 1. Check for minimum length
+        if (strlen($password) < $minLength) {
+            $output = 'Password is too short. It must be at least {$minLength} characters long.';
+            return $output;
+        }
+
+        // 2. Check for presence of different character types (example: uppercase, lowercase, number, special character)
+        if (!preg_match('/[A-Z]/', $password)) {
+            $output = 'Password must contain at least one uppercase letter.';
+            return $output;
+        }
+
+        if (!preg_match('/[a-z]/', $password)) {
+            $output = 'Password must contain at least one lowercase letter.';
+            return $output;
+        }
+
+        if (!preg_match('/[0-9]/', $password)) {
+            $output = 'Password must contain at least one number.';
+            return $output;
+        }
+
+        // If all checks pass
+        return $output;
     }
 
 }

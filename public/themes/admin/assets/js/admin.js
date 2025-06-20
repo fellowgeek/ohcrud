@@ -507,7 +507,12 @@ $$(document).on('page:init', function (e, page) {
         });
 
         btnUserFormRefreshToken.on('click', function() {
-            console.log(btnUserFormRefreshToken.data('row-key-value'));
+            let id = btnUserFormRefreshToken.data('row-key-value');
+            app.dialog.confirm('Are you sure you want to refresh this user\'s API token? This will invalidate the old token and disable all API access using it.', 'Refresh API Token', () => {
+                setTimeout(() => {
+                    refreshUserSecrets(id, 'TOKEN');
+                }, 250);
+            }, null);
         });
 
         btnUserFormTOTPQRCode.on('click', function() {
@@ -516,7 +521,13 @@ $$(document).on('page:init', function (e, page) {
         });
 
         btnUserFormTOTPRefresh.on('click', function() {
-            console.log(btnUserFormTOTPRefresh.data('row-key-value'));
+            let id = btnUserFormTOTPRefresh.data('row-key-value');
+            app.dialog.confirm('Are you sure you want to refresh this user\'s TOTP secret? If TOTP is currently enabled, they won\'t be able to log in until they register a new authenticator using the new secret.', 'Refresh TOTP Secret', () => {
+                setTimeout(() => {
+                    refreshUserSecrets(id, 'TOTP_SECRET');
+
+                }, 250);
+            }, null);
         });
 
         // Handle create user popup events
@@ -851,6 +862,11 @@ function loadTableData(table, page = 1) {
                         if (columnDetails[key].PRIMARY_KEY == true) {
                             primaryColumnName = columnDetails[key].NAME;
                             primaryColumnValue = value;
+                        }
+
+                        // Special case for Users
+                        if (table == 'Users' && ['STATUS', 'TOTP'].includes(columnDetails[key].NAME)) {
+                            columnDetails[key].DETECTED_TYPE = 'boolean';
                         }
 
                         // Hash and encrypted chips
@@ -1427,7 +1443,6 @@ function showUserSecrets(id, type = 'TOKEN') {
         },
         async function (response) {
             const json = await response.json();
-            console.log(json.data);
 
             if (type == 'TOKEN') {
                 if (json.data.TOKEN == false) {
@@ -1504,6 +1519,54 @@ function showUserSecrets(id, type = 'TOKEN') {
                 title: 'ohCRUD!',
                 titleRightText: 'now',
                 text: 'Something went wrong with getting user secrets.',
+                closeOnClick: true,
+            });
+        }
+    );
+
+}
+
+// This function refreshes the user secrets
+function refreshUserSecrets(id, type = 'TOKEN') {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/refreshUserSecrets/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                ID: id,
+                SECRET_TYPE: type
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            // Prepare message
+            let message = '';
+            if (type == 'TOKEN') message = 'API access token has been refreshed.';
+            if (type == 'TOTP_SECRET') message = 'TOTP secret has been refreshed.';
+            // Display success message
+            notify({
+                icon: '<i class="f7-icons icon color-blue">info_circle</i>',
+                title: 'ohCRUD! - Success',
+                titleRightText: 'now',
+                text: message,
+                closeOnClick: true,
+            });
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in notification
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: 'Something went wrong with refreshing user secrets.',
                 closeOnClick: true,
             });
         }

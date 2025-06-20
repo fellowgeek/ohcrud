@@ -93,7 +93,7 @@ class Users extends \ohCRUD\DB {
         if (isset($data['PASSWORD']) == true) {
             $data['PASSWORD'] = password_hash(
                 $data['PASSWORD'], PASSWORD_BCRYPT, [
-                    'cost' => 10
+                    'cost' => 14
                 ]
             );
         }
@@ -199,8 +199,8 @@ class Users extends \ohCRUD\DB {
                 $APIToken = substr($token, 40, 40);
             } else {
                 $this->log('warning', 'Invalid token length', [$token]);
-                // Delay to mitigate brute force attacks
-                sleep(1);
+                // Delay to mitigate brute force and timing attacks
+                usleep(rand(500000, 1000000));
                 return false;
             }
 
@@ -217,8 +217,8 @@ class Users extends \ohCRUD\DB {
             // Return if user was not found
             if ($user == false) {
                 $this->log('warning', 'Invalid token hash', [$token]);
-                // Delay to mitigate brute force attacks
-                sleep(1);
+                // Delay to mitigate brute force and timing attacks
+                usleep(rand(500000, 1000000));
                 return false;
             }
 
@@ -237,8 +237,8 @@ class Users extends \ohCRUD\DB {
                 $this->setSession('User', $user);
             } else {
                 $this->log('warning', 'Invalid token', [$token]);
-                // Delay to mitigate brute force attacks
-                sleep(1);
+                // Delay to mitigate brute force and timing attacks
+                usleep(rand(500000, 1000000));
                 return false;
             }
 
@@ -247,7 +247,7 @@ class Users extends \ohCRUD\DB {
 
         // Delay to mitigate brute force attacks, only in production mode
         if(__OHCRUD_DEBUG_MODE__ == false) {
-            sleep(1);
+            usleep(rand(500000, 1000000));
         }
 
         // Get a user based on username and status
@@ -294,9 +294,9 @@ class Users extends \ohCRUD\DB {
     // Handle TOTP authentication for a given user ID
     public function verify($id, $TOTP_CODE) {
 
-        // Delay to mitigate brute force attacks, only in production mode
+        // Delay to mitigate brute force and timing attacks, only in production mode
         if(__OHCRUD_DEBUG_MODE__ == false) {
-            sleep(1);
+            usleep(rand(500000, 1000000));
         }
 
         // Get the user

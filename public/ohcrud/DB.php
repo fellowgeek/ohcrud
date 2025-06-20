@@ -154,7 +154,7 @@ class DB extends \ohCRUD\Core {
         for($f = 0; $f < $fieldSize; ++$f) {
             if ($f > 0)
                 $sql .= ", ";
-            $sql .= $fields[$f] . " = :update_" . $fields[$f];
+            $sql .= "`" . $fields[$f] . "` = :update_" . $fields[$f];
         }
         $sql .= " WHERE " . $where . ";";
 
@@ -231,7 +231,8 @@ class DB extends \ohCRUD\Core {
                             $field->EXTRA = $isSQLite ? null : $fieldRow['Extra'];
 
                             // Sample data from the column to detect type
-                            $sampleStmt = $this->db->prepare("SELECT `{$field->NAME}` FROM `$tableName` WHERE `{$field->NAME}` IS NOT NULL AND `{$field->NAME}` <> '' LIMIT 5");
+                            $sampleStmt = $this->db->prepare(
+                                "SELECT `{$field->NAME}` FROM `$tableName` WHERE `{$field->NAME}` IS NOT NULL AND `{$field->NAME}` <> '' LIMIT 5");
                             $sampleStmt->execute();
                             $samples = $sampleStmt->fetchAll(\PDO::FETCH_COLUMN);
 

@@ -12,6 +12,10 @@
   height: 38px !important;
 }
 
+.dialog-text {
+  text-align: left !important;
+}
+
 /* simplemde Styles */
 .editor-toolbar {
   border: none !important;
