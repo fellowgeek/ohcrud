@@ -1,6 +1,6 @@
 <?php
-// Sanitize the table name
-$table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['table'] ?? ''));
+    // Sanitize the table name
+    $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['table'] ?? ''));
 ?>
 
 <input type="hidden" id="TABLE" name="TABLE" value="<?= $table ?>" />
@@ -13,7 +13,17 @@ $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['
             <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">
                 <i class="icon f7-icons">table_badge_more</i>
             </a>
+<?php
+    if($table == 'Users') {
+?>
+        <a id="btnNewUserRecord" class="link icon-only">
+<?php
+    } else {
+?>
             <a id="btnNewRecord" class="link icon-only">
+<?php
+    }
+?>
                 <i class="icon f7-icons">plus</i>
             </a>
         </div>

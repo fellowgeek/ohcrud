@@ -339,8 +339,8 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        // if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
-        //     $this->error('Missing or invalid CSRF token.');
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
         if (isset($request->payload) == false ||
@@ -484,8 +484,8 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        // if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
-        //     $this->error('Missing or invalid CSRF token.');
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
         if (isset($request->payload) == false ||
@@ -535,6 +535,7 @@ class cAdmin extends \ohCRUD\DB {
                 $this->error('Invalid email address.');
             }
         }
+
         // Prepare the data : NAME
         if (isset($request->payload->NAME) == true) {
             $request->payload->NAME = trim($request->payload->NAME);
@@ -586,12 +587,14 @@ class cAdmin extends \ohCRUD\DB {
                     $request->payload->PASSWORD,
                     PASSWORD_BCRYPT,
                     [
-                        'cost' => 10
+                        'cost' => 14
                     ]
                 );
             } else {
                 $this->error($checkPasswordSecurity);
             }
+        } else {
+            unset($request->payload->PASSWORD);
         }
 
         // Prepare the data : TOTP

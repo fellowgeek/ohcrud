@@ -113,7 +113,7 @@ class Users extends \ohCRUD\DB {
         if (isset($data['PASSWORD']) == true) {
             $data['PASSWORD'] = password_hash(
                 $data['PASSWORD'], PASSWORD_BCRYPT, [
-                    'cost' => 10
+                    'cost' => 14
                 ]
             );
         }
@@ -245,7 +245,7 @@ class Users extends \ohCRUD\DB {
             return $user;
         }
 
-        // Delay to mitigate brute force attacks, only in production mode
+        // Delay to mitigate brute force and timing attacks, only in production mode
         if(__OHCRUD_DEBUG_MODE__ == false) {
             usleep(rand(500000, 1000000));
         }

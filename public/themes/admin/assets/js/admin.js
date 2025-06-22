@@ -413,6 +413,7 @@ $$(document).on('page:init', function (e, page) {
         let btnNewRecord = $$('#btnNewRecord');
         let btnFormCreateSave = $$('#btnFormCreateSave');
         let btnFormCreateCancel = $$('#btnFormCreateCancel');
+        let btnNewUserRecord = $$('#btnNewUserRecord');
         let btnUserFormEditSave = $$('#btnUserFormEditSave');
         let btnUserFormEditCancel = $$('#btnUserFormEditCancel');
         let btnUserFormToken = $$('#btnUserFormToken');
@@ -479,6 +480,7 @@ $$(document).on('page:init', function (e, page) {
             buildFormFromData(tableName ,columnDetails, 'formCreateRecord');
             // Open the popup
             app.popup.open('.create-record-popup');
+            document.querySelector('.create-record-popup .page-content').scrollTop = 0;
         });
 
         btnFormCreateSave.on('click', function() {
@@ -486,7 +488,11 @@ $$(document).on('page:init', function (e, page) {
             let formRecordInputs = $$('.formRecordInput');
 
             formRecordInputs.forEach((formRecordInput) => {
-                data[formRecordInput.id] = formRecordInput.value;
+                if (formRecordInput.type == 'checkbox') {
+                    data[formRecordInput.name] = formRecordInput.checked ? 1 : 0;
+                } else {
+                    data[formRecordInput.name] = formRecordInput.value;
+                }
             });
             saveRowData(tableName, 'create', data);
         });
@@ -498,6 +504,18 @@ $$(document).on('page:init', function (e, page) {
             setTimeout(() => {
                 $$('#formCreateRecord').empty();
             }, 500);
+        });
+
+        // Handle create user popup events
+        btnNewUserRecord.on('click', function() {
+            // Prepare the user record form
+            $$('.create-edit-user-popup .title').text('Create User');
+            $$('.formUserRecordInput').val('');
+            $$('#Users-STATUS').prop('checked', false);
+            $$('#Users-TOTP').prop('checked', false);
+            // Open the popup
+            app.popup.open('.create-edit-user-popup');
+            document.querySelector('.create-edit-user-popup .page-content').scrollTop = 0;
         });
 
         // Handle edit user popup events
@@ -530,7 +548,25 @@ $$(document).on('page:init', function (e, page) {
             }, null);
         });
 
-        // Handle create user popup events
+        btnUserFormEditCancel.on('click', function() {
+            // Close the popup
+            app.popup.close('.create-edit-user-popup');
+        });
+
+        btnUserFormEditSave.on('click', function() {
+            let data = {};
+            let id = $$(this).data('row-key-value');
+            let formUserRecordInputs = $$('.formUserRecordInput');
+
+            formUserRecordInputs.forEach((formUserRecordInput) => {
+                if (formUserRecordInput.type == 'checkbox') {
+                    data[formUserRecordInput.name] = formUserRecordInput.checked ? 1 : 0;
+                } else {
+                    data[formUserRecordInput.name] = formUserRecordInput.value;
+                }
+            });
+            saveUserRowData('update', data, id);
+        });
     }
 });
 
@@ -957,7 +993,8 @@ function loadTableData(table, page = 1) {
                             // Get row data
                             loadUserRowData(rowKeyValue);
                             // Open the popup
-                            app.popup.open('.edit-user-popup');
+                            app.popup.open('.create-edit-user-popup');
+                            document.querySelector('.create-edit-user-popup .page-content').scrollTop = 0;
                             break;
 
                         default:
@@ -965,6 +1002,7 @@ function loadTableData(table, page = 1) {
                             loadRowData(table, rowKeyColumn, rowKeyValue);
                             // Open the popup
                             app.popup.open('.edit-record-popup');
+                            document.querySelector('.edit-record-popup .page-content').scrollTop = 0;
                         break;
                     }
                 });
@@ -1083,6 +1121,11 @@ function loadUserRowData(keyValue) {
             $$('#btnUserFormTOTPRefresh').data('row-key-value', keyValue);
 
             Object.entries(json.data).forEach(([key, value]) => {
+                if (['STATUS', 'TOTP'].includes(key) == true) {
+                    $$('#Users-' + key).prop('checked', value == 1 ? true : false);
+                    $$('#Users-' + key).val(value);
+                    return;
+                }
                 $$('#Users-' + key).val(value);
             });
         },
@@ -1201,6 +1244,79 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
             setTimeout(() => {
                 if (mode == 'create') $$('#formCreateRecord').empty();
                 if (mode == 'update') $$('#formEditRecord').empty();
+            }, 500);
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in notification
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: json.errors.join(),
+                closeOnClick: true,
+            });
+        }
+    );
+}
+
+// This function update a user row with the form data
+function saveUserRowData(mode = 'update', data, id) {
+
+    let body = {};
+    let adminAPI = '';
+    let page = parseInt($$('#PAGE_CURRENT').val());
+
+    if (mode == 'create') {
+        adminAPI = 'createUserRow';
+
+        // Remove unwanted data
+        Object.entries(columnDetails).forEach(([index, column]) => {
+            if (column.PRIMARY_KEY == true ||column.EXTRA == 'auto_increment') {
+                delete data[column.NAME];
+            }
+        });
+
+        body = {
+            ...data
+        };
+    }
+    if (mode == 'update') {
+        adminAPI = 'updateUserRow';
+        body = {
+            ID: id,
+            ...data
+        };
+    }
+
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/' + adminAPI + '/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: body
+        },
+        async function (response) {
+            const json = await response.json();
+            // Undo the highlight
+            $$(`.btnRecordDelete[data-row-key-value="${id}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+
+            // Reload the page
+            loadTableData('Users', page);
+
+            // Close the popup
+            app.popup.close('.create-user-popup');
+            app.popup.close('.create-edit-user-popup');
+            // Empty the form
+            setTimeout(() => {
+                // TODO: empty the create user form
+                // if (mode == 'create') $$('#formCreateRecord').empty();
             }, 500);
         },
         async function (error) {
