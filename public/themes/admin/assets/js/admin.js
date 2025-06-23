@@ -124,7 +124,7 @@ $$(document).on('page:init', function (e, page) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join(),
+                        text: json.errors.join('<br/>'),
                         closeOnClick: true,
                     });
                     // Re-enable the button and change its content back to "Login"
@@ -181,7 +181,7 @@ $$(document).on('page:init', function (e, page) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join(),
+                        text: json.errors.join('<br/>'),
                         closeOnClick: true,
                     });
                     btnLoginVerify.removeClass('disabled');
@@ -299,7 +299,7 @@ $$(document).on('page:init', function (e, page) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join(),
+                        text: json.errors.join('<br/>'),
                         closeOnClick: true,
                     });
                     btnCMSSave.removeClass('disabled');
@@ -342,7 +342,7 @@ $$(document).on('page:init', function (e, page) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join(),
+                        text: json.errors.join('<br/>'),
                         closeOnClick: true,
                     });
                     btnCMSDeleteRestore.removeClass('disabled');
@@ -383,7 +383,7 @@ $$(document).on('page:init', function (e, page) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join(),
+                        text: json.errors.join('<br/>'),
                         closeOnClick: true,
                     });
                     if (fileToUploadMode == 'image') {
@@ -414,8 +414,8 @@ $$(document).on('page:init', function (e, page) {
         let btnFormCreateSave = $$('#btnFormCreateSave');
         let btnFormCreateCancel = $$('#btnFormCreateCancel');
         let btnNewUserRecord = $$('#btnNewUserRecord');
-        let btnUserFormEditSave = $$('#btnUserFormEditSave');
-        let btnUserFormEditCancel = $$('#btnUserFormEditCancel');
+        let btnUserFormCreateEditSave = $$('#btnUserFormCreateEditSave');
+        let btnUserFormCreateEditCancel = $$('#btnUserFormCreateEditCancel');
         let btnUserFormToken = $$('#btnUserFormToken');
         let btnUserFormRefreshToken = $$('#btnUserFormRefreshToken');
         let btnUserFormTOTPQRCode = $$('#btnUserFormTOTPQRCode');
@@ -510,7 +510,12 @@ $$(document).on('page:init', function (e, page) {
         btnNewUserRecord.on('click', function() {
             // Prepare the user record form
             $$('.create-edit-user-popup .title').text('Create User');
+            $$('#btnUserFormCreateEditSave').data('mode', 'create');
             $$('.formUserRecordInput').val('');
+            btnUserFormToken.addClass('hidden');
+            btnUserFormRefreshToken.addClass('hidden');
+            btnUserFormTOTPQRCode.addClass('hidden');
+            btnUserFormTOTPRefresh.addClass('hidden');
             $$('#Users-STATUS').prop('checked', false);
             $$('#Users-TOTP').prop('checked', false);
             // Open the popup
@@ -518,7 +523,7 @@ $$(document).on('page:init', function (e, page) {
             document.querySelector('.create-edit-user-popup .page-content').scrollTop = 0;
         });
 
-        // Handle edit user popup events
+        // Handle create edit user popup events
         btnUserFormToken.on('click', function() {
             let id = btnUserFormToken.data('row-key-value');
             showUserSecrets(id, 'TOKEN');
@@ -548,15 +553,16 @@ $$(document).on('page:init', function (e, page) {
             }, null);
         });
 
-        btnUserFormEditCancel.on('click', function() {
+        btnUserFormCreateEditCancel.on('click', function() {
             // Close the popup
             app.popup.close('.create-edit-user-popup');
         });
 
-        btnUserFormEditSave.on('click', function() {
+        btnUserFormCreateEditSave.on('click', function() {
             let data = {};
             let id = $$(this).data('row-key-value');
             let formUserRecordInputs = $$('.formUserRecordInput');
+            let mode = $$(this).data('mode');
 
             formUserRecordInputs.forEach((formUserRecordInput) => {
                 if (formUserRecordInput.type == 'checkbox') {
@@ -565,7 +571,7 @@ $$(document).on('page:init', function (e, page) {
                     data[formUserRecordInput.name] = formUserRecordInput.value;
                 }
             });
-            saveUserRowData('update', data, id);
+            saveUserRowData(mode, data, id);
         });
     }
 });
@@ -993,6 +999,12 @@ function loadTableData(table, page = 1) {
                             // Get row data
                             loadUserRowData(rowKeyValue);
                             // Open the popup
+                            $$('.create-edit-user-popup .title').text('Edit User');
+                            $$('#btnUserFormCreateEditSave').data('mode', 'update');
+                            $$('#btnUserFormToken').removeClass('hidden');
+                            $$('#btnUserFormRefreshToken').removeClass('hidden');
+                            $$('#btnUserFormTOTPQRCode').removeClass('hidden');
+                            $$('#btnUserFormTOTPRefresh').removeClass('hidden');
                             app.popup.open('.create-edit-user-popup');
                             document.querySelector('.create-edit-user-popup .page-content').scrollTop = 0;
                             break;
@@ -1044,7 +1056,7 @@ function loadTableData(table, page = 1) {
                                             icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                                             title: 'ohCRUD!',
                                             titleRightText: 'now',
-                                            text: json.errors.join(),
+                                            text: json.errors.join('<br/>'),
                                             closeOnClick: true,
                                         });
                                     }
@@ -1113,8 +1125,8 @@ function loadUserRowData(keyValue) {
             const json = await response.json();
             $$('#btnUserFormEditCancel').data('row-key-column', 'ID');
             $$('#btnUserFormEditCancel').data('row-key-value', keyValue);
-            $$('#btnUserFormEditSave').data('row-key-column', 'ID');
-            $$('#btnUserFormEditSave').data('row-key-value', keyValue);
+            $$('#btnUserFormCreateEditSave').data('row-key-column', 'ID');
+            $$('#btnUserFormCreateEditSave').data('row-key-value', keyValue);
             $$('#btnUserFormToken').data('row-key-value', keyValue);
             $$('#btnUserFormRefreshToken').data('row-key-value', keyValue);
             $$('#btnUserFormTOTPQRCode').data('row-key-value', keyValue);
@@ -1254,7 +1266,7 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
                 titleRightText: 'now',
-                text: json.errors.join(),
+                text: json.errors.join('<br/>'),
                 closeOnClick: true,
             });
         }
@@ -1311,13 +1323,7 @@ function saveUserRowData(mode = 'update', data, id) {
             loadTableData('Users', page);
 
             // Close the popup
-            app.popup.close('.create-user-popup');
             app.popup.close('.create-edit-user-popup');
-            // Empty the form
-            setTimeout(() => {
-                // TODO: empty the create user form
-                // if (mode == 'create') $$('#formCreateRecord').empty();
-            }, 500);
         },
         async function (error) {
             const json = await error.json();
@@ -1327,7 +1333,7 @@ function saveUserRowData(mode = 'update', data, id) {
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
                 titleRightText: 'now',
-                text: json.errors.join(),
+                text: json.errors.join('<br/>'),
                 closeOnClick: true,
             });
         }

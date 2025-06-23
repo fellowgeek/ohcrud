@@ -225,7 +225,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">ID</div>
 												<div class="item-input-wrap">
-													<input id="Users-ID" name="ID" type="number" readonly="true" validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
+													<input id="Users-ID" name="ID" type="number" readonly validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -264,7 +264,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">HASH</div>
 												<div class="item-input-wrap">
-													<input id="Users-HASH" name="HASH" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-HASH" name="HASH" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -345,7 +345,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">PASSWORD</div>
 												<div class="item-input-wrap">
-													<input id="Users-PASSWORD" name="PASSWORD" type="password" required value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-PASSWORD" name="PASSWORD" type="password" required value="" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="new-password" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -364,7 +364,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">TOKEN</div>
 												<div class="item-input-wrap">
-													<input id="Users-TOKEN" name="TOKEN" type="password" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-TOKEN" name="TOKEN" type="password" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -399,7 +399,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">TOTP_SECRET</div>
 												<div class="item-input-wrap">
-													<input id="Users-TOTP_SECRET" name="TOTP_SECRET" type="password" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-TOTP_SECRET" name="TOTP_SECRET" type="password" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -419,7 +419,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">CDATE</div>
 												<div class="item-input-wrap">
-													<input id="Users-CDATE" name="CDATE" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-CDATE" name="CDATE" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -432,7 +432,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">MDATE</div>
 												<div class="item-input-wrap">
-													<input id="Users-MDATE" name="MDATE" type="text" readonly="true" data-error-message="Please enter a valid date and time" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-MDATE" name="MDATE" type="text" readonly data-error-message="Please enter a valid date and time" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -445,7 +445,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">CUSER</div>
 												<div class="item-input-wrap">
-													<input id="Users-CUSER" name="CUSER" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-CUSER" name="CUSER" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -458,7 +458,7 @@
 											<div class="item-inner">
 												<div class="item-title item-label">MUSER</div>
 												<div class="item-input-wrap">
-													<input id="Users-MUSER" name="MUSER" type="text" readonly="true" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+													<input id="Users-MUSER" name="MUSER" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
 												</div>
 											</div>
 										</div>
@@ -468,8 +468,8 @@
 
 							<div class="block inset">
 								<div class="grid grid-cols-2 grid-gap margin-horizontal">
-									<button id="btnUserFormEditSave" class="button button-fill" data-row-key-column="" data-row-key-value="">SAVE</button>
-									<button id="btnUserFormEditCancel" class="button button-outline" data-row-key-column="" data-row-key-value="">CANCEL</button>
+									<button id="btnUserFormCreateEditSave" class="button button-fill" data-mode="" data-row-key-column="" data-row-key-value="">SAVE</button>
+									<button id="btnUserFormCreateEditCancel" class="button button-outline" data-row-key-column="" data-row-key-value="">CANCEL</button>
 								</div>
 							</div>
 

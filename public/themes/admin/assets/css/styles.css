@@ -113,7 +113,7 @@ input.formRecordInput, input.formUserRecordInput {
   padding-left: 5px !important;
 }
 
-input[readonly="true"] {
+input[readonly="true"], input[readonly] {
   background-color: var(--f7-page-bg-color) !important;
   opacity: 0.8 !important;
   color: #666 !important;
@@ -200,7 +200,7 @@ Dark Mode
   background-image:  url('../img/patterns/cartographer.png');
 }
 
-.dark input[readonly="true"] {
+.dark input[readonly="true"], .dark input[readonly] {
   background-color: #333 !important;
   opacity: 0.8 !important;
   color: #666 !important;

@@ -344,16 +344,18 @@ class cAdmin extends \ohCRUD\DB {
 
         // Check if the request payload contains the necessary data.
         if (isset($request->payload) == false ||
-            empty($request->payload->ID) == true)
+            empty($request->payload->USERNAME) == true ||
+            empty($request->payload->EMAIL) == true ||
+            empty($request->payload->NAME) == true ||
+            empty($request->payload->GROUP) == true ||
+            empty($request->payload->PERMISSIONS) == true ||
+            empty($request->payload->PASSWORD) == true)
             $this->error('Missing or incomplete data.');
 
         if ($this->success == false) {
             $this->output();
             return $this;
         }
-
-        // Cleanup the input data
-        $id = (int) $request->payload->ID;
 
         // Remove unwanted data from the payload
         unset($request->payload->CSRF);
@@ -463,13 +465,9 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         // Update the row in the database
-        $this->update(
+        $this->create(
             'Users',
-            (array) $request->payload,
-            "ID = :ID",
-            [
-                ':ID' => $id
-            ],
+            (array) $request->payload
         );
 
         $this->data = new \stdClass();
@@ -928,7 +926,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // 1. Check for minimum length
         if (strlen($password) < $minLength) {
-            $output = 'Password is too short. It must be at least {$minLength} characters long.';
+            $output = "Password is too short. It must be at least {$minLength} characters long.";
             return $output;
         }
 
