@@ -43,7 +43,7 @@ class mPages extends \ohCRUD\DB {
                             `PERMISSIONS` int(10) NOT NULL DEFAULT '-1',
                             `THEME` varchar(32) NOT NULL DEFAULT '',
                             `LAYOUT` varchar(32) NOT NULL DEFAULT '',
-                            `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                            `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                             PRIMARY KEY (`ID`),
                             UNIQUE KEY `idx_URL` (`URL`) USING BTREE,
                             KEY `idx_GROUP` (`GROUP`) USING BTREE,

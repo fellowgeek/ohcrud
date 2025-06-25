@@ -906,8 +906,14 @@ function loadTableData(table, page = 1) {
                             primaryColumnValue = value;
                         }
 
-                        // Special case for Users
+                        // Special cases
+                        if (table == 'Pages' && ['STATUS'].includes(columnDetails[key].NAME)) {
+                            columnDetails[key].DETECTED_TYPE = 'boolean';
+                        }
                         if (table == 'Users' && ['STATUS', 'TOTP'].includes(columnDetails[key].NAME)) {
+                            columnDetails[key].DETECTED_TYPE = 'boolean';
+                        }
+                        if (table == 'Files' && ['STATUS'].includes(columnDetails[key].NAME)) {
                             columnDetails[key].DETECTED_TYPE = 'boolean';
                         }
 

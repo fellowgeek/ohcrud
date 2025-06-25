@@ -1,8 +1,6 @@
 <?php
 namespace app\controllers;
 
-use OTPHP\TOTP;
-
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
@@ -67,8 +65,12 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         if (isset($request->payload) == true && isset($request->payload->TABLE) == true) {
-            $this->data = $this->details($request->payload->TABLE, isset($request->payload->COLUMNS) ? true : false);
+            // Cleanup the input data
+            $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+            // Get column details for the given table
+            $this->data = $this->details($table, isset($request->payload->COLUMNS) ? true : false);
         } else {
+            // Get column details for all tables
             $this->data = $this->details('', isset($request->payload->COLUMNS) ? true : false);
         }
         unset($this->pagination);
@@ -123,7 +125,7 @@ class cAdmin extends \ohCRUD\DB {
         $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
         $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
         $order = $request->payload->ORDER ??  'DESC';
-        $orderBy = $request->payload->ORDER_BY ?? NULL;
+        $orderBy = $request->payload->ORDER_BY ?? $this->getPrimaryKeyColumn($table);
 
         // Get total records
         $totalRecords = $this->RUN("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;
@@ -138,11 +140,17 @@ class cAdmin extends \ohCRUD\DB {
 
         // Build the SQL query
         $SQL = "SELECT * FROM " . $table . "\n";
-        if ($orderBy != NULL) {
+        if ($orderBy != false) {
             $SQL .= "ORDER BY " . $orderBy . " " . $order . "\n";
         }
         $SQL .= "LIMIT ". $limit . " OFFSET " . $offset . ";";
         $this->data = $this->run($SQL)->data;
+
+        // Stop if there are errors
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
 
         // Cleanup the data and shorten long results and obfuscate ohCRUD secrets
         foreach ($this->data as $index => $value) {
@@ -153,7 +161,7 @@ class cAdmin extends \ohCRUD\DB {
                 $this->data[$index]->TOKEN = '**********';
                 $this->data[$index]->TOTP_SECRET = '**********';
             }
-
+            // Shorten long results
             foreach ($value as $key => $value) {
                 if (gettype($value) == 'string') {
                     $this->data[$index]->{$key} = $this->shortenString($value, 100);
@@ -162,7 +170,6 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         // Get pagination meta data
-
         $hasNextPage = $page < $totalPages;
         $hasPreviousPage = $page > 1;
         $showingRangeFrom = ($offset + 1);

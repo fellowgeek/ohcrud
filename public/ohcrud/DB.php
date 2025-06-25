@@ -179,6 +179,44 @@ class DB extends \ohCRUD\Core {
         }
     }
 
+    // Return the primary key column name for a given table
+    public function getPrimaryKeyColumn($table) {
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+            $this->error('Invalid table name.');
+            return null;
+        }
+
+        try {
+            $isSQLite = $this->config["DRIVER"] === 'SQLITE';
+            $isMySQL = $this->config["DRIVER"] === 'MYSQL';
+
+            if (!$isSQLite && !$isMySQL) {
+                throw new \Exception('Unsupported PDO driver: ' . $this->config["DRIVER"]);
+            }
+
+            if ($isSQLite) {
+                $stmt = $this->db->query("PRAGMA table_info(`$table`)");
+                while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                    if ((int)$row['pk'] !== 0) {
+                        return $row['name']; // Return first primary key column found
+                    }
+                }
+            } else {
+                $stmt = $this->db->query("DESCRIBE `$table`");
+                while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                    if ($row['Key'] === 'PRI') {
+                        return $row['Field']; // Return first primary key column found
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+        }
+
+        // No primary key found or error occurred
+        return false;
+    }
+
     // Return the details of all tables or a specific table
     public function details($table = '', $returnColumnDetails = false) {
 
@@ -455,7 +493,7 @@ class DB extends \ohCRUD\Core {
 
             $uniqueChars = count(array_unique(str_split($value)));
             $entropy = $uniqueChars / strlen($value);
-            $hasSymbols = preg_match('/[^A-Za-z0-9]/', $value);
+            $hasSymbols = preg_match('/[^A-Za-z0-9-_\.]/', $value);
 
             if (!$hasSlashes && strlen($value) >= 16 && $hasSymbols && $entropy > 0.4) {
                 return 'encrypted (guessed)';

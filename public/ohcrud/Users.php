@@ -52,7 +52,7 @@ class Users extends \ohCRUD\DB {
                         `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOKEN` varchar(256) NOT NULL DEFAULT '',
                         `TOTP_SECRET` varchar(256) NOT NULL DEFAULT '',
-                        `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                        `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                         `TOTP` int(10) unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`ID`),
                         UNIQUE KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
