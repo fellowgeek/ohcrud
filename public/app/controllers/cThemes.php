@@ -22,7 +22,10 @@ class cThemes extends \ohCRUD\DB {
         // Get a list of HTML files in the 'themes' directory and its subdirectories
         $scan = glob('themes/*/*.html');
 
+        $theme = '';
         $themes = [];
+        $layout = '';
+
         // Iterate through the list of HTML files
         foreach ($scan as $layoutFile) {
             $matches = [];

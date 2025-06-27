@@ -193,6 +193,39 @@ input[readonly="true"], input[readonly] {
   background-color: whitesmoke;
 }
 
+.file-card-header {
+  height: 180px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.file-card-chip {
+  color: whitesmoke;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 0px 5px 0px 5px;
+  border-radius: 5px !important;
+  height: 24px;
+}
+
+.file-card-header-background {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+.file-icon {
+  position: absolute;
+  font-size: 110px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: transparent;
+  color: white;
+}
+
+.file-card {
+  background-color: var(--f7-page-bg-color) !important;
+}
+
 /*
 Dark Mode
 */
@@ -256,4 +289,19 @@ Dark Mode
 
 .dark .totp-qr-code {
   opacity: 0.8;
+}
+
+/*
+Responsive
+*/
+@media (min-width:1920px) {
+  .xxlarge-grid-cols-6 {
+    grid-template-columns: repeat(6, minmax(0,1fr)) !important;
+  }
+}
+
+@media (min-width:2560px) {
+  .xxxlarge-grid-cols-7 {
+    grid-template-columns: repeat(7, minmax(0,1fr)) !important;
+  }
 }

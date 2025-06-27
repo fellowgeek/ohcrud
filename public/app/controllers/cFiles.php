@@ -54,9 +54,10 @@ class cFiles extends \app\models\mFiles {
         }
 
         // Get file information such as name, extension, and generate a unique path.
-        $NAME = basename($_FILES[0]['name']);
-        $TYPE = strtolower(pathinfo($NAME, PATHINFO_EXTENSION));
-        $PATH = 'global/files/' . md5($NAME . microtime()) . '.' . $TYPE;
+        $BASENAME = basename($_FILES[0]['name']);
+        $NAME = pathinfo($BASENAME, PATHINFO_FILENAME);
+        $TYPE = strtolower(pathinfo($BASENAME, PATHINFO_EXTENSION));
+        $PATH = 'global/files/' . md5($BASENAME . microtime()) . '.' . $TYPE;
         $TEMP  = $_FILES[0]['tmp_name'];
 
         // Check allowed file extension
@@ -266,4 +267,5 @@ class cFiles extends \app\models\mFiles {
         readfile($filePath);
         exit;
     }
+
 }

@@ -8,6 +8,7 @@ let ohCrudEditor = null;
 let columnDetails = {};
 const __CURRENT_THEME__ = $$('#currentTHEME').val();
 const __CURRENT_LAYOUT__ = $$('#currentLAYOUT').val();
+let file = document.getElementById('FILE');
 
 // Execute the following code when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function () {
@@ -25,9 +26,12 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Event listener for page initialization
-$$(document).on('page:init', function (e, page) {
+$$(document).on('page:init', function (e, pageObject) {
     // Log the page initialization event
-    debugLog('event: "page:init" triggered for "' + page.name + '"');
+    debugLog('event: "page:init" triggered for "' + pageObject.name + '"');
+
+    // Get global action for the page
+    let action = getFromURL('action');
 
     // Global setup
     let appDarkMode = localStorage.getItem('app:dark-mode');
@@ -47,7 +51,7 @@ $$(document).on('page:init', function (e, page) {
     });
 
     // If the login page is initialized
-    if (page.name == 'login') {
+    if (pageObject.name == 'login') {
 
         // Logout user
         logout();
@@ -192,12 +196,11 @@ $$(document).on('page:init', function (e, page) {
     }
 
     // If the admin page is initialized
-    if (page.name == 'edit') {
+    if (pageObject.name == 'edit') {
 
         // UI inputs
         let themeSelect = $$('#THEME');
         let layoutSelect = $$('#LAYOUT');
-        let file = document.getElementById('FILE');
         let fileToUploadMode = '';
 
         // UI buttons
@@ -352,58 +355,71 @@ $$(document).on('page:init', function (e, page) {
         });
 
         // File input change event (for uploading files)
-        file.addEventListener('change', function () {
-            let fileToUpload = file.files[0];
-            let formData = new FormData();
-            formData.append("0", fileToUpload);
-            formData.append("CSRF", __CSRF__);
-            document.querySelector(`.upload-${fileToUploadMode}`).classList = `fa fa-cog fa-spin upload-${fileToUploadMode}`;
+        if (file !== null) {
+            file.addEventListener('change', function () {
+                let fileToUpload = file.files[0];
+                let formData = new FormData();
+                formData.append("0", fileToUpload);
+                formData.append("CSRF", __CSRF__);
+                document.querySelector(`.upload-${fileToUploadMode}`).classList = `fa fa-cog fa-spin upload-${fileToUploadMode}`;
 
-            httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/files/upload/',
-                {
-                    method: 'POST',
-                    cache: 'no-cache',
-                    credentials: 'same-origin',
-                    body: formData
-                },
-                async function (response) {
-                    const json = await response.json();
-                    if (fileToUploadMode == 'image') {
-                        const alt = json.data.NAME.replace(`.${json.data.TYPE}`, '');
-                        insertCodeInEditor(ohCrudEditor, `![${alt}](${json.data.PATH})`);
-                        document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
-                    } else {
-                        insertCodeInEditor(ohCrudEditor, `[${json.data.NAME}](${json.data.PATH})`);
-                        document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
-                    }
-                },
-                async function (error) {
-                    const json = await error.json();
-                    notify({
-                        icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
-                        title: 'ohCRUD!',
-                        titleRightText: 'now',
-                        text: json.errors.join('<br/>'),
-                        closeOnClick: true,
-                    });
-                    if (fileToUploadMode == 'image') {
-                        document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
-                    } else {
-                        document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
-                    }
-                },
-                true
-            );
-        });
+                httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/files/upload/',
+                    {
+                        method: 'POST',
+                        cache: 'no-cache',
+                        credentials: 'same-origin',
+                        body: formData
+                    },
+                    async function (response) {
+                        const json = await response.json();
+                        if (fileToUploadMode == 'image') {
+                            const alt = json.data.NAME.replace(`.${json.data.TYPE}`, '');
+                            insertCodeInEditor(ohCrudEditor, `![${alt}](${json.data.PATH})`);
+                            document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
+                        } else {
+                            insertCodeInEditor(ohCrudEditor, `[${json.data.NAME}](${json.data.PATH})`);
+                            document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
+                        }
+                    },
+                    async function (error) {
+                        const json = await error.json();
+                        notify({
+                            icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                            title: 'ohCRUD!',
+                            titleRightText: 'now',
+                            text: json.errors.join('<br/>'),
+                            closeOnClick: true,
+                        });
+                        if (fileToUploadMode == 'image') {
+                            document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
+                        } else {
+                            document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
+                        }
+                    },
+                    true
+                );
+            });
+        }
     }
 
     // If the admin page is initialized
-    if (page.name == 'tables') {
+    if (pageObject.name == 'tables') {
+
+        let page = getFromURL('page');
+        if (page == false) {
+            page = parseInt($$('#PAGE_CURRENT').val());
+        } else {
+            page = parseInt(page);
+        }
+        console.log('page is: ', page);
 
         let tableName = $$('#TABLE').val();
 
         // UI inputs
         let limitSelect = $$('#LIMIT');
+        if (localStorage.getItem('limit') != null) {
+            limitSelect.val(localStorage.getItem('limit'));
+        }
 
         // UI buttons
         let btnPageNext = $$('#btnPageNext');
@@ -420,28 +436,34 @@ $$(document).on('page:init', function (e, page) {
         let btnUserFormRefreshToken = $$('#btnUserFormRefreshToken');
         let btnUserFormTOTPQRCode = $$('#btnUserFormTOTPQRCode');
         let btnUserFormTOTPRefresh = $$('#btnUserFormTOTPRefresh');
+        let btnUploadFile = $$('#btnUploadFile');
+        let btnFileView = $$('#btnFileView');
 
         // Load table list
         loadTableList();
 
-        // Load table details
+        // Load details
         loadTableDetails(tableName);
 
         // Handle pagination button events
         btnPageNext.on('click', function () {
-            let page = parseInt(btnPageNext.data('page-next'));
-            loadTableData(tableName, page);
+            let pageNext = parseInt(btnPageNext.data('page-next'));
+            if (action == 'tables') loadTableData(tableName, pageNext);
+            if (action == 'files') loadFilesData(pageNext);
         });
 
         btnPagePrevious.on('click', function () {
-            let page = parseInt(btnPagePrevious.data('page-previous'));
-            loadTableData(tableName, page);
+            let pagePrevious = parseInt(btnPagePrevious.data('page-previous'));
+            if (action == 'tables') loadTableData(tableName, pagePrevious);
+            if (action == 'files') loadFilesData(pagePrevious);
         });
 
         // Handle pagination limit select
         limitSelect.on('change', function() {
             let page = parseInt($$('#PAGE_CURRENT').val());
-            loadTableData(tableName, page);
+            localStorage.setItem('limit', limitSelect.val());
+            if (action == 'tables') loadTableData(tableName, page);
+            if (action == 'files') loadFilesData(page);
         });
 
         // Handle edit popup events
@@ -573,7 +595,64 @@ $$(document).on('page:init', function (e, page) {
             });
             saveUserRowData(mode, data, id);
         });
+
+        btnFileView.on('click', function() {
+            page = parseInt($$('#PAGE_CURRENT').val());
+            window.location.href = '/?action=files&page=' + page;
+        });
+
+        btnTableView.on('click', function() {
+            page = parseInt($$('#PAGE_CURRENT').val());
+            window.location.href = '/?action=tables&table=Files&page=' + page;
+        });
+
+        // Handle upload new file button
+        btnUploadFile.on('click', function() {
+            file.click();
+        });
+
+        // File input change event (for uploading files)
+        if (file !== null) {
+            file.addEventListener('change', function () {
+                let page = parseInt($$('#PAGE_CURRENT').val());
+                let fileToUpload = file.files[0];
+                let formData = new FormData();
+                formData.append("0", fileToUpload);
+                formData.append("CSRF", __CSRF__);
+
+                httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/files/upload/',
+                    {
+                        method: 'POST',
+                        cache: 'no-cache',
+                        credentials: 'same-origin',
+                        body: formData
+                    },
+                    async function (response) {
+                        const json = await response.json();
+                        // Reload the page
+                        if (getFromURL('action') == 'tables') {
+                            loadTableData('Files', page);
+                        }
+                        if (getFromURL('action') == 'files') {
+                            loadFilesData(page);
+                        }
+                    },
+                    async function (error) {
+                        const json = await error.json();
+                        notify({
+                            icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                            title: 'ohCRUD!',
+                            titleRightText: 'now',
+                            text: json.errors.join('<br/>'),
+                            closeOnClick: true,
+                        });
+                    },
+                    true
+                );
+            });
+        }
     }
+
 });
 
 // -------------------------------------------------------------------------
@@ -794,8 +873,11 @@ function loadTableDetails(table) {
                 $$('.tableHeader').empty();
                 $$('.tableHeader').html(tableHeader);
 
-                loadTableColumnToggles(table);
-                loadTableData(table);
+                if (getFromURL('action') == 'tables') {
+                    loadTableColumnToggles(table);
+                    loadTableData(table);
+                }
+                if (getFromURL('action') == 'files') loadFilesData();
             }
         },
         async function (error) {
@@ -1258,6 +1340,7 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
             // Close the popup
             app.popup.close('.create-record-popup');
             app.popup.close('.edit-record-popup');
+
             // Empty the form
             setTimeout(() => {
                 if (mode == 'create') $$('#formCreateRecord').empty();
@@ -1703,6 +1786,128 @@ function refreshUserSecrets(id, type = 'TOKEN') {
 }
 
 // -------------------------------------------------------------------------
+// Files:
+// -------------------------------------------------------------------------
+
+// Load files data
+function loadFilesData(page = 1) {
+
+    let fileIcons = {'CSV': 'table', 'TXT': 'doc_text', 'PDF': 'doc_richtext', 'XML': 'doc_text', 'XLXS': 'doc_chart', 'JSON': 'doc', 'ZIP': 'archivebox'};
+
+    limit = parseInt($$('#LIMIT').val());
+    $$('#PAGE_CURRENT').val(page);
+
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                TABLE: 'Files',
+                PAGE: page,
+                LIMIT: limit,
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            if (typeof json.data != undefined) {
+
+                let fileType = '';
+                let fileCards = '';
+
+                // Load the table data into the data table
+                json.data.forEach(row => {
+                    fileType = row.TYPE.toUpperCase();
+                    if (['CSV', 'TXT', 'PDF', 'XML', 'XLXS', 'JSON', 'ZIP'].includes(fileType) == true) {
+                        fileCards += `
+                        <div class="card card-outline-md file-card">
+                            <div valign="bottom" class="card-header file-card-header file-card-header-background">
+                                <span class="f7-icons file-icon">${fileIcons[fileType]}</span>
+                                <div class="chip file-card-chip">
+                                    <div class="chip-label">${formatBytesForDocuments(row.SIZE)}</div>
+                                </div>
+                                <div class="chip file-card-chip">
+                                    <div class="chip-label">${fileType}</div>
+                                </div>
+                            </div>
+                            <div class="card-content card-content-padding">
+                                <p>${row.NAME}<br/>
+                                    <small>${row.CDATE}</small>
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <a class="link external f7-icons" href="${row.PATH}" target="_blank">link</a>
+                                <a class="link f7-icons">arrow_right</a>
+                            </div>
+                        </div>
+                        `;
+                    } else {
+                        fileCards += `
+                        <div class="card card-outline-md file-card">
+                            <div style="background-image:url(${row.PATH}?w=400)" valign="bottom" class="card-header file-card-header">
+                                <div class="chip file-card-chip">
+                                    <div class="chip-label">${formatBytesForDocuments(row.SIZE)}</div>
+                                </div>
+                                <div class="chip file-card-chip">
+                                    <div class="chip-label">${fileType}</div>
+                                </div>
+                            </div>
+                            <div class="card-content card-content-padding">
+                                <p>${row.NAME}<br/>
+                                    <small>${row.CDATE}</small>
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <a class="link external f7-icons" href="${row.PATH}" target="_blank">link</a>
+                                <a class="link f7-icons">arrow_right</a>
+                            </div>
+                        </div>
+                        `;
+                    }
+                });
+
+                $$('.fileCards').empty();
+                $$('.fileCards').html(fileCards);
+
+                // Update the pagination buttons and text
+                $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
+                if (json.pagination.hasNextPage == true) {
+                    $$('#btnPageNext').removeClass('disabled');
+                    $$('#btnPageNext').attr('data-page-next', (page + 1));
+                } else {
+                    $$('#btnPageNext').addClass('disabled');
+                    $$('#btnPageNext').removeAttr('data-page-next');
+                }
+                if (json.pagination.hasPreviousPage == true) {
+                    $$('#btnPagePrevious').removeClass('disabled');
+                    $$('#btnPagePrevious').attr('data-page-previous', (page - 1));
+                } else {
+                    $$('#btnPagePrevious').addClass('disabled');
+                    $$('#btnPagePrevious').removeAttr('data-page-previous');
+                }
+            }
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in notification
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: 'Something went wrong with loading table data.',
+                closeOnClick: true,
+            });
+        }
+    );
+}
+
+// -------------------------------------------------------------------------
 // Misc:
 // -------------------------------------------------------------------------
 
@@ -1798,4 +2003,48 @@ function isColumnVisible(tableName, columnName) {
     }
     // Column not found, default to visible
     return true;
+}
+
+// This function converts a size in bytes to a human-readable string (e.g., 300 KB, 1.2 MB)
+function formatBytesForDocuments(bytes, precision = 1) {
+    bytes = Math.max(bytes, 0); // Ensure bytes is not negative
+
+    const ONE_MB = 1024 * 1024;
+    const ONE_KB = 1024;
+
+    let value;
+    let unit;
+
+    // Determine the appropriate unit and calculate the value
+    if (bytes < ONE_MB) {
+        // For bytes less than 1 MB, display in KB
+        if (bytes === 0) {
+            value = 0;
+            unit = 'KB';
+        } else {
+            value = bytes / ONE_KB;
+            unit = 'KB';
+        }
+    } else {
+        // For 1 MB or more, display in MB
+        value = bytes / ONE_MB;
+        unit = 'MB';
+    }
+
+    // Format the value:
+    // 1. Use toFixed(precision) to control decimal places.
+    // 2. Use parseFloat() to convert back to a number, which inherently removes trailing zeros (e.g., 1024.00 becomes 1024).
+    // 3. Convert back to a string for concatenation.
+    const formattedValue = parseFloat(value.toFixed(precision)).toString();
+
+    return `${formattedValue} ${unit}`;
+}
+
+// Retrieves the value of the 'action' URL parameter from the current page's URL.
+function getFromURL(verb) {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const verbValue = urlParams.get(verb);
+
+    return verbValue !== null ? verbValue : false;
 }

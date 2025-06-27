@@ -25,7 +25,6 @@ class mFiles extends \ohCRUD\DB {
                     $sql = "CREATE TABLE IF NOT EXISTS `Files` (
                             `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
                             `NAME`	TEXT,
-                            `TITLE`	TEXT,
                             `PATH`	TEXT,
                             `SIZE`	INTEGER,
                             `TYPE`	TEXT,
@@ -40,8 +39,7 @@ class mFiles extends \ohCRUD\DB {
                     $tableExists = $this->run("SELECT * FROM information_schema.tables WHERE `table_schema`='" . $this->config["MYSQL_DB"] . "' AND `table_name`= 'Files';")->first() ?? false;
                     $sql = "CREATE TABLE IF NOT EXISTS `Files` (
                             `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
-                            `NAME` varchar(256) NOT NULL DEFAULT '',
-                            `TITLE` varchar(256) NOT NULL DEFAULT '',
+                            `NAME` varchar(128) NOT NULL DEFAULT '',
                             `PATH` varchar(256) NOT NULL DEFAULT '',
                             `SIZE` bigint(20) unsigned NOT NULL DEFAULT '0',
                             `TYPE` varchar(32) NOT NULL DEFAULT '',

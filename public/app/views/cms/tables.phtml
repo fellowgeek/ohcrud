@@ -26,13 +26,13 @@
 
         case 'Files':
             print <<<END
-            <a id="" class="link icon-only">
+            <a id="btnFileView" class="link icon-only">
                 <i class="icon f7-icons">rectangle_grid_3x2_fill</i>
             </a>
             <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">
                 <i class="icon f7-icons">table_badge_more</i>
             </a>
-            <a id="btnNewFileRecord" class="link icon-only">
+            <a id="btnUploadFile" class="link icon-only">
                 <i class="icon f7-icons">arrow_up_square</i>
             </a>
             END;
@@ -52,12 +52,14 @@
 ?>
         </div>
     </div>
+
     <table>
         <thead class="tableHeader">
         </thead>
         <tbody class="tableBody">
         </tbody>
     </table>
+
     <div class="data-table-footer">
         <div class="data-table-rows-select">Per page:
             <div class="input input-dropdown">
@@ -82,6 +84,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <!-- Columns Toggle Popover -->
