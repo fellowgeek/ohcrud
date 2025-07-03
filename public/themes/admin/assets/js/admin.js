@@ -405,14 +405,6 @@ $$(document).on('page:init', function (e, pageObject) {
     // If the admin page is initialized
     if (pageObject.name == 'tables') {
 
-        let page = getFromURL('page');
-        if (page == false) {
-            page = parseInt($$('#PAGE_CURRENT').val());
-        } else {
-            page = parseInt(page);
-        }
-        console.log('page is: ', page);
-
         let tableName = $$('#TABLE').val();
 
         // UI inputs
@@ -438,6 +430,7 @@ $$(document).on('page:init', function (e, pageObject) {
         let btnUserFormTOTPRefresh = $$('#btnUserFormTOTPRefresh');
         let btnUploadFile = $$('#btnUploadFile');
         let btnFileView = $$('#btnFileView');
+        let btnTableView = $$('#btnTableView');
 
         // Load table list
         loadTableList();
@@ -596,14 +589,15 @@ $$(document).on('page:init', function (e, pageObject) {
             saveUserRowData(mode, data, id);
         });
 
+        // Handle file view modes
         btnFileView.on('click', function() {
-            page = parseInt($$('#PAGE_CURRENT').val());
-            window.location.href = '/?action=files&page=' + page;
+            let link = $$(this).data('link');
+            window.location.href = link;
         });
 
         btnTableView.on('click', function() {
-            page = parseInt($$('#PAGE_CURRENT').val());
-            window.location.href = '/?action=tables&table=Files&page=' + page;
+            let link = $$(this).data('link');
+            window.location.href = link;
         });
 
         // Handle upload new file button
@@ -875,9 +869,9 @@ function loadTableDetails(table) {
 
                 if (getFromURL('action') == 'tables') {
                     loadTableColumnToggles(table);
-                    loadTableData(table);
+                    loadTableData(table, getFromURL('page'));
                 }
-                if (getFromURL('action') == 'files') loadFilesData();
+                if (getFromURL('action') == 'files') loadFilesData(getFromURL('page'));
             }
         },
         async function (error) {
@@ -933,9 +927,16 @@ function loadTableColumnToggles(table) {
 }
 
 // Load table data
-function loadTableData(table, page = 1) {
+function loadTableData(table, page) {
+
+    if (page == false) {
+        page = 1;
+    } else {
+        page = parseInt(page);
+    }
 
     limit = parseInt($$('#LIMIT').val());
+    $$('#btnFileView').data('link', '/?action=files&page=' + page);
     $$('#PAGE_CURRENT').val(page);
 
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
@@ -1159,6 +1160,7 @@ function loadTableData(table, page = 1) {
                 });
 
                 // Update the pagination buttons and text
+                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage == true) {
                     $$('#btnPageNext').removeClass('disabled');
@@ -1790,11 +1792,17 @@ function refreshUserSecrets(id, type = 'TOKEN') {
 // -------------------------------------------------------------------------
 
 // Load files data
-function loadFilesData(page = 1) {
+function loadFilesData(page) {
+
+    if (page == false) {
+        page = 1;
+    } else {
+        page = parseInt(page);
+    }
 
     let fileIcons = {'CSV': 'table', 'TXT': 'doc_text', 'PDF': 'doc_richtext', 'XML': 'doc_text', 'XLXS': 'doc_chart', 'JSON': 'doc', 'ZIP': 'archivebox'};
-
     limit = parseInt($$('#LIMIT').val());
+    $$('#btnTableView').data('link', '/?action=tables&table=Files&page=' + page);
     $$('#PAGE_CURRENT').val(page);
 
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
@@ -1842,7 +1850,7 @@ function loadFilesData(page = 1) {
                             </div>
                             <div class="card-footer">
                                 <a class="link external f7-icons" href="${row.PATH}" target="_blank">link</a>
-                                <a class="link f7-icons">arrow_right</a>
+                                <a class="link f7-icons" onclick="copyToClipboard('[${row.NAME}](${row.PATH})', true)">square_on_square</a>
                             </div>
                         </div>
                         `;
@@ -1864,7 +1872,7 @@ function loadFilesData(page = 1) {
                             </div>
                             <div class="card-footer">
                                 <a class="link external f7-icons" href="${row.PATH}" target="_blank">link</a>
-                                <a class="link f7-icons">arrow_right</a>
+                                <a class="link f7-icons" onclick="copyToClipboard('![${row.NAME}](${row.PATH})', true)">square_on_square</a>
                             </div>
                         </div>
                         `;
@@ -1875,6 +1883,7 @@ function loadFilesData(page = 1) {
                 $$('.fileCards').html(fileCards);
 
                 // Update the pagination buttons and text
+                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage == true) {
                     $$('#btnPageNext').removeClass('disabled');
@@ -2047,4 +2056,30 @@ function getFromURL(verb) {
     const verbValue = urlParams.get(verb);
 
     return verbValue !== null ? verbValue : false;
+}
+
+// This function copies a given text into user's clipboard and shows a notification
+function copyToClipboard(text, showNotification = false) {
+    navigator.clipboard.writeText(text);
+    if (showNotification == true) {
+        // Display error messages in notification
+        notify({
+            icon: '<i class="f7-icons icon color-blue">info_circle</i>',
+            title: 'ohCRUD!',
+            titleRightText: 'now',
+            text: `
+                The content below has been copied to your clipboard:
+                <div class="list list-strong-ios list-dividers-ios inset-ios no-margin">
+                    <div class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-input-wrap">
+                                <input id="" name="" type="text" readonly value="${text}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            closeOnClick: true,
+        });
+    }
 }

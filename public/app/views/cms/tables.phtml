@@ -1,6 +1,6 @@
 <?php
     // Sanitize the table name
-    $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['table'] ?? ''));
+    $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['table'] ?? 'Users'));
 ?>
 
 <input type="hidden" id="TABLE" name="TABLE" value="<?= $table ?>" />
@@ -26,7 +26,7 @@
 
         case 'Files':
             print <<<END
-            <a id="btnFileView" class="link icon-only">
+            <a id="btnFileView" class="link icon-only" data-link="?action=files&page=1">
                 <i class="icon f7-icons">rectangle_grid_3x2_fill</i>
             </a>
             <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">

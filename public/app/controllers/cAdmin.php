@@ -22,6 +22,8 @@ class cAdmin extends \ohCRUD\DB {
         'updateUserRow' => 1,
         'getUserSecrets' => 1,
         'refreshUserSecrets' => 1,
+        'getLogList' => 1,
+        'getLogData' => 1
     ];
 
     public ?array $pagination = null;
@@ -836,6 +838,157 @@ class cAdmin extends \ohCRUD\DB {
         $this->output();
     }
 
+    // This function returns a list of all available log files.
+    public function getLogList($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+        $result = [];
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Get a list of log files in the '__OHCRUD_LOG_PATH__' directory
+        $scan = glob(__OHCRUD_LOG_PATH__ . '*.log');
+
+        // Iterate through the list of HTML files
+        foreach ($scan as $logFile) {
+            $result[] = [
+                'NAME' => basename($logFile),
+                'PATH' => __OHCRUD_LOG_PATH__ . basename($logFile)
+            ];
+        }
+        $this->data = $result;
+        unset($this->pagination);
+
+        $this->output();
+    }
+
+    public function getLogData($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+        $result = [];
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        // if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        //     $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->LOG) == true ||
+            empty($request->payload->PAGE) == true ||
+            empty($request->payload->LIMIT) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success == false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $log = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $request->payload->LOG);
+
+        // Default values for optional parameters.
+        $page = (int) $request->payload->PAGE <= 0 ? 1 : (int) $request->payload->PAGE;
+        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+
+        // Get total records
+        $totalRecords = $this->countLogRecords($log);
+        if ($totalRecords == false) {
+            $this->error('Log file not found.');
+            $this->output();
+            return $this;
+        }
+
+        // Calculate total pages
+        $totalPages = ceil($totalRecords / $limit);
+
+        // Clamp the variable ranges
+        if ($limit > 100) $limit = 100;
+        if ($limit > $totalRecords) $limit = $totalRecords;
+        if ($page > $totalPages) $page = $totalPages;
+        $offset = ($page - 1) * $limit;
+        if ($offset < 0) $offset = 0;
+
+        // Open log file
+        $fp = fopen(__OHCRUD_LOG_PATH__ . $log, 'r');
+        if (!$fp) {
+            $this->error('Unable to open log file: ' . $log);
+            $this->output();
+            return $this;
+        }
+
+        $bufferSize = 4096;
+        $pos = -1;
+        $lines = [];
+        $currentLine = '';
+        $foundLines = 0;
+
+        fseek($fp, 0, SEEK_END);
+        $fileSize = ftell($fp);
+
+        while ($fileSize + $pos > 0 && $foundLines < ($limit + $offset)) {
+            $seekSize = min($bufferSize, $fileSize + $pos);
+            $pos -= $seekSize;
+            fseek($fp, $pos, SEEK_END);
+            $chunk = fread($fp, $seekSize);
+
+            $currentLine = $chunk . $currentLine;
+
+            $linesInChunk = explode("\n", $currentLine);
+            // Last (incomplete) line to keep for next iteration
+            $currentLine = array_shift($linesInChunk);
+
+            foreach (array_reverse($linesInChunk) as $line) {
+                $trimmed = trim($line);
+                if ($trimmed !== '') {
+                    $lines[] = $trimmed;
+                    $foundLines++;
+                    if ($foundLines >= ($limit + $offset)) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        fclose($fp);
+
+        // Apply offset and limit, and parse JSON
+        $result = array_slice($lines, $offset, $limit);
+        $this->data = array_values(array_filter(array_map('json_decode', $result)));
+
+        // Get pagination meta data
+        $hasNextPage = $page < $totalPages;
+        $hasPreviousPage = $page > 1;
+        $showingRangeFrom = ($offset + 1);
+        $showingRangeTo = ($offset + $limit);
+        if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
+
+        $showing = $showingRangeFrom . ' - ' . $showingRangeTo . ' of ' . $totalRecords;
+
+        $this->pagination = [
+            'totalRecords' => $totalRecords,
+            'totalPages' => $totalPages,
+            'currentPage' => $page,
+            'limit' => $limit,
+            'hasNextPage' => $hasNextPage,
+            'hasPreviousPage' => $hasPreviousPage,
+            'showing' => $showing
+        ];
+
+        $this->output();
+    }
+
+
     // This function returns a font-awesome icon based on a given data type.
     private function getFAIconForDetectedType($type, $detectedType, $columnName = '') {
 
@@ -955,6 +1108,52 @@ class cAdmin extends \ohCRUD\DB {
 
         // If all checks pass
         return $output;
+    }
+
+    // This function counts the number of log records in a given log file.
+    private function countLogRecords($logFile)  {
+
+        if (file_exists(__OHCRUD_LOG_PATH__ . $logFile) == false) {
+            return false;
+        }
+
+        $fp = fopen(__OHCRUD_LOG_PATH__ . $logFile, 'r');
+        if (!$fp) {
+            return false;
+        }
+
+        $bufferSize = 4096;
+        $pos = -1;
+        $lineCount = 0;
+        $currentLine = '';
+
+        fseek($fp, 0, SEEK_END);
+        $fileSize = ftell($fp);
+
+        while ($fileSize + $pos > 0) {
+            $seekSize = min($bufferSize, $fileSize + $pos);
+            $pos -= $seekSize;
+            fseek($fp, $pos, SEEK_END);
+            $chunk = fread($fp, $seekSize);
+
+            $currentLine = $chunk . $currentLine;
+            $lines = explode("\n", $currentLine);
+            $currentLine = array_shift($lines); // Save incomplete line for next round
+
+            foreach ($lines as $line) {
+                if (trim($line) !== '') {
+                    $lineCount++;
+                }
+            }
+        }
+
+        // Handle remaining line
+        if (trim($currentLine) !== '') {
+            $lineCount++;
+        }
+
+        fclose($fp);
+        return $lineCount;
     }
 
 }
