@@ -879,8 +879,8 @@ class cAdmin extends \ohCRUD\DB {
         $result = [];
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        // if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
-        //     $this->error('Missing or invalid CSRF token.');
+        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+            $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
         if (isset($request->payload) == false ||
