@@ -70,7 +70,7 @@ class Users extends \ohCRUD\DB {
             }
 
             // Create a default admin user if the Users table was just created
-            if ($tableExists == false && $this->success == true) {
+            if ($tableExists === false && $this->success === true) {
                 $this->create('Users', [
                     'USERNAME' => 'admin',
                     'EMAIL' => 'admin@example.com',
@@ -215,7 +215,7 @@ class Users extends \ohCRUD\DB {
             )->first();
 
             // Return if user was not found
-            if ($user == false) {
+            if ($user === false) {
                 $this->log('warning', 'Invalid token hash', [$token]);
                 // Delay to mitigate brute force and timing attacks
                 usleep(rand(500000, 1000000));
@@ -223,7 +223,7 @@ class Users extends \ohCRUD\DB {
             }
 
             // Decrypt and compare user token
-            if ($this->decryptText($user->TOKEN) == $APIToken) {
+            if ($this->decryptText($user->TOKEN) === $APIToken) {
                 $user->loggedIn = true;
                 // Remove sensitive information
                 unset($user->PASSWORD);
@@ -260,7 +260,7 @@ class Users extends \ohCRUD\DB {
             ]
         )->first();
 
-        if ($user != false) {
+        if ($user !== false) {
             // Verify the user's password against the stored hash
             $user->loggedIn = password_verify($password, $user->PASSWORD);
             if ($user->loggedIn == false) {
@@ -277,13 +277,13 @@ class Users extends \ohCRUD\DB {
             unset($user->RESET_HASH);
 
             // Check if the user has TOTP enabled
-            if ($user->TOTP == $this::ACTIVE) {
+            if ((int) $user->TOTP == $this::ACTIVE) {
                 $user->TOTPVerified = false;
                 $this->setSession('tempUser', $user);
             }
 
             // Create the user session and log in the user if TOTP is not enabled for this user
-            if ($user->TOTP == $this::INACTIVE) {
+            if ((int) $user->TOTP == $this::INACTIVE) {
                 $this->setSession('User', $user);
             }
         }
@@ -309,7 +309,7 @@ class Users extends \ohCRUD\DB {
             ]
         )->first();
 
-        if ($user == false) {
+        if ($user === false) {
             $this->log('warning', 'TOTP verification failed, User does not exist.', [$id]);
             return false;
         }

@@ -32,7 +32,7 @@ class Router extends \ohCRUD\Core {
         $method = '';
 
         // Process command-line parameters if the script is run in CLI mode.
-        if (PHP_SAPI == 'cli') {
+        if (PHP_SAPI === 'cli') {
             $parameters = [];
             parse_str(parse_url($rawPath, PHP_URL_QUERY) ?? '', $parameters);
             $this->request = (object) $parameters;
@@ -42,7 +42,7 @@ class Router extends \ohCRUD\Core {
             $payload = file_get_contents('php://input');
             if (empty($payload) == false) {
                 // Decode JSON payload if the content type is 'application/json'.
-                if ($_SERVER['CONTENT_TYPE'] == 'application/json') $this->request->payload = \json_decode($payload); else $this->request->payload = $payload;
+                if ($_SERVER['CONTENT_TYPE'] === 'application/json') $this->request->payload = \json_decode($payload); else $this->request->payload = $payload;
             }
         }
 
@@ -104,22 +104,22 @@ class Router extends \ohCRUD\Core {
     private function checkPermissions($expression, $method = null) {
 
         // Grant permission if the script is called from the command-line interface.
-        if (PHP_SAPI == 'cli') return true;
+        if (PHP_SAPI === 'cli') return true;
 
         // Variables
         $objectHasPermission = false;
         $methodHasPermission = false;
-        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;
+        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
 
         // Check object permission
         if (isset($expression['object']) == true) {
-            if ($expression['object'] == __OHCRUD_PERMISSION_ALL__ || ($expression['object'] >= $userPermissions && $userPermissions != false))
+            if ((int) $expression['object'] == __OHCRUD_PERMISSION_ALL__ || ((int) $expression['object'] >= $userPermissions && $userPermissions !== false))
                 $objectHasPermission = true;
         }
 
         // Check method permission
-        if (isset($method) == true) {
-            if (isset($expression[$method]) == true && ($expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions != false)))
+        if (isset($method) == true && isset($expression[$method]) == true) {
+            if ((int) $expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions !== false))
                 $methodHasPermission = true;
         } else {
             $methodHasPermission = true;
@@ -164,7 +164,7 @@ class Router extends \ohCRUD\Core {
         $this->CSRF();
 
         // Skip CORS check if we are in CLI mode.
-        if (PHP_SAPI == 'cli') return true;
+        if (PHP_SAPI === 'cli') return true;
 
         // Check if remote IP filtering is enabled and handle allowed IPs.
         if (__OHCRUD_ALLOWED_IPS_ENABLED__ == true) {
@@ -173,7 +173,7 @@ class Router extends \ohCRUD\Core {
 
         // Handle same origin requests using HTTP_ORIGIN and HTTP_REFERER to determine the request's origin.
         $origin = strtolower($_SERVER['HTTP_ORIGIN'] ?? '');
-        if ($origin == '')  {
+        if ($origin === '')  {
             if ($parts = parse_url(strtolower(($_SERVER['HTTP_REFERER'] ?? '')))) {
                 if (isset($parts['scheme']) == true && isset($parts['host']) == true)
                 $origin = $parts['scheme'] . '://' . $parts['host'];
@@ -181,15 +181,15 @@ class Router extends \ohCRUD\Core {
         }
 
         // If the origin is not set or the request is coming from the current site, allow access.
-        if ($origin == ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
-        if ($origin == '') return true;
+        if ($origin === ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
+        if ($origin === '') return true;
 
         // Handle cross-origin requests and set appropriate CORS headers.
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || ___OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
             header('Access-Control-Allow-Origin: ' . $origin);
             header('Access-Control-Allow-Credentials: true');
             header('Access-Control-Max-Age: 86400');
-            if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+            if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
                 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS");
                 header("Access-Control-Allow-Headers: token, Content-Type, Accept, Origin");
                 die();

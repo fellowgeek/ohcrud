@@ -86,7 +86,7 @@ class DB extends \ohCRUD\Core {
             $result = $this->db->prepare($sql);
             if ($updateSuccess == true) $this->success = $result->execute($bind); else $result->execute($bind);
 
-            if (preg_match("/^SELECT(.*?)/i", $sql) == 1) {
+            if (preg_match("/^SELECT(.*?)/i", $sql) === 1) {
                 // If it's a SELECT query, fetch and store the results
                 $result->setFetchMode(\PDO::FETCH_ASSOC);
                 $rows = array();
@@ -313,11 +313,11 @@ class DB extends \ohCRUD\Core {
         $fields = array();
         $filteredData = array();
 
-        if ($this->config['DRIVER'] == 'SQLITE') {
+        if ($this->config['DRIVER'] === 'SQLITE') {
             // SQLite specific query to get table columns
             $sql = "PRAGMA table_info('" . $table . "');";
             $key = "name";
-        } elseif ($this->config['DRIVER'] == 'MYSQL') {
+        } elseif ($this->config['DRIVER'] === 'MYSQL') {
             // MySQL specific query to get table columns
             $sql = "DESCRIBE " . $table . ";";
             $key = "Field";
@@ -346,40 +346,40 @@ class DB extends \ohCRUD\Core {
             try {
                 // Loop through system columns and create them if missing in the table
                 if (in_array('CDATE', $fields) == false) {
-                    if ($this->config['DRIVER'] == 'SQLITE') {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` TEXT;");
                     }
-                    if ($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] === 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CDATE` (`CDATE`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'CDATE'; }
                 }
 
                 if (in_array('MDATE', $fields) == false) {
-                    if ($this->config['DRIVER'] == 'SQLITE') {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` TEXT;");
                     }
-                    if ($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] === 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MDATE` (`MDATE`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'MDATE'; }
                 }
 
                 if (in_array('CUSER', $fields) == false) {
-                    if ($this->config['DRIVER'] == 'SQLITE') {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` INTEGER;");
                     }
-                    if ($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] === 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CUSER` (`CUSER`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'CUSER'; }
                 }
 
                 if (in_array('MUSER', $fields) == false) {
-                    if ($this->config['DRIVER'] == 'SQLITE') {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` INTEGER;");
                     }
-                    if ($this->config['DRIVER'] == 'MYSQL') {
+                    if ($this->config['DRIVER'] === 'MYSQL') {
                         $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MUSER` (`MUSER`) USING BTREE;");
                     }
                     if ($statement->execute() == true) { $fields[] = 'MUSER'; }

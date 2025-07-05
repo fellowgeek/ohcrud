@@ -36,7 +36,7 @@ $$(document).on('page:init', function (e, pageObject) {
     // Global setup
     let appDarkMode = localStorage.getItem('app:dark-mode');
     if (appDarkMode != null) {
-        $$('#appDarkMode').prop('checked', appDarkMode == 'Y' ? true : false);
+        $$('#appDarkMode').prop('checked', appDarkMode === 'Y' ? true : false);
         setDarkMode(appDarkMode);
     }
 
@@ -47,11 +47,11 @@ $$(document).on('page:init', function (e, pageObject) {
 
     $$('#appDarkMode').on('change', function() {
         appDarkMode = $$(this).prop('checked');
-        setDarkMode(appDarkMode == true ? 'Y' : 'N');
+        setDarkMode(appDarkMode === true ? 'Y' : 'N');
     });
 
     // If the login page is initialized
-    if (pageObject.name == 'login') {
+    if (pageObject.name === 'login') {
 
         // Logout user
         logout();
@@ -107,7 +107,7 @@ $$(document).on('page:init', function (e, pageObject) {
                     const json = await response.json();
                     // Handle the response based on TOTP status
                     if (json.data.TOTP === 1) {
-                        if (json.data.loggedIn == true && json.data.TOTPVerified == false) {
+                        if (json.data.loggedIn === true && json.data.TOTPVerified === false) {
                             // Hide the login form and show the TOTP form
                             $$('.card-login').addClass('hidden');
                             $$('.card-totp').removeClass('hidden');
@@ -196,7 +196,7 @@ $$(document).on('page:init', function (e, pageObject) {
     }
 
     // If the admin page is initialized
-    if (pageObject.name == 'edit') {
+    if (pageObject.name === 'edit') {
 
         // UI inputs
         let themeSelect = $$('#THEME');
@@ -207,7 +207,7 @@ $$(document).on('page:init', function (e, pageObject) {
         let btnCMSSave = $$('#btnCMSSave');
         let btnCMSCancel = $$('#btnCMSCancel');
         let btnCMSDeleteRestore = $$('#btnCMSDeleteRestore');
-        btnCMSDeleteRestore.html(btnCMSDeleteRestore.data('is-deleted') == '1' ? 'RESTORE' : 'DELETE');
+        btnCMSDeleteRestore.html(btnCMSDeleteRestore.data('is-deleted') === '1' ? 'RESTORE' : 'DELETE');
 
         // Load themes and layouts
         loadThemes();
@@ -349,7 +349,7 @@ $$(document).on('page:init', function (e, pageObject) {
                         closeOnClick: true,
                     });
                     btnCMSDeleteRestore.removeClass('disabled');
-                    btnCMSDeleteRestore.html(btnCMSDeleteRestore.data('is-deleted') == '1' ? 'RESTORE' : 'DELETE');
+                    btnCMSDeleteRestore.html(btnCMSDeleteRestore.data('is-deleted') === '1' ? 'RESTORE' : 'DELETE');
                 }
             );
         });
@@ -372,7 +372,7 @@ $$(document).on('page:init', function (e, pageObject) {
                     },
                     async function (response) {
                         const json = await response.json();
-                        if (fileToUploadMode == 'image') {
+                        if (fileToUploadMode === 'image') {
                             const alt = json.data.NAME.replace(`.${json.data.TYPE}`, '');
                             insertCodeInEditor(ohCrudEditor, `![${alt}](${json.data.PATH})`);
                             document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
@@ -390,7 +390,7 @@ $$(document).on('page:init', function (e, pageObject) {
                             text: json.errors.join('<br/>'),
                             closeOnClick: true,
                         });
-                        if (fileToUploadMode == 'image') {
+                        if (fileToUploadMode === 'image') {
                             document.querySelector(`.upload-image`).classList = `fa fa-file-image-o upload-image`;
                         } else {
                             document.querySelector(`.upload-file`).classList = `fa fa-file upload-file`;
@@ -403,7 +403,7 @@ $$(document).on('page:init', function (e, pageObject) {
     }
 
     // If the admin page is initialized
-    if (pageObject.name == 'tables') {
+    if (pageObject.name === 'tables') {
 
         let tableName = $$('#TABLE').val();
 
@@ -441,22 +441,22 @@ $$(document).on('page:init', function (e, pageObject) {
         // Handle pagination button events
         btnPageNext.on('click', function () {
             let pageNext = parseInt(btnPageNext.data('page-next'));
-            if (action == 'tables') loadTableData(tableName, pageNext);
-            if (action == 'files') loadFilesData(pageNext);
+            if (action === 'tables') loadTableData(tableName, pageNext);
+            if (action === 'files') loadFilesData(pageNext);
         });
 
         btnPagePrevious.on('click', function () {
             let pagePrevious = parseInt(btnPagePrevious.data('page-previous'));
-            if (action == 'tables') loadTableData(tableName, pagePrevious);
-            if (action == 'files') loadFilesData(pagePrevious);
+            if (action === 'tables') loadTableData(tableName, pagePrevious);
+            if (action === 'files') loadFilesData(pagePrevious);
         });
 
         // Handle pagination limit select
         limitSelect.on('change', function() {
             let page = parseInt($$('#PAGE_CURRENT').val());
             localStorage.setItem('limit', limitSelect.val());
-            if (action == 'tables') loadTableData(tableName, page);
-            if (action == 'files') loadFilesData(page);
+            if (action === 'tables') loadTableData(tableName, page);
+            if (action === 'files') loadFilesData(page);
         });
 
         // Handle edit popup events
@@ -467,7 +467,7 @@ $$(document).on('page:init', function (e, pageObject) {
             let formRecordInputs = $$('.formRecordInput');
 
             formRecordInputs.forEach((formRecordInput) => {
-                if (formRecordInput.type == 'checkbox') {
+                if (formRecordInput.type === 'checkbox') {
                     data[formRecordInput.name] = formRecordInput.checked ? 1 : 0;
                 } else {
                     data[formRecordInput.name] = formRecordInput.value;
@@ -503,7 +503,7 @@ $$(document).on('page:init', function (e, pageObject) {
             let formRecordInputs = $$('.formRecordInput');
 
             formRecordInputs.forEach((formRecordInput) => {
-                if (formRecordInput.type == 'checkbox') {
+                if (formRecordInput.type === 'checkbox') {
                     data[formRecordInput.name] = formRecordInput.checked ? 1 : 0;
                 } else {
                     data[formRecordInput.name] = formRecordInput.value;
@@ -580,7 +580,7 @@ $$(document).on('page:init', function (e, pageObject) {
             let mode = $$(this).data('mode');
 
             formUserRecordInputs.forEach((formUserRecordInput) => {
-                if (formUserRecordInput.type == 'checkbox') {
+                if (formUserRecordInput.type === 'checkbox') {
                     data[formUserRecordInput.name] = formUserRecordInput.checked ? 1 : 0;
                 } else {
                     data[formUserRecordInput.name] = formUserRecordInput.value;
@@ -624,10 +624,10 @@ $$(document).on('page:init', function (e, pageObject) {
                     async function (response) {
                         const json = await response.json();
                         // Reload the page
-                        if (getFromURL('action') == 'tables') {
+                        if (getFromURL('action') === 'tables') {
                             loadTableData('Files', page);
                         }
-                        if (getFromURL('action') == 'files') {
+                        if (getFromURL('action') === 'files') {
                             loadFilesData(page);
                         }
                     },
@@ -668,7 +668,7 @@ function logout(redirect = false) {
         },
         async function (response) {
             const json = await response.json();
-            if (redirect == true) {
+            if (redirect === true) {
                 window.location.href = '/login/';
             }
         },
@@ -743,7 +743,7 @@ function insertCodeInEditor(editor, text = '', preText = '', postText = '') {
     let startPoint = cm.getCursor('start');
     let endPoint = cm.getCursor('end');
     let selection = cm.getSelection();
-    if (text == '') { text = selection; }
+    if (text === '') { text = selection; }
     cm.replaceSelection(preText + text + postText);
     startPoint.ch += preText.length;
     if (startPoint !== endPoint) {
@@ -807,7 +807,7 @@ function loadTableList() {
 function loadTableDetails(table) {
     columnDetails = {};
 
-    if (typeof table == undefined || table == '') return;
+    if (typeof table === undefined || table === '') return;
 
     // Get table details
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableDetails/',
@@ -840,7 +840,7 @@ function loadTableDetails(table) {
 
                 json.data[table].COLUMNS.forEach(column => {
                     let tableHeaderTHIcon = '';
-                    if (column.PRIMARY_KEY == true) {
+                    if (column.PRIMARY_KEY === true) {
                         column.ICON = 'fa-key';
                     }
                     tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
@@ -851,7 +851,7 @@ function loadTableDetails(table) {
                     `;
 
                     // Check if we should render the column
-                    if (isColumnVisible(table, column.NAME) == true || column.PRIMARY_KEY == true) {
+                    if (isColumnVisible(table, column.NAME) === true || column.PRIMARY_KEY === true) {
                         tableHeader += tableHeaderTH;
                     }
 
@@ -867,11 +867,11 @@ function loadTableDetails(table) {
                 $$('.tableHeader').empty();
                 $$('.tableHeader').html(tableHeader);
 
-                if (getFromURL('action') == 'tables') {
+                if (getFromURL('action') === 'tables') {
                     loadTableColumnToggles(table);
                     loadTableData(table, getFromURL('page'));
                 }
-                if (getFromURL('action') == 'files') loadFilesData(getFromURL('page'));
+                if (getFromURL('action') === 'files') loadFilesData(getFromURL('page'));
             }
         },
         async function (error) {
@@ -889,7 +889,7 @@ function loadTableColumnToggles(table) {
 
     Object.entries(columnDetails).forEach(([index, column]) => {
         // Skip primary key(s)
-        if (column.PRIMARY_KEY == true) return;
+        if (column.PRIMARY_KEY === true) return;
 
         // Check if column is enabled
         let columnEnabled = isColumnVisible(table, column.NAME);
@@ -929,7 +929,7 @@ function loadTableColumnToggles(table) {
 // Load table data
 function loadTableData(table, page) {
 
-    if (page == false) {
+    if (page === false) {
         page = 1;
     } else {
         page = parseInt(page);
@@ -984,19 +984,19 @@ function loadTableData(table, page) {
                         columnValue = value;
 
                         // Get primary column key and value
-                        if (columnDetails[key].PRIMARY_KEY == true) {
+                        if (columnDetails[key].PRIMARY_KEY === true) {
                             primaryColumnName = columnDetails[key].NAME;
                             primaryColumnValue = value;
                         }
 
                         // Special cases
-                        if (table == 'Pages' && ['STATUS'].includes(columnDetails[key].NAME)) {
+                        if (table === 'Pages' && ['STATUS'].includes(columnDetails[key].NAME)) {
                             columnDetails[key].DETECTED_TYPE = 'boolean';
                         }
-                        if (table == 'Users' && ['STATUS', 'TOTP'].includes(columnDetails[key].NAME)) {
+                        if (table === 'Users' && ['STATUS', 'TOTP'].includes(columnDetails[key].NAME)) {
                             columnDetails[key].DETECTED_TYPE = 'boolean';
                         }
-                        if (table == 'Files' && ['STATUS'].includes(columnDetails[key].NAME)) {
+                        if (table === 'Files' && ['STATUS'].includes(columnDetails[key].NAME)) {
                             columnDetails[key].DETECTED_TYPE = 'boolean';
                         }
 
@@ -1017,8 +1017,8 @@ function loadTableData(table, page) {
                                 break;
                             case 'boolean':
                                 columnValue = `
-                                    <div class="chip ${value == 1 ? 'color-blue' : ''}">
-                                        <div class="chip-label">${value == 1 ? 'TRUE' : 'FALSE'}</div>
+                                    <div class="chip ${value === 1 ? 'color-blue' : ''}">
+                                        <div class="chip-label">${value === 1 ? 'TRUE' : 'FALSE'}</div>
                                     </div>
                                 `;
                                 break;
@@ -1046,12 +1046,12 @@ function loadTableData(table, page) {
                         }
 
                         // Handle special cases for ohCRUD tables ('Users', 'Pages', 'Files')
-                        if (table == 'Pages' && key == 'URL') {
+                        if (table === 'Pages' && key === 'URL') {
                             pageURL = value;
                         }
 
                         // Check if we should render the column
-                        if (isColumnVisible(table, columnDetails[key].NAME) == true || columnDetails[key].PRIMARY_KEY == true) {
+                        if (isColumnVisible(table, columnDetails[key].NAME) === true || columnDetails[key].PRIMARY_KEY === true) {
                             tableBodyTD += `<td data-detected-type="${(value !== null && value !== '') ? columnDetails[key].DETECTED_TYPE : ''}">${columnValue}</td>`;
                         }
                     });
@@ -1162,14 +1162,14 @@ function loadTableData(table, page) {
                 // Update the pagination buttons and text
                 if (page > json.pagination.totalPages) page = json.pagination.totalPages;
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
-                if (json.pagination.hasNextPage == true) {
+                if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');
                     $$('#btnPageNext').attr('data-page-next', (page + 1));
                 } else {
                     $$('#btnPageNext').addClass('disabled');
                     $$('#btnPageNext').removeAttr('data-page-next');
                 }
-                if (json.pagination.hasPreviousPage == true) {
+                if (json.pagination.hasPreviousPage === true) {
                     $$('#btnPagePrevious').removeClass('disabled');
                     $$('#btnPagePrevious').attr('data-page-previous', (page - 1));
                 } else {
@@ -1223,8 +1223,8 @@ function loadUserRowData(keyValue) {
             $$('#btnUserFormTOTPRefresh').data('row-key-value', keyValue);
 
             Object.entries(json.data).forEach(([key, value]) => {
-                if (['STATUS', 'TOTP'].includes(key) == true) {
-                    $$('#Users-' + key).prop('checked', value == 1 ? true : false);
+                if (['STATUS', 'TOTP'].includes(key) === true) {
+                    $$('#Users-' + key).prop('checked', value === 1 ? true : false);
                     $$('#Users-' + key).val(value);
                     return;
                 }
@@ -1294,12 +1294,12 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
     let adminAPI = '';
     let page = parseInt($$('#PAGE_CURRENT').val());
 
-    if (mode == 'create') {
+    if (mode === 'create') {
         adminAPI = 'createTableRow';
 
         // Remove unwanted data
         Object.entries(columnDetails).forEach(([index, column]) => {
-            if (column.PRIMARY_KEY == true ||column.EXTRA == 'auto_increment') {
+            if (column.PRIMARY_KEY === true ||column.EXTRA === 'auto_increment') {
                 delete data[column.NAME];
             }
         });
@@ -1309,7 +1309,7 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
             ...data
         };
     }
-    if (mode == 'update') {
+    if (mode === 'update') {
         adminAPI = 'updateTableRow';
         body = {
             TABLE: table,
@@ -1345,8 +1345,8 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
 
             // Empty the form
             setTimeout(() => {
-                if (mode == 'create') $$('#formCreateRecord').empty();
-                if (mode == 'update') $$('#formEditRecord').empty();
+                if (mode === 'create') $$('#formCreateRecord').empty();
+                if (mode === 'update') $$('#formEditRecord').empty();
             }, 500);
         },
         async function (error) {
@@ -1371,12 +1371,12 @@ function saveUserRowData(mode = 'update', data, id) {
     let adminAPI = '';
     let page = parseInt($$('#PAGE_CURRENT').val());
 
-    if (mode == 'create') {
+    if (mode === 'create') {
         adminAPI = 'createUserRow';
 
         // Remove unwanted data
         Object.entries(columnDetails).forEach(([index, column]) => {
-            if (column.PRIMARY_KEY == true ||column.EXTRA == 'auto_increment') {
+            if (column.PRIMARY_KEY === true ||column.EXTRA === 'auto_increment') {
                 delete data[column.NAME];
             }
         });
@@ -1385,7 +1385,7 @@ function saveUserRowData(mode = 'update', data, id) {
             ...data
         };
     }
-    if (mode == 'update') {
+    if (mode === 'update') {
         adminAPI = 'updateUserRow';
         body = {
             ID: id,
@@ -1564,7 +1564,7 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
         const fieldValue = getFieldValue(column, rowData);
 
         // Handle exceptions for ohCRUD stamp fields
-        if (['CDATE', 'MDATE', 'CUSER', 'MUSER'].includes(column.NAME) && fieldValue == '') {
+        if (['CDATE', 'MDATE', 'CUSER', 'MUSER'].includes(column.NAME) && fieldValue === '') {
             inputType = 'text';
         }
 
@@ -1602,7 +1602,7 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
                             type="${inputType}"
                             ${required ? 'required="true"' : ''}
                             ${readonly ? 'readonly="true"' : ''}
-                            ${fieldValue == true ? 'checked="true"' : ''}
+                            ${fieldValue === true ? 'checked="true"' : ''}
                             value="${fieldValue}"
                             class="formRecordInput"
                         />
@@ -1657,8 +1657,8 @@ function showUserSecrets(id, type = 'TOKEN') {
         async function (response) {
             const json = await response.json();
 
-            if (type == 'TOKEN') {
-                if (json.data.TOKEN == false) {
+            if (type === 'TOKEN') {
+                if (json.data.TOKEN === false) {
                     // Display error messages in notification
                     notify({
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
@@ -1690,8 +1690,8 @@ function showUserSecrets(id, type = 'TOKEN') {
                 return;
             }
 
-            if (type == 'TOTP_SECRET') {
-                if (json.data.TOTP_SECRET == false || json.data.QR_CODE == false) {
+            if (type === 'TOTP_SECRET') {
+                if (json.data.TOTP_SECRET === false || json.data.QR_CODE === false) {
                     // Display error messages in notification
                     notify({
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
@@ -1760,8 +1760,8 @@ function refreshUserSecrets(id, type = 'TOKEN') {
             const json = await response.json();
             // Prepare message
             let message = '';
-            if (type == 'TOKEN') message = 'API access token has been refreshed.';
-            if (type == 'TOTP_SECRET') message = 'TOTP secret has been refreshed.';
+            if (type === 'TOKEN') message = 'API access token has been refreshed.';
+            if (type === 'TOTP_SECRET') message = 'TOTP secret has been refreshed.';
             // Display success message
             notify({
                 icon: '<i class="f7-icons icon color-blue">info_circle</i>',
@@ -1794,7 +1794,7 @@ function refreshUserSecrets(id, type = 'TOKEN') {
 // Load files data
 function loadFilesData(page) {
 
-    if (page == false) {
+    if (page === false) {
         page = 1;
     } else {
         page = parseInt(page);
@@ -1831,7 +1831,7 @@ function loadFilesData(page) {
                 // Load the table data into the data table
                 json.data.forEach(row => {
                     fileType = row.TYPE.toUpperCase();
-                    if (['CSV', 'TXT', 'PDF', 'XML', 'XLXS', 'JSON', 'ZIP'].includes(fileType) == true) {
+                    if (['CSV', 'TXT', 'PDF', 'XML', 'XLXS', 'JSON', 'ZIP'].includes(fileType) === true) {
                         fileCards += `
                         <div class="card card-outline-md file-card">
                             <div valign="bottom" class="card-header file-card-header file-card-header-background">
@@ -1885,14 +1885,14 @@ function loadFilesData(page) {
                 // Update the pagination buttons and text
                 if (page > json.pagination.totalPages) page = json.pagination.totalPages;
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
-                if (json.pagination.hasNextPage == true) {
+                if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');
                     $$('#btnPageNext').attr('data-page-next', (page + 1));
                 } else {
                     $$('#btnPageNext').addClass('disabled');
                     $$('#btnPageNext').removeAttr('data-page-next');
                 }
-                if (json.pagination.hasPreviousPage == true) {
+                if (json.pagination.hasPreviousPage === true) {
                     $$('#btnPagePrevious').removeClass('disabled');
                     $$('#btnPagePrevious').attr('data-page-previous', (page - 1));
                 } else {
@@ -1944,7 +1944,7 @@ function setDarkMode(appDarkMode) {
         }, 50);
         return;
     }
-    if (appDarkMode == 'Y') {
+    if (appDarkMode === 'Y') {
         app.setDarkMode(true);
         app.setColorTheme('#2564aa');
     } else {
@@ -2061,7 +2061,7 @@ function getFromURL(verb) {
 // This function copies a given text into user's clipboard and shows a notification
 function copyToClipboard(text, showNotification = false) {
     navigator.clipboard.writeText(text);
-    if (showNotification == true) {
+    if (showNotification === true) {
         // Display error messages in notification
         notify({
             icon: '<i class="f7-icons icon color-blue">info_circle</i>',

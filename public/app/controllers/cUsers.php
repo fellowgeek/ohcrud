@@ -26,7 +26,7 @@ class cUsers extends \ohCRUD\DB {
         $Users = new \ohCRUD\Users;
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check for missing or incomplete user login data
@@ -34,7 +34,7 @@ class cUsers extends \ohCRUD\DB {
             $this->error('Missing or incomplete data.');
 
         // If there are errors, output them and return
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -43,7 +43,7 @@ class cUsers extends \ohCRUD\DB {
         $response = $Users->login($request->payload->USERNAME, $request->payload->PASSWORD);
 
         // If login is unsuccessful, output an error and return
-        if ($response == false) {
+        if ($response === false) {
             $this->error('Unable to login, check your Username and Password.');
             $this->output();
             return $this;
@@ -70,7 +70,7 @@ class cUsers extends \ohCRUD\DB {
         $Users = new \ohCRUD\Users;
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check for missing or incomplete verification data
@@ -82,7 +82,7 @@ class cUsers extends \ohCRUD\DB {
             $this->error('User has not logged in yet.');
 
         // If there are errors, output them and return
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -91,7 +91,7 @@ class cUsers extends \ohCRUD\DB {
         $response = $Users->verify($_SESSION['tempUser']->ID, $request->payload->TOTP);
 
         // If verification is unsuccessful, output an error and return
-        if ($response == false) {
+        if ($response === false) {
             $this->error('Unable to verify, check your two factor authentication code.');
             $this->output();
             return $this;

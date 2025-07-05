@@ -39,7 +39,7 @@ class cFiles extends \app\models\mFiles {
         $this->outputType = \ohCRUD\Core::OUTPUT_JSON;
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->CSRF ?? '') == false) {
+        if ($this->checkCSRF($request->CSRF ?? '') === false) {
             $this->error('Missing or invalid CSRF token.');
             $this->output();
             return $this;
@@ -218,7 +218,7 @@ class cFiles extends \app\models\mFiles {
         $newImage = imagecreatetruecolor($newWidth, $newHeight);
 
         // Preserve transparency for PNG and WebP formats
-        if ($mime == 'image/png' || $mime == 'image/webp') {
+        if ($mime === 'image/png' || $mime === 'image/webp') {
             imagealphablending($newImage, false);
             imagesavealpha($newImage, true);
             $transparentColor = imagecolorallocatealpha($newImage, 0, 0, 0, 127);

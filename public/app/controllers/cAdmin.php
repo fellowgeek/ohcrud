@@ -36,10 +36,10 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -58,10 +58,10 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -105,7 +105,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -115,7 +115,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->LIMIT) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -149,7 +149,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = $this->run($SQL)->data;
 
         // Stop if there are errors
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -158,14 +158,14 @@ class cAdmin extends \ohCRUD\DB {
         foreach ($this->data as $index => $value) {
 
             // Obfuscate secrets
-            if ($table == 'Users') {
+            if ($table === 'Users') {
                 $this->data[$index]->PASSWORD = '**********';
                 $this->data[$index]->TOKEN = '**********';
                 $this->data[$index]->TOTP_SECRET = '**********';
             }
             // Shorten long results
             foreach ($value as $key => $value) {
-                if (gettype($value) == 'string') {
+                if (gettype($value) === 'string') {
                     $this->data[$index]->{$key} = $this->shortenString($value, 100);
                 }
             }
@@ -202,7 +202,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -210,7 +210,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->TABLE) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -247,7 +247,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -257,7 +257,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->KEY_VALUE) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -276,7 +276,7 @@ class cAdmin extends \ohCRUD\DB {
         )->first();
 
         // Obfuscate secrets
-        if ($table == 'Users') {
+        if ($table === 'Users') {
             $this->data->PASSWORD = '**********';
             $this->data->TOKEN = '**********';
             $this->data->TOTP_SECRET = '**********';
@@ -293,7 +293,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -303,7 +303,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->KEY_VALUE) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -348,7 +348,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -361,7 +361,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->PASSWORD) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -445,9 +445,9 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         // Prepare the data : PASSWORD
-        if (isset($request->payload->PASSWORD) == true && $request->payload->PASSWORD != '**********') {
+        if (isset($request->payload->PASSWORD) == true && $request->payload->PASSWORD !== '**********') {
             $checkPasswordSecurity = $this->checkPasswordSecurity($request->payload->PASSWORD);
-            if ($checkPasswordSecurity == 'secure') {
+            if ($checkPasswordSecurity === 'secure') {
                 $request->payload->PASSWORD = password_hash(
                     $request->payload->PASSWORD,
                     PASSWORD_BCRYPT,
@@ -468,7 +468,7 @@ class cAdmin extends \ohCRUD\DB {
             }
         }
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -491,7 +491,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -499,7 +499,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->ID) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -587,9 +587,9 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         // Prepare the data : PASSWORD
-        if (isset($request->payload->PASSWORD) == true && $request->payload->PASSWORD != '**********') {
+        if (isset($request->payload->PASSWORD) == true && $request->payload->PASSWORD !== '**********') {
             $checkPasswordSecurity = $this->checkPasswordSecurity($request->payload->PASSWORD);
-            if ($checkPasswordSecurity == 'secure') {
+            if ($checkPasswordSecurity === 'secure') {
                 $request->payload->PASSWORD = password_hash(
                     $request->payload->PASSWORD,
                     PASSWORD_BCRYPT,
@@ -612,7 +612,7 @@ class cAdmin extends \ohCRUD\DB {
             }
         }
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -639,7 +639,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -649,7 +649,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->KEY_VALUE) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -659,7 +659,7 @@ class cAdmin extends \ohCRUD\DB {
         $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
 
         // Check for super admins if we are deleting records from the Users table
-        if ($table == 'Users') {
+        if ($table === 'Users') {
             $user = $this->read(
                 $table,
                 $keyColumn . " = :KEY_VALUE",
@@ -669,7 +669,7 @@ class cAdmin extends \ohCRUD\DB {
             )->first();
 
             // Check if the user is a super admin
-            if ($user != false && $user->STATUS == 1 && $user->PERMISSIONS == 1) {
+            if ($user != false && (int) $user->STATUS === 1 && (int) $user->PERMISSIONS === 1) {
 
                 // Get the number of super admins
                 $superAdmins = $this->run(
@@ -684,12 +684,29 @@ class cAdmin extends \ohCRUD\DB {
                 )->first();
 
                 // Check if this is the last super admin
-                if ($superAdmins->COUNT == 1) {
+                if ((int) $superAdmins->COUNT === 1) {
                     $this->error('You can\'t delete the only existing superuser.');
                     $this->data = new \stdClass();
                     $this->output();
                     return $this;
                 }
+            }
+        }
+
+        // Delete the file if we are deleting records from the Files table
+        if ($table == 'Files') {
+            $file = $this->read(
+                $table,
+                $keyColumn . " = :KEY_VALUE",
+                [
+                    'KEY_VALUE' => $request->payload->KEY_VALUE
+                ]
+            )->first();
+
+            if ($file != false) {
+                $basePath = 'global/files/';
+                $absoluteFilePath = $basePath . basename($file->PATH);
+                unlink($absoluteFilePath);
             }
         }
 
@@ -714,7 +731,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -722,7 +739,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->ID) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -780,7 +797,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->data = new \stdClass();
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -789,7 +806,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->SECRET_TYPE) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -815,7 +832,7 @@ class cAdmin extends \ohCRUD\DB {
             'ID'
         )->first();
 
-        if ($userExists == false) {
+        if ($userExists === false) {
             $this->error('User not found.');
             $this->output();
             return $this;
@@ -847,10 +864,10 @@ class cAdmin extends \ohCRUD\DB {
         $result = [];
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -879,7 +896,7 @@ class cAdmin extends \ohCRUD\DB {
         $result = [];
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -889,7 +906,7 @@ class cAdmin extends \ohCRUD\DB {
             empty($request->payload->LIMIT) == true)
             $this->error('Missing or incomplete data.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -903,7 +920,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Get total records
         $totalRecords = $this->countLogRecords($log);
-        if ($totalRecords == false) {
+        if ($totalRecords === false) {
             $this->error('Log file not found.');
             $this->output();
             return $this;

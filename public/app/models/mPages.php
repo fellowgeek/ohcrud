@@ -55,7 +55,7 @@ class mPages extends \ohCRUD\DB {
             }
 
             // If the 'Pages' table was created and the operation was successful, seed the table with a default page.
-            if ($tableExists == false && $this->success == true) {
+            if ($tableExists === false && $this->success === true) {
                 $this->create(
                     'Pages',
                     [

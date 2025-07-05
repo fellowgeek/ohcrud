@@ -68,7 +68,7 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Disable cache for login pages
-        if ($GLOBALS['PATH'] == '/login/') {
+        if ($GLOBALS['PATH'] === '/login/') {
             $this->useCache = false;
         }
 
@@ -90,7 +90,7 @@ class cCMS extends \ohCRUD\DB {
         // Get cached response (if any)
         $cacheKey = 'cCMS:' . $this->path . http_build_query($_GET ?? '');
         $cachedResponse = $this->getCache($cacheKey, 3600);
-        if ($this->useCache == true && $cachedResponse != false) {
+        if ($this->useCache == true && $cachedResponse !== false) {
             $this->data = $cachedResponse;
             // Inject the uncachable content
             $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
@@ -181,10 +181,10 @@ class cCMS extends \ohCRUD\DB {
         $content = new \app\models\mContent;
 
         // Try getting page content from file
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
+        if (file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
             $content = $this->getContentFromFile($path);
             // Handle special paths
-            if ($path == '/login/') {
+            if ($path === '/login/') {
                 // Set theme and layout
                 $content->theme = __OHCRUD_CMS_ADMIN_THEME__;
                 $content->layout = 'login';
@@ -202,11 +202,11 @@ class cCMS extends \ohCRUD\DB {
         )->first();
 
         // Check if page does not exists
-        if ($page == false || $page->STATUS != \app\models\mPages::ACTIVE) {
+        if ($page === false || (int) $page->STATUS != $this::ACTIVE) {
             if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
-            if (($this->request->action ?? '') != 'edit') {
+            if (($this->request->action ?? '') !== 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
             if (($page->STATUS ?? -1) == $this::INACTIVE) {
@@ -223,8 +223,9 @@ class cCMS extends \ohCRUD\DB {
         $content->layout = $page->LAYOUT;
 
         // Check if user has permission
-        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;
-        if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions != false)) {
+        $page->PERMISSIONS = (int) $page->PERMISSIONS;
+        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
+        if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions !== false)) {
             $content->text = $page->TEXT;
             $content->html = $this->purifier->purify($this->parsedown->text($page->TEXT));
         } else {
@@ -263,7 +264,7 @@ class cCMS extends \ohCRUD\DB {
         if ($matchCount > 0) {
             $this->recursiveContentCounter++;
             foreach ($matches[0] as $match) {
-                if ($this->path == '/' . $match . '/' || $this->recursiveContentCounter > $this->maxRecursiveContent) {
+                if ($this->path === '/' . $match . '/' || $this->recursiveContentCounter > $this->maxRecursiveContent) {
                     $content->html = str_ireplace('{{' . $match . '}}', '<mark>ohCRUD! Recursive content not allowed.</mark>', $content->html);
                     continue;
                 }
@@ -338,7 +339,7 @@ class cCMS extends \ohCRUD\DB {
         array_shift($componentParameters);
 
         // Check if the component exists
-        if (\file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
+        if (file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
 
             $component = new $componentClass($this->request, $this->path);
             $component->output($componentParameters);
@@ -418,7 +419,7 @@ class cCMS extends \ohCRUD\DB {
         $output = '';
 
         // Fallback to default theme ans layout if file does not exist
-        if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false) {
+        if (file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false) {
             $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
             $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
         }

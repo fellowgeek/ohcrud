@@ -21,7 +21,7 @@ class cPages extends \app\models\mPages {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
@@ -32,10 +32,10 @@ class cPages extends \app\models\mPages {
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
             $this->error('You can\'t edit a hard coded page.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -59,18 +59,18 @@ class cPages extends \app\models\mPages {
         // Check if the page exists in the database.
         $PageExists = $this->run(
             "SELECT
-                COUNT(*) AS `PageExists`
+                `ID`
             FROM
-                Pages
+                `Pages`
             WHERE
-                URL = :URL
+                `URL` = :URL
             ",
             [
                 ':URL' => $request->payload->URL
             ]
-        )->first()->PageExists;
+        )->first();
 
-        if ($PageExists == false) {
+        if ($PageExists === false) {
             // Create a new record in the 'Pages' table.
             $this->create('Pages', [
                 'URL' => $request->payload->URL,
@@ -111,7 +111,7 @@ class cPages extends \app\models\mPages {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Performs CSRF token validation and displays an error if the token is missing or invalid.
-        if ($this->checkCSRF($request->payload->CSRF ?? '') == false)
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
             $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload is complete.
@@ -119,10 +119,10 @@ class cPages extends \app\models\mPages {
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
             $this->error('You can\'t delete a hard coded page.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -132,20 +132,20 @@ class cPages extends \app\models\mPages {
             "SELECT
                 *
             FROM
-                Pages
+                `Pages`
             WHERE
-                URL = :URL
+                `URL` = :URL
             ",
             [
                 ':URL' => $request->payload->URL
             ]
         )->first();
 
-        if ($page != false) {
+        if ($page !== false) {
             // Update the record: toggle the STATUS between ACTIVE and INACTIVE.
             $this->update('Pages',
                 [
-                    'STATUS' => ($page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
+                    'STATUS' => ((int) $page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
                 ],
                 'URL = :URL',
                 [
