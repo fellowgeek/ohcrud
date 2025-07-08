@@ -126,7 +126,7 @@ class Core {
             print($output);
         }
 
-        if (PHP_SAPI == 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
+        if (PHP_SAPI === 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
             $this->debug();
         }
 

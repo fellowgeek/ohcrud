@@ -694,7 +694,7 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         // Delete the file if we are deleting records from the Files table
-        if ($table == 'Files') {
+        if ($table === 'Files') {
             $file = $this->read(
                 $table,
                 $keyColumn . " = :KEY_VALUE",
