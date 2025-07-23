@@ -945,7 +945,7 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         $bufferSize = 4096;
-        $pos = -1;
+        $pos = 0;
         $lines = [];
         $currentLine = '';
         $foundLines = 0;
@@ -966,6 +966,20 @@ class cAdmin extends \ohCRUD\DB {
             $currentLine = array_shift($linesInChunk);
 
             foreach (array_reverse($linesInChunk) as $line) {
+                $trimmed = trim($line);
+                if ($trimmed !== '') {
+                    $lines[] = $trimmed;
+                    $foundLines++;
+                    if ($foundLines >= ($limit + $offset)) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($foundLines < ($limit + $offset) && !empty($currentLine)) {
+            $remainingLines = explode("\n", $currentLine);
+            foreach (array_reverse($remainingLines) as $line) {
                 $trimmed = trim($line);
                 if ($trimmed !== '') {
                     $lines[] = $trimmed;
@@ -1139,37 +1153,16 @@ class cAdmin extends \ohCRUD\DB {
             return false;
         }
 
-        $bufferSize = 4096;
-        $pos = -1;
+       // A simple way to count lines
         $lineCount = 0;
-        $currentLine = '';
-
-        fseek($fp, 0, SEEK_END);
-        $fileSize = ftell($fp);
-
-        while ($fileSize + $pos > 0) {
-            $seekSize = min($bufferSize, $fileSize + $pos);
-            $pos -= $seekSize;
-            fseek($fp, $pos, SEEK_END);
-            $chunk = fread($fp, $seekSize);
-
-            $currentLine = $chunk . $currentLine;
-            $lines = explode("\n", $currentLine);
-            $currentLine = array_shift($lines); // Save incomplete line for next round
-
-            foreach ($lines as $line) {
-                if (trim($line) !== '') {
-                    $lineCount++;
-                }
+        $handle = fopen(__OHCRUD_LOG_PATH__ . $logFile, "r");
+        while(!feof($handle)) {
+            $line = fgets($handle);
+            if (trim($line) !== '') {
+                $lineCount++;
             }
         }
-
-        // Handle remaining line
-        if (trim($currentLine) !== '') {
-            $lineCount++;
-        }
-
-        fclose($fp);
+        fclose($handle);
         return $lineCount;
     }
 

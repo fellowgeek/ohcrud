@@ -15,12 +15,13 @@ class cFiles extends \app\models\mFiles {
     ];
 
     // Define an array of file extensions allowed for uploading.
-    private $filesAllowed = ['jpg', 'jpeg', 'png', 'webp', 'svg', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip'];
+    private $filesAllowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip', 'mp3'];
 
     // Allowed MIME types
     private $mimeTypesAllowed = [
         'image/jpeg',
         'image/png',
+        'image/gif',
         'image/webp',
         'image/svg+xml',
         'text/csv',
@@ -29,7 +30,8 @@ class cFiles extends \app\models\mFiles {
         'application/xml',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/json',
-        'application/zip'
+        'application/zip',
+        'audio/mpeg',
     ];
 
     // Define the 'upload' method for this controller.

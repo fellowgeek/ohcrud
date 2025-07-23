@@ -195,7 +195,7 @@ $$(document).on('page:init', function (e, pageObject) {
         });
     }
 
-    // If the admin page is initialized
+    // If the edit page is initialized
     if (pageObject.name === 'edit') {
 
         // UI inputs
@@ -214,6 +214,9 @@ $$(document).on('page:init', function (e, pageObject) {
 
         // Load table list
         loadTableList();
+
+        // Load log list
+        loadLogList();
 
         // Initialize the text editor
         ohCrudEditor = new SimpleMDE({
@@ -402,7 +405,7 @@ $$(document).on('page:init', function (e, pageObject) {
         }
     }
 
-    // If the admin page is initialized
+    // If the tables page is initialized
     if (pageObject.name === 'tables') {
 
         let tableName = $$('#TABLE').val();
@@ -435,8 +438,11 @@ $$(document).on('page:init', function (e, pageObject) {
         // Load table list
         loadTableList();
 
-        // Load details
+        // Load table details
         loadTableDetails(tableName);
+
+        // Load log list
+        loadLogList();
 
         // Handle pagination button events
         btnPageNext.on('click', function () {
@@ -647,6 +653,48 @@ $$(document).on('page:init', function (e, pageObject) {
         }
     }
 
+    // If the logs page is initialized
+    if (pageObject.name === 'logs') {
+
+        let logName = $$('#LOG').val();
+
+        // UI inputs
+        let limitSelect = $$('#LIMIT');
+        if (localStorage.getItem('limit') != null) {
+            limitSelect.val(localStorage.getItem('limit'));
+        }
+
+        // UI buttons
+        let btnPageNext = $$('#btnPageNext');
+        let btnPagePrevious = $$('#btnPagePrevious');
+
+        // Load table list
+        loadTableList();
+
+        // Load log list
+        loadLogList();
+
+        // Load log data
+        loadLogData(logName, getFromURL('page'));
+
+        // Handle pagination button events
+        btnPageNext.on('click', function () {
+            let pageNext = parseInt(btnPageNext.data('page-next'));
+            if (action === 'logs') loadLogData(logName, pageNext);
+        });
+
+        btnPagePrevious.on('click', function () {
+            let pagePrevious = parseInt(btnPagePrevious.data('page-previous'));
+            if (action === 'logs') loadLogData(logName, pagePrevious);
+        });
+
+        // Handle pagination limit select
+        limitSelect.on('change', function() {
+            let page = parseInt($$('#PAGE_CURRENT').val());
+            localStorage.setItem('limit', limitSelect.val());
+            if (action === 'logs') loadLogData(logName, page);
+        });
+    }
 });
 
 // -------------------------------------------------------------------------
@@ -800,7 +848,8 @@ function loadTableList() {
         async function (error) {
             const json = await error.json();
             console.error(json);
-        });
+        }
+    );
 }
 
 // Load table details
@@ -1800,7 +1849,7 @@ function loadFilesData(page) {
         page = parseInt(page);
     }
 
-    let fileIcons = {'CSV': 'table', 'TXT': 'doc_text', 'PDF': 'doc_richtext', 'XML': 'doc_text', 'XLXS': 'doc_chart', 'JSON': 'doc', 'ZIP': 'archivebox'};
+    let fileIcons = {'CSV': 'table', 'TXT': 'doc_text', 'PDF': 'doc_richtext', 'XML': 'doc_text', 'XLXS': 'doc_chart', 'JSON': 'doc', 'ZIP': 'archivebox', 'MP3': 'music_note_2'};
     limit = parseInt($$('#LIMIT').val());
     $$('#btnTableView').data('link', '/?action=tables&table=Files&page=' + page);
     $$('#PAGE_CURRENT').val(page);
@@ -1831,7 +1880,7 @@ function loadFilesData(page) {
                 // Load the table data into the data table
                 json.data.forEach(row => {
                     fileType = row.TYPE.toUpperCase();
-                    if (['CSV', 'TXT', 'PDF', 'XML', 'XLXS', 'JSON', 'ZIP'].includes(fileType) === true) {
+                    if (['CSV', 'TXT', 'PDF', 'XML', 'XLXS', 'JSON', 'ZIP', 'MP3'].includes(fileType) === true) {
                         fileCards += `
                         <div class="card card-outline-md file-card">
                             <div valign="bottom" class="card-header file-card-header file-card-header-background">
@@ -1910,6 +1959,228 @@ function loadFilesData(page) {
                 title: 'ohCRUD!',
                 titleRightText: 'now',
                 text: 'Something went wrong with loading table data.',
+                closeOnClick: true,
+            });
+        }
+    );
+}
+
+// -------------------------------------------------------------------------
+// Logs:
+// -------------------------------------------------------------------------
+
+// Load log list
+function loadLogList() {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getLogList/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {}
+        },
+        async function (response) {
+            const json = await response.json();
+            let listLogs = $$('#listLogs');
+            listLogs.empty();
+            Object.entries(json.data).forEach(([log, logData]) => {
+                // if (['Users', 'Pages', 'Files'].includes(table)) return;
+                let listLogItem = `
+                <li>
+                    <a class="item-link item-content listLogItem" data-log-name="${logData.NAME}" data-log-path="${logData.PATH}">
+                        <div class="item-media">
+                            <i class="f7-icons">doc_text_search</i>
+                        </div>
+                        <div class="item-inner">
+                            <div class="item-title">${logData.NAME}</div>
+                        </div>
+                    </a>
+                </li>
+            `;
+                listLogs.append(listLogItem);
+            });
+
+            $$('.listLogItem').on('click', function () {
+                let logName = $$(this).data('log-name');
+                window.location.href = __PATH__ + '?action=logs&log=' + logName;
+            });
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+        }
+    );
+}
+
+// Load log data
+function loadLogData(log, page) {
+    if (page === false) {
+        page = 1;
+    } else {
+        page = parseInt(page);
+    }
+
+    limit = parseInt($$('#LIMIT').val());
+    $$('#PAGE_CURRENT').val(page);
+
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getLogData/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                LOG: log,
+                PAGE: page,
+                LIMIT: limit,
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            if (typeof json.data != undefined) {
+                let tableBody = '';
+                let level = '';
+                let extra = '';
+                let context = '';
+
+                json.data.forEach(row => {
+
+                    // Format the level
+                    switch (row.level_name.toUpperCase()) {
+                        case 'DEBUG':
+                            level = `
+                                <div class="chip color-blue">
+                                    <div class="chip-label">${row.level_name}</div>
+                                </div>
+                            `;
+                            break;
+                        case 'INFO':
+                            level = `
+                                <div class="chip color-green">
+                                    <div class="chip-label">${row.level_name}</div>
+                                </div>
+                            `;
+                            break;
+                        case 'WARNING':
+                            level = `
+                                <div class="chip color-orange">
+                                    <div class="chip-label">${row.level_name}</div>
+                                </div>
+                            `;
+                            break;
+                        case 'ERROR':
+                        case 'CRITICAL':
+                            level = `
+                                <div class="chip color-red">
+                                    <div class="chip-label">${row.level_name}</div>
+                                </div>
+                            `;
+                            break;
+                        default:
+                            level = `
+                                <div class="chip">
+                                    <div class="chip-label">${row.level_name}</div>
+                                </div>
+                            `;
+                    }
+
+                    // Format the extra data
+                    if (row.extra === null || row.extra === '' || row.extra.length === 0) {
+                        extra = `
+                            <div class="chip">
+                                <div class="chip-label">EMPTY</div>
+                            </div>
+                        `;
+                    }
+
+                    // Format the context data
+                    if (row.context === null || row.context === '' || row.context.length === 0) {
+                        context = `
+                            <div class="chip">
+                                <div class="chip-label">EMPTY</div>
+                            </div>
+                        `;
+                    } else {
+                        context = `
+                            <div class="chip color-blue">
+                                <div class="chip-label">YES</div>
+                            </div>
+                        `;
+                    }
+
+                    console.log(row);
+                    console.log(row.extra.length);
+
+                    tableBody += `
+                    <tr>
+                        <td class="checkbox-cell">
+                            <label class="checkbox">
+                                <input type="checkbox" /><i class="icon-checkbox"></i>
+                            </label>
+                        </td>
+                        <td>${level}</td>
+                        <td>${row.channel}</td>
+                        <td data-detected-type="message">${row.message}</td>
+                        <td>${extra}</td>
+                        <td>${context}</td>
+                        <td data-detected-type="datetime">${row.datetime.date}</td>
+
+                        <td class="actions-cell">
+                            <a class="btnSomething link icon-only" data-row-key-column="" data-row-key-value=""><i class="icon f7-icons">square_stack_3d_up</i></a>
+                        </td>
+                    </tr>
+                    `;
+
+                });
+
+                $$('.tableBody').empty();
+                $$('.tableBody').html(tableBody);
+
+                // Event listener for row action buttons
+                $$('.btnSomething').on('click', function() {
+                    let rowKeyColumn = $$(this).data('row-key-column');
+                    let rowKeyValue = $$(this).data('row-key-value');
+
+                    // Highlight the row
+                    $$(`.btnSomething[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
+                });
+
+                // Update the pagination buttons and text
+                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
+                if (json.pagination.hasNextPage === true) {
+                    $$('#btnPageNext').removeClass('disabled');
+                    $$('#btnPageNext').attr('data-page-next', (page + 1));
+                } else {
+                    $$('#btnPageNext').addClass('disabled');
+                    $$('#btnPageNext').removeAttr('data-page-next');
+                }
+                if (json.pagination.hasPreviousPage === true) {
+                    $$('#btnPagePrevious').removeClass('disabled');
+                    $$('#btnPagePrevious').attr('data-page-previous', (page - 1));
+                } else {
+                    $$('#btnPagePrevious').addClass('disabled');
+                    $$('#btnPagePrevious').removeAttr('data-page-previous');
+                }
+            }
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in notification
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: 'Something went wrong with loading log data.',
                 closeOnClick: true,
             });
         }

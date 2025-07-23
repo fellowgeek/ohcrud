@@ -43,7 +43,7 @@ class cCMS extends \ohCRUD\DB {
     // Max recursive content
     public $maxRecursiveContent = 7;
     // Allowed CMS actions
-    public $allowedActions = ['edit', 'users', 'tables', 'files', 'settings'];
+    public $allowedActions = ['edit', 'users', 'tables', 'files', 'logs', 'settings'];
 
     public function __construct($request) {
         parent::__construct();
@@ -435,6 +435,10 @@ class cCMS extends \ohCRUD\DB {
                 case 'tables':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'tables';
+                    break;
+                case 'logs':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'logs';
                     break;
                 default:
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
