@@ -982,6 +982,7 @@ class cAdmin extends \ohCRUD\DB {
 
             foreach (array_reverse($linesInChunk) as $line) {
                 $trimmed = trim($line);
+                $trimmed = str_replace('"file":"' . __SELF__, '"file":".../', $trimmed);
                 if ($trimmed !== '') {
                     $lines[] = $trimmed;
                     $foundLines++;
@@ -996,6 +997,7 @@ class cAdmin extends \ohCRUD\DB {
             $remainingLines = explode("\n", $currentLine);
             foreach (array_reverse($remainingLines) as $line) {
                 $trimmed = trim($line);
+                $trimmed = str_replace('"file":"' . __SELF__, '"file":".../', $trimmed);
                 if ($trimmed !== '') {
                     $lines[] = $trimmed;
                     $foundLines++;

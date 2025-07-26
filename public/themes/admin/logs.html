@@ -129,7 +129,7 @@
 			</div>
 
 			<!-- Context Popup -->
-			<div class="popup popup-push context-popup" data-close-on-escape="true">
+			<div class="popup popup-push context-popup" data-close-on-escape="true" data-row-key-value="">
 				<div class="view">
 					<div class="page">
 						<div class="navbar">
@@ -144,69 +144,18 @@
 						</div>
 						<div class="page-content">
 
-                            <div class="block margin-top-15px margin-bottom-15px">
-                                <div class="chip color-red">
-                                    <div class="chip-label">ERROR</div>
-                                </div>
-                                <p>Missing or incomplete data.</p>
+                            <div id="logHeader" class="block margin-top-15px margin-bottom-15px">
                             </div>
 
                             <div class="block-title margin-top-15px">Context</div>
                             <div class="list list-strong-ios list-dividers-ios inset-ios margin-top-15px">
-
-                                <!-- <ul id="formContext" class="padding-bottom"></ul> -->
-                                <ul>
-                                    <li>
-                                        <div class="item-content">
-                                            <div class="item-media"><i class="icon">4</i></div>
-                                            <div class="item-inner">
-                                                <div class="item-title">
-                                                    <div class="item-header">/app/app/controllers/cAdmin.php:114</div>
-                                                    ohCRUD\Core->error()
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li>
-                                        <div class="item-content">
-                                            <div class="item-media"><i class="icon">3</i></div>
-                                            <div class="item-inner">
-                                                <div class="item-title">
-                                                    <div class="item-header">/app/ohcrud/Router.php:79</div>
-                                                    app\controllers\cAdmin->getTableData()
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li>
-                                        <div class="item-content">
-                                            <div class="item-media"><i class="icon">2</i></div>
-                                            <div class="item-inner">
-                                                <div class="item-title">
-                                                    <div class="item-header">/app/ohcrud/Router.php:23</div>
-                                                    ohCRUD\Router->route()
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li>
-                                        <div class="item-content">
-                                            <div class="item-media"><i class="icon">1</i></div>
-                                            <div class="item-inner">
-                                                <div class="item-title">
-                                                    <div class="item-header">/app/index.php:34</div>
-                                                    ohCRUD\Router->__construct()
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
+                                <ul id="logContext">
                                 </ul>
                             </div>
 
                             <div class="block-title">Extra</div>
                             <div class="card monospace">
-                                <div class="card-content card-content-padding">Card with header and footer. Card headers are used to display card
-                                titles and footers for additional information or just for custom actions.</div>
+                                <div id="logExtra" class="card-content card-content-padding"></div>
                             </div>
 
 						</div>

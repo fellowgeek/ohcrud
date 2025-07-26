@@ -495,6 +495,12 @@ $$(document).on('page:init', function (e, pageObject) {
             }, 500);
         });
 
+        $$('.edit-record-popup').on('popup:closed', function () {
+            let rowKeyValue = $$(this).data('row-key-value');
+            // Undo the highlight
+            $$(`.btnRecordEdit[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
+        });
+
         // Handle create popup events
         btnNewRecord.on('click', function() {
             // Build the create record form
@@ -593,6 +599,12 @@ $$(document).on('page:init', function (e, pageObject) {
                 }
             });
             saveUserRowData(mode, data, id);
+        });
+
+        $$('.create-edit-user-popup').on('popup:closed', function () {
+            let rowKeyValue = $$(this).data('row-key-value');
+            // Undo the highlight
+            $$(`.btnRecordEdit[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
         });
 
         // Handle file view modes
@@ -704,6 +716,14 @@ $$(document).on('page:init', function (e, pageObject) {
                     clearLogFile(log);
                 }, 250);
             }, null);
+        });
+
+        // Handle log context popup events
+        $$('.context-popup').on('popup:closed', function () {
+            rowKeyValue = $$(this).data('row-key-value');
+
+            // Undo the highlight
+            $$(`.btnContext[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').removeClass('data-table-row-selected');
         });
 
     }
@@ -1155,6 +1175,7 @@ function loadTableData(table, page) {
                             $$('#btnUserFormRefreshToken').removeClass('hidden');
                             $$('#btnUserFormTOTPQRCode').removeClass('hidden');
                             $$('#btnUserFormTOTPRefresh').removeClass('hidden');
+                            $$('.create-edit-user-popup').data('row-key-value', rowKeyValue);
                             app.popup.open('.create-edit-user-popup');
                             document.querySelector('.create-edit-user-popup .page-content').scrollTop = 0;
                             break;
@@ -1163,6 +1184,7 @@ function loadTableData(table, page) {
                             // Get row data
                             loadRowData(table, rowKeyColumn, rowKeyValue);
                             // Open the popup
+                            $$('.edit-record-popup').data('row-key-value', rowKeyValue);
                             app.popup.open('.edit-record-popup');
                             document.querySelector('.edit-record-popup .page-content').scrollTop = 0;
                         break;
@@ -1180,7 +1202,6 @@ function loadTableData(table, page) {
                     setTimeout(() => {
                         app.dialog.confirm('Do you really want to delete the selected record?', 'Delete Record',
                             () => {
-                                console.log('You deleted: ' + rowKeyValue);
                                 httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/deleteTableRow/',
                                     {
                                         method: 'POST',
@@ -2143,8 +2164,7 @@ function loadLogData(log, page) {
                         row.extra = window.btoa(JSON.stringify(row.extra));
                     }
 
-
-
+                    // Build the table row
                     tableBody += `
                     <tr>
                         <td class="checkbox-cell">
@@ -2160,11 +2180,10 @@ function loadLogData(log, page) {
                         <td data-detected-type="datetime">${row.datetime.date}</td>
 
                         <td class="actions-cell">
-                            <a class="btnContext link icon-only ${hasContext == true ? '' : 'disabled'}" data-row-key-value="${keyValue}" data-context="${row.context}" data-extra="${row.extra}"><i class="icon f7-icons">square_stack_3d_up</i></a>
+                            <a class="btnContext link icon-only ${hasContext == true ? '' : 'disabled'}" data-row-key-value="${keyValue}" data-level="${window.btoa(level)}" data-message="${window.btoa(row.message)}" data-context="${row.context}" data-extra="${row.extra}"><i class="icon f7-icons">square_stack_3d_up</i></a>
                         </td>
                     </tr>
                     `;
-
                 });
 
                 $$('.tableBody').empty();
@@ -2173,14 +2192,16 @@ function loadLogData(log, page) {
                 // Event listener for row action buttons
                 $$('.btnContext').on('click', function() {
                     let rowKeyValue = $$(this).data('row-key-value');
+                    let level = $$(this).data('level');
+                    let message = $$(this).data('message');
+                    let context = $$(this).data('context');
+                    let extra = $$(this).data('extra');
 
                     // Highlight the row
                     $$(`.btnContext[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
 
-                    console.log('Row key value:', rowKeyValue);
-
-                    app.popup.open('.context-popup');
-
+                    // Display the context popup
+                    displayContextPopup(rowKeyValue, level, message, context, extra);
                 });
 
                 // Update the pagination buttons and text
@@ -2217,6 +2238,92 @@ function loadLogData(log, page) {
     );
 }
 
+// This function displays the context popup with the provided context and extra data
+function displayContextPopup(rowKeyValue, level, message, context, extra) {
+
+    let levelDecoded = window.atob(level);
+    let messageDecoded = window.atob(message);
+    let contextDecoded = JSON.parse(window.atob(context));
+    let extraDecoded = JSON.parse(window.atob(extra));
+
+    $$('#logHeader').empty();
+    $$('#logHeader').html(`
+        ${levelDecoded}
+        <p>${escapeHtml(messageDecoded)}</p>
+        `
+    );
+
+    let className = '';
+    let typeName = '';
+    let functionName = '';
+    let fileName = '';
+    let lineNumber = '';
+    let contextLength = contextDecoded.length;
+    let contextHTML = '';
+    contextDecoded.forEach((item, index) => {
+        className = '';
+        typeName = '';
+        functionName = '';
+        fileName = '';
+        lineNumber = '';
+
+        if (item.file !== undefined && item.file !== null && item.line !== undefined && item.line !== null) {
+            className = item.class || '';
+            typeName = item.type || '';
+            functionName = item.function || '';
+            fileName = item.file;
+            lineNumber = item.line;
+        }
+
+        if (item.function !== undefined && item.function !== null && item.args !== undefined && item.args !== null && Array.isArray(item.args) === true) {
+            className = item.class || '';
+            typeName = item.type || '';
+            functionName = item.function;
+            fileName = item.args[0].file || '';
+            lineNumber = '';
+        }
+
+        if (className === '' && typeName === '' && functionName === '') {
+            contextHTML += `
+                <li>
+                    <div class="item-content">
+                        <div class="item-media"><i class="icon">&nbsp;</i></div>
+                        <div class="item-inner">
+                            <div class="item-title monospace">
+                                ${escapeHtml(JSON.stringify(item))}
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            `;
+        } else {
+            contextHTML += `
+                <li>
+                    <div class="item-content">
+                        <div class="item-media"><i class="icon">${contextLength - index}</i></div>
+                        <div class="item-inner">
+                            <div class="item-title">
+                                <div class="item-header">${escapeHtml(fileName)}${lineNumber !== '' ? ':' + escapeHtml(lineNumber) : ''}</div>
+                                ${escapeHtml(className)}${escapeHtml(typeName)}${escapeHtml(functionName)}
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            `;
+        }
+    });
+    $$('#logContext').empty();
+    $$('#logContext').html(contextHTML);
+
+    $$('#logExtra').empty();
+    if (extraDecoded !== null && Object.keys(extraDecoded).length > 0) {
+        $$('#logExtra').html(escapeHtml(JSON.stringify(extraDecoded, null, 2)));
+    }
+
+    $$('.context-popup').data('row-key-value', rowKeyValue);
+    app.popup.open('.context-popup');
+}
+
 // Clear log file
 function clearLogFile(log) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/clearLog/',
@@ -2235,7 +2342,6 @@ function clearLogFile(log) {
         },
         async function (response) {
             const json = await response.json();
-            console.log('success', json);
             // Display success message
             notify({
                 icon: '<i class="f7-icons icon color-blue">info_circle</i>',
