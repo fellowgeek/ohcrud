@@ -665,6 +665,7 @@ $$(document).on('page:init', function (e, pageObject) {
         }
 
         // UI buttons
+        let btnClearLog = $$('#btnClearLog');
         let btnPageNext = $$('#btnPageNext');
         let btnPagePrevious = $$('#btnPagePrevious');
 
@@ -694,6 +695,17 @@ $$(document).on('page:init', function (e, pageObject) {
             localStorage.setItem('limit', limitSelect.val());
             if (action === 'logs') loadLogData(logName, page);
         });
+
+        // Handle clear logs button
+        btnClearLog.on('click', function() {
+            let log = $$('#LOG').val();
+            app.dialog.confirm('Are you sure you want to clear this log file? This will permanently erase its contents.', 'Clear Log File', () => {
+                setTimeout(() => {
+                    clearLogFile(log);
+                }, 250);
+            }, null);
+        });
+
     }
 });
 
@@ -2050,8 +2062,13 @@ function loadLogData(log, page) {
                 let level = '';
                 let extra = '';
                 let context = '';
+                let hasContext = false;
+                let keyValue = 0;
 
                 json.data.forEach(row => {
+
+                    // Generate random key value for the row
+                    keyValue = Math.floor(Math.random() * 1000);
 
                     // Format the level
                     switch (row.level_name.toUpperCase()) {
@@ -2099,6 +2116,12 @@ function loadLogData(log, page) {
                                 <div class="chip-label">EMPTY</div>
                             </div>
                         `;
+                    } else {
+                        extra = `
+                            <div class="chip color-blue">
+                                <div class="chip-label">YES</div>
+                            </div>
+                        `;
                     }
 
                     // Format the context data
@@ -2108,16 +2131,19 @@ function loadLogData(log, page) {
                                 <div class="chip-label">EMPTY</div>
                             </div>
                         `;
+                        hasContext = false;
                     } else {
                         context = `
                             <div class="chip color-blue">
                                 <div class="chip-label">YES</div>
                             </div>
                         `;
+                        hasContext = true;
+                        row.context = window.btoa(JSON.stringify(row.context));
+                        row.extra = window.btoa(JSON.stringify(row.extra));
                     }
 
-                    console.log(row);
-                    console.log(row.extra.length);
+
 
                     tableBody += `
                     <tr>
@@ -2134,7 +2160,7 @@ function loadLogData(log, page) {
                         <td data-detected-type="datetime">${row.datetime.date}</td>
 
                         <td class="actions-cell">
-                            <a class="btnSomething link icon-only" data-row-key-column="" data-row-key-value=""><i class="icon f7-icons">square_stack_3d_up</i></a>
+                            <a class="btnContext link icon-only ${hasContext == true ? '' : 'disabled'}" data-row-key-value="${keyValue}" data-context="${row.context}" data-extra="${row.extra}"><i class="icon f7-icons">square_stack_3d_up</i></a>
                         </td>
                     </tr>
                     `;
@@ -2145,12 +2171,16 @@ function loadLogData(log, page) {
                 $$('.tableBody').html(tableBody);
 
                 // Event listener for row action buttons
-                $$('.btnSomething').on('click', function() {
-                    let rowKeyColumn = $$(this).data('row-key-column');
+                $$('.btnContext').on('click', function() {
                     let rowKeyValue = $$(this).data('row-key-value');
 
                     // Highlight the row
-                    $$(`.btnSomething[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
+                    $$(`.btnContext[data-row-key-value="${rowKeyValue}"]`).parent('td').parent('tr').addClass('data-table-row-selected');
+
+                    console.log('Row key value:', rowKeyValue);
+
+                    app.popup.open('.context-popup');
+
                 });
 
                 // Update the pagination buttons and text
@@ -2181,6 +2211,49 @@ function loadLogData(log, page) {
                 title: 'ohCRUD!',
                 titleRightText: 'now',
                 text: 'Something went wrong with loading log data.',
+                closeOnClick: true,
+            });
+        }
+    );
+}
+
+// Clear log file
+function clearLogFile(log) {
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/clearLog/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                LOG: log
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            console.log('success', json);
+            // Display success message
+            notify({
+                icon: '<i class="f7-icons icon color-blue">info_circle</i>',
+                title: 'ohCRUD! - Success',
+                titleRightText: 'now',
+                text: 'Log file <b>' + log + '</b> has been cleared successfully.',
+                closeOnClick: true,
+            });
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in notification
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: json.errors.join('<br/>'),
                 closeOnClick: true,
             });
         }
@@ -2353,4 +2426,16 @@ function copyToClipboard(text, showNotification = false) {
             closeOnClick: true,
         });
     }
+}
+
+// This function escapes HTML special characters in a string to prevent XSS attacks
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return unsafe
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }

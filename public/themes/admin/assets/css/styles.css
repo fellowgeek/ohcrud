@@ -65,6 +65,10 @@
     margin-top: 10rem !important;
 }
 
+.margin-bottom-15px {
+    margin-bottom: 15px !important;
+}
+
 .font-small {
     font-size: 12px !important;
 }
@@ -75,6 +79,12 @@
 
 .text-center {
     text-align: center;
+}
+
+.monospace {
+    font-family: monospace, 'Courier New', Courier;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 /*

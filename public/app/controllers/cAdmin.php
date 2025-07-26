@@ -23,7 +23,8 @@ class cAdmin extends \ohCRUD\DB {
         'getUserSecrets' => 1,
         'refreshUserSecrets' => 1,
         'getLogList' => 1,
-        'getLogData' => 1
+        'getLogData' => 1,
+        'clearLog' => 1
     ];
 
     public ?array $pagination = null;
@@ -911,15 +912,29 @@ class cAdmin extends \ohCRUD\DB {
             return $this;
         }
 
-        // Cleanup the input data
-        $log = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $request->payload->LOG);
+        // Sanitize and validate file name
+        $filename = basename($request->payload->LOG); // removes any path parts
+        if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $filename)) {
+            $this->error('Invalid log filename.');
+            $this->output();
+            return $this;
+        }
+
+        $filepath = realpath(__OHCRUD_LOG_PATH__ . $filename);
+
+        // Ensure the resolved path is inside the log directory
+        if (strpos($filepath, realpath(__OHCRUD_LOG_PATH__)) !== 0 || !file_exists($filepath)) {
+            $this->error('Log file not found or invalid path.');
+            $this->output();
+            return $this;
+        }
 
         // Default values for optional parameters.
         $page = (int) $request->payload->PAGE <= 0 ? 1 : (int) $request->payload->PAGE;
         $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
 
         // Get total records
-        $totalRecords = $this->countLogRecords($log);
+        $totalRecords = $this->countLogRecords($filename);
         if ($totalRecords === false) {
             $this->error('Log file not found.');
             $this->output();
@@ -937,9 +952,9 @@ class cAdmin extends \ohCRUD\DB {
         if ($offset < 0) $offset = 0;
 
         // Open log file
-        $fp = fopen(__OHCRUD_LOG_PATH__ . $log, 'r');
+        $fp = fopen($filepath, 'r');
         if (!$fp) {
-            $this->error('Unable to open log file: ' . $log);
+            $this->error('Unable to open log file: ' . $filename);
             $this->output();
             return $this;
         }
@@ -1019,6 +1034,49 @@ class cAdmin extends \ohCRUD\DB {
         $this->output();
     }
 
+    public function clearLog($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Initializes variables
+        $this->data = new \stdClass();
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
+            $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->LOG) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success === false) {
+            $this->output();
+            return $this;
+        }
+
+        // Sanitize and validate file name
+        $filename = basename($request->payload->LOG); // removes any path parts
+        if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $filename)) {
+            $this->error('Invalid log filename.');
+            $this->output();
+            return $this;
+        }
+
+        $filepath = realpath(__OHCRUD_LOG_PATH__ . $filename);
+
+        // Ensure the resolved path is inside the log directory
+        if (strpos($filepath, realpath(__OHCRUD_LOG_PATH__)) !== 0 || !file_exists($filepath)) {
+            $this->error('Log file not found or invalid path.');
+            $this->output();
+            return $this;
+        }
+
+        // Clear the log file
+        file_put_contents($filepath, '');
+        $this->success = true;
+
+        $this->output();
+    }
 
     // This function returns a font-awesome icon based on a given data type.
     private function getFAIconForDetectedType($type, $detectedType, $columnName = '') {
