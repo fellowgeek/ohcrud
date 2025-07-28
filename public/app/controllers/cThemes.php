@@ -43,6 +43,11 @@ class cThemes extends \ohCRUD\DB {
                 $layout = $matches[2];
             }
 
+            if ($theme == __OHCRUD_CMS_ADMIN_THEME__) {
+                // Skip the admin theme
+                continue;
+            }
+
             // Organize themes and layouts into an associative array
             $themes[$theme][] = $layout;
         }

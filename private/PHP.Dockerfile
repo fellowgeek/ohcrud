@@ -15,8 +15,11 @@ RUN apt-get update && apt-get install -y \
 
 # Create cache directory with proper ownership and permissions
 RUN mkdir /ramdisk \
+    && mkdir /data \
     && chown root:www-data /ramdisk \
-    && chmod 0775 /ramdisk
+    && chmod 0775 /ramdisk \
+    && chown root:www-data /data \
+    && chmod 0775 /data
 
 # Copy configuration files
 COPY ./private/PHP-Custom.ini /usr/local/etc/php/conf.d/custom.ini

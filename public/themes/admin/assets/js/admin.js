@@ -1912,6 +1912,15 @@ function loadFilesData(page) {
 
                 // Load the table data into the data table
                 json.data.forEach(row => {
+
+                    // Skip bad data
+                    if (row.PATH === undefined || row.PATH === null ||
+                        row.NAME === undefined || row.NAME === null ||
+                        row.SIZE === undefined || row.SIZE === null ||
+                        row.TYPE === undefined || row.TYPE === null) {
+                        return;
+                    }
+
                     fileType = row.TYPE.toUpperCase();
                     if (['CSV', 'TXT', 'PDF', 'XML', 'XLXS', 'JSON', 'ZIP', 'MP3'].includes(fileType) === true) {
                         fileCards += `
