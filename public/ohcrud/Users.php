@@ -92,7 +92,7 @@ class Users extends \ohCRUD\DB {
         // create hash from password
         if (isset($data['PASSWORD']) == true) {
             $data['PASSWORD'] = password_hash(
-                $data['PASSWORD'], PASSWORD_BCRYPT, [
+                $data['PASSWORD'] . __OHCRUD_SECRET__, PASSWORD_BCRYPT, [
                     'cost' => 14
                 ]
             );
@@ -112,7 +112,7 @@ class Users extends \ohCRUD\DB {
         // create hash from password
         if (isset($data['PASSWORD']) == true) {
             $data['PASSWORD'] = password_hash(
-                $data['PASSWORD'], PASSWORD_BCRYPT, [
+                $data['PASSWORD'] . __OHCRUD_SECRET__, PASSWORD_BCRYPT, [
                     'cost' => 14
                 ]
             );
@@ -262,7 +262,7 @@ class Users extends \ohCRUD\DB {
 
         if ($user !== false) {
             // Verify the user's password against the stored hash
-            $user->loggedIn = password_verify($password, $user->PASSWORD);
+            $user->loggedIn = password_verify($password . __OHCRUD_SECRET__, $user->PASSWORD);
             if ($user->loggedIn == false) {
                 $this->log('warning', 'Login attempt was not successful', [$username]);
                 return false;

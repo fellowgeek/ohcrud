@@ -297,7 +297,7 @@ class Core {
 
     // Custom exception handler for uncaught exceptions
     public function coreExceptionHandler($exception) {
-        $this->log('error', $exception->getMessage(), debug_backtrace());
+        $this->log('error', $exception->getMessage(), debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
     }
 
     // Shutdown function to handle fatal errors
