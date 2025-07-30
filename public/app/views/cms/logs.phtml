@@ -1,0 +1,77 @@
+<?php
+    // Sanitize the log name
+    $log = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $this->purifier->purify($_REQUEST['log'] ?? 'app.log'));
+?>
+
+<input type="hidden" id="LOG" name="LOG" value="<?= $log ?>" />
+<input type="hidden" id="PAGE_CURRENT" name="PAGE_CURRENT" value="1" />
+
+<div class="card data-table data-table-init">
+    <div class="card-header">
+        <div class="data-table-title"><?= $log ?? '' ?></div>
+        <div class="data-table-actions">
+            <a id="btnClearLog" class="link icon-only">
+                <i class="icon f7-icons">trash</i>
+            </a>
+        </div>
+    </div>
+
+    <table>
+        <thead class="tableHeader">
+            <tr>
+                <th class="checkbox-cell">
+                    <label class="checkbox">
+                        <input type="checkbox"><i class="icon-checkbox"></i>
+                    </label>
+                </th>
+                <th class="label-cell" data-detected-type="string">
+                    <i class="fa fa-font" aria-hidden="true"></i> LEVEL
+                </th>
+                <th class="label-cell" data-detected-type="string">
+                    <i class="fa fa-font" aria-hidden="true"></i> CHANNEL
+                </th>
+                <th class="label-cell" data-detected-type="message">
+                    <i class="fa fa-font" aria-hidden="true"></i> MESSAGE
+                </th>
+                <th class="label-cell" data-detected-type="boolean">
+                    <i class="fa fa-toggle-on" aria-hidden="true"></i> EXTRA
+                </th>
+                <th class="label-cell" data-detected-type="boolean">
+                    <i class="fa fa-toggle-on" aria-hidden="true"></i> CONTEXT
+                </th>
+                <th class="label-cell" data-detected-type="datetime">
+                    <i class="fa fa-calendar" aria-hidden="true"></i> TIMESTAMP
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody class="tableBody">
+        </tbody>
+    </table>
+
+    <div class="data-table-footer">
+        <div class="data-table-rows-select">Per page:
+            <div class="input input-dropdown">
+                <select id="LIMIT" name="LIMIT">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+        <div class="data-table-pagination">
+            <span ID="RECORDS_DISPLAYED" class="data-table-pagination-label">...</span>
+            <div class="pagination-wrapper">
+                <a ID="btnPagePrevious" href="#" class="link disabled">
+                    <i class="icon icon-prev color-gray"></i>
+                </a>
+                <a ID="btnPageNext" href="#" class="link">
+                    <i class="icon icon-next color-gray"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>

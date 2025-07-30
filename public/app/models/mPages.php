@@ -4,8 +4,8 @@ namespace app\models;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Model mPages - Represents a pages model extending the \OhCrud\DB class.
-class mPages extends \OhCrud\DB {
+// Model mPages - Represents a pages model extending the \ohCRUD\DB class.
+class mPages extends \ohCRUD\DB {
 
     function __construct() {
         parent::__construct();
@@ -43,7 +43,7 @@ class mPages extends \OhCrud\DB {
                             `PERMISSIONS` int(10) NOT NULL DEFAULT '-1',
                             `THEME` varchar(32) NOT NULL DEFAULT '',
                             `LAYOUT` varchar(32) NOT NULL DEFAULT '',
-                            `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                            `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                             PRIMARY KEY (`ID`),
                             UNIQUE KEY `idx_URL` (`URL`) USING BTREE,
                             KEY `idx_GROUP` (`GROUP`) USING BTREE,
@@ -55,7 +55,7 @@ class mPages extends \OhCrud\DB {
             }
 
             // If the 'Pages' table was created and the operation was successful, seed the table with a default page.
-            if ($tableExists == false && $this->success == true) {
+            if ($tableExists === false && $this->success === true) {
                 $this->create(
                     'Pages',
                     [

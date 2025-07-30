@@ -4,8 +4,8 @@ namespace app\models;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Model mFiles - Represents a file model extending the \OhCrud\DB class.
-class mFiles extends \OhCrud\DB {
+// Model mFiles - Represents a file model extending the \ohCRUD\DB class.
+class mFiles extends \ohCRUD\DB {
 
     // The permissions associated with the model.
     public $permissions = [
@@ -25,7 +25,6 @@ class mFiles extends \OhCrud\DB {
                     $sql = "CREATE TABLE IF NOT EXISTS `Files` (
                             `ID`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
                             `NAME`	TEXT,
-                            `TITLE`	TEXT,
                             `PATH`	TEXT,
                             `SIZE`	INTEGER,
                             `TYPE`	TEXT,
@@ -40,15 +39,13 @@ class mFiles extends \OhCrud\DB {
                     $tableExists = $this->run("SELECT * FROM information_schema.tables WHERE `table_schema`='" . $this->config["MYSQL_DB"] . "' AND `table_name`= 'Files';")->first() ?? false;
                     $sql = "CREATE TABLE IF NOT EXISTS `Files` (
                             `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
-                            `NAME` varchar(256) NOT NULL DEFAULT '',
-                            `TITLE` varchar(256) NOT NULL DEFAULT '',
+                            `NAME` varchar(128) NOT NULL DEFAULT '',
                             `PATH` varchar(256) NOT NULL DEFAULT '',
                             `SIZE` bigint(20) unsigned NOT NULL DEFAULT '0',
                             `TYPE` varchar(32) NOT NULL DEFAULT '',
                             `IP` varchar(32) NOT NULL DEFAULT '',
-                            `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                            `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                             PRIMARY KEY (`ID`),
-                            UNIQUE KEY `idx_NAME` (`NAME`) USING BTREE,
                             UNIQUE KEY `idx_PATH` (`PATH`) USING BTREE
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                     ";
@@ -57,7 +54,7 @@ class mFiles extends \OhCrud\DB {
             }
 
             // Seed the 'Files' table if it doesn't exist and if the database setup was successful.
-            if ($tableExists == false && $this->success == true) {
+            if ($tableExists === false && $this->success === true) {
                 $this->create(
                     'Files',
                     [

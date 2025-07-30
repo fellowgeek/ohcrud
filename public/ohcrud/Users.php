@@ -1,13 +1,13 @@
 <?php
-namespace OhCrud;
+namespace ohCRUD;
 
 use OTPHP\TOTP;
 
 // Prevent direct access to this class
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Class Users - Users class for OhCrud, this class handles creation and authentication of the OhCrud framework users.
-class Users extends \OhCrud\DB {
+// Class Users - Users class for ohCRUD, this class handles creation and authentication of the ohCRUD framework users.
+class Users extends \ohCRUD\DB {
 
     function __construct() {
         parent::__construct();
@@ -31,8 +31,6 @@ class Users extends \OhCrud\DB {
                             `GROUP`	INTEGER,
                             `PERMISSIONS` INTEGER,
                             `TOKEN` TEXT,
-                            `ACTIVATION_HASH` TEXT,
-                            `RESET_HASH` TEXT,
                             `TOTP_SECRET` TEXT,
                             `STATUS` INTEGER,
                             `TOTP` INTEGER
@@ -53,10 +51,8 @@ class Users extends \OhCrud\DB {
                         `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
                         `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
                         `TOKEN` varchar(256) NOT NULL DEFAULT '',
-                        `ACTIVATION_HASH` varchar(128) NOT NULL DEFAULT '',
-                        `RESET_HASH` varchar(128) NOT NULL DEFAULT '',
                         `TOTP_SECRET` varchar(256) NOT NULL DEFAULT '',
-                        `STATUS` int(10) unsigned NOT NULL DEFAULT '0',
+                        `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                         `TOTP` int(10) unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`ID`),
                         UNIQUE KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
@@ -74,7 +70,7 @@ class Users extends \OhCrud\DB {
             }
 
             // Create a default admin user if the Users table was just created
-            if ($tableExists == false && $this->success == true) {
+            if ($tableExists === false && $this->success === true) {
                 $this->create('Users', [
                     'USERNAME' => 'admin',
                     'EMAIL' => 'admin@example.com',
@@ -96,8 +92,8 @@ class Users extends \OhCrud\DB {
         // create hash from password
         if (isset($data['PASSWORD']) == true) {
             $data['PASSWORD'] = password_hash(
-                $data['PASSWORD'], PASSWORD_BCRYPT, [
-                    'cost' => 10
+                $data['PASSWORD'] . __OHCRUD_SECRET__, PASSWORD_BCRYPT, [
+                    'cost' => 14
                 ]
             );
         }
@@ -116,8 +112,8 @@ class Users extends \OhCrud\DB {
         // create hash from password
         if (isset($data['PASSWORD']) == true) {
             $data['PASSWORD'] = password_hash(
-                $data['PASSWORD'], PASSWORD_BCRYPT, [
-                    'cost' => 10
+                $data['PASSWORD'] . __OHCRUD_SECRET__, PASSWORD_BCRYPT, [
+                    'cost' => 14
                 ]
             );
         }
@@ -126,24 +122,58 @@ class Users extends \OhCrud\DB {
     }
 
     // Enable or re-generate TOTP for a user
-    public function enableTOTP($id) {
+    public function enableTOTP($id, $activateTOTP = true) {
         $user = $this->read(
             'Users',
-            'ID = :ID AND STATUS = :STATUS',
+            'ID = :ID',
             [
-                ':ID' => $id,
-                ':STATUS' => $this::ACTIVE
+                ':ID' => $id
             ]
         )->first();
 
         if ($user != false) {
             $totp = TOTP::generate();
 
+            $data = [
+                'TOTP_SECRET' => $this->encryptText($totp->getSecret())
+            ];
+
+            if ($activateTOTP == true) {
+                $data['TOTP'] = $this::ACTIVE;
+            }
+
+            $output = $this->Update(
+                'Users',
+                $data,
+                'ID = :ID',
+                [
+                    ':ID' => $id
+                ]
+            )->success;
+
+            return $output;
+        } else {
+            return false;
+        }
+    }
+
+    // Enable or re-generate TOKEN for a user
+    public function enableTOKEN($id) {
+        $user = $this->read(
+            'Users',
+            'ID = :ID',
+            [
+                ':ID' => $id
+            ]
+        )->first();
+
+        if ($user != false) {
+            $token = $this->encryptText($this->generateToken($user->USERNAME));
+
             $output = $this->Update(
                 'Users',
                 [
-                    'TOTP' => $this::ACTIVE,
-                    'TOTP_SECRET' => $this->encryptText($totp->getSecret())
+                    'TOKEN' => $token
                 ],
                 'ID = :ID',
                 [
@@ -169,8 +199,8 @@ class Users extends \OhCrud\DB {
                 $APIToken = substr($token, 40, 40);
             } else {
                 $this->log('warning', 'Invalid token length', [$token]);
-                // Delay to mitigate brute force attacks
-                sleep(1);
+                // Delay to mitigate brute force and timing attacks
+                usleep(rand(500000, 1000000));
                 return false;
             }
 
@@ -185,15 +215,15 @@ class Users extends \OhCrud\DB {
             )->first();
 
             // Return if user was not found
-            if ($user == false) {
+            if ($user === false) {
                 $this->log('warning', 'Invalid token hash', [$token]);
-                // Delay to mitigate brute force attacks
-                sleep(1);
+                // Delay to mitigate brute force and timing attacks
+                usleep(rand(500000, 1000000));
                 return false;
             }
 
             // Decrypt and compare user token
-            if ($this->decryptText($user->TOKEN) == $APIToken) {
+            if ($this->decryptText($user->TOKEN) === $APIToken) {
                 $user->loggedIn = true;
                 // Remove sensitive information
                 unset($user->PASSWORD);
@@ -207,17 +237,17 @@ class Users extends \OhCrud\DB {
                 $this->setSession('User', $user);
             } else {
                 $this->log('warning', 'Invalid token', [$token]);
-                // Delay to mitigate brute force attacks
-                sleep(1);
+                // Delay to mitigate brute force and timing attacks
+                usleep(rand(500000, 1000000));
                 return false;
             }
 
             return $user;
         }
 
-        // Delay to mitigate brute force attacks, only in production mode
+        // Delay to mitigate brute force and timing attacks, only in production mode
         if(__OHCRUD_DEBUG_MODE__ == false) {
-            sleep(1);
+            usleep(rand(500000, 1000000));
         }
 
         // Get a user based on username and status
@@ -230,9 +260,9 @@ class Users extends \OhCrud\DB {
             ]
         )->first();
 
-        if ($user != false) {
+        if ($user !== false) {
             // Verify the user's password against the stored hash
-            $user->loggedIn = password_verify($password, $user->PASSWORD);
+            $user->loggedIn = password_verify($password . __OHCRUD_SECRET__, $user->PASSWORD);
             if ($user->loggedIn == false) {
                 $this->log('warning', 'Login attempt was not successful', [$username]);
                 return false;
@@ -247,13 +277,13 @@ class Users extends \OhCrud\DB {
             unset($user->RESET_HASH);
 
             // Check if the user has TOTP enabled
-            if ($user->TOTP == $this::ACTIVE) {
+            if ((int) $user->TOTP == $this::ACTIVE) {
                 $user->TOTPVerified = false;
                 $this->setSession('tempUser', $user);
             }
 
             // Create the user session and log in the user if TOTP is not enabled for this user
-            if ($user->TOTP == $this::INACTIVE) {
+            if ((int) $user->TOTP == $this::INACTIVE) {
                 $this->setSession('User', $user);
             }
         }
@@ -264,9 +294,9 @@ class Users extends \OhCrud\DB {
     // Handle TOTP authentication for a given user ID
     public function verify($id, $TOTP_CODE) {
 
-        // Delay to mitigate brute force attacks, only in production mode
+        // Delay to mitigate brute force and timing attacks, only in production mode
         if(__OHCRUD_DEBUG_MODE__ == false) {
-            sleep(1);
+            usleep(rand(500000, 1000000));
         }
 
         // Get the user
@@ -279,13 +309,14 @@ class Users extends \OhCrud\DB {
             ]
         )->first();
 
-        if ($user == false) {
+        if ($user === false) {
             $this->log('warning', 'TOTP verification failed, User does not exist.', [$id]);
             return false;
         }
 
         // Create a TOTP object from the secret and verify the TOTP code
         $totp = TOTP::createFromSecret($this->decryptText($user->TOTP_SECRET));
+
         if ($totp->verify($TOTP_CODE) == false) {
             $this->log('warning', 'TOTP verification failed.', [$user->USERNAME]);
             return false;
@@ -302,138 +333,6 @@ class Users extends \OhCrud\DB {
         // Create the user session and log in the user
         $this->setSession('User', $user);
         $this->unsetSession('tempUser');
-
-        return $user;
-    }
-
-    // Handle User activation
-    public function activate($username, $activationHash) {
-
-        // Get the user
-        $user = $this->read(
-            'Users',
-            'USERNAME = :USERNAME AND ACTIVATION_HASH = :ACTIVATION_HASH AND STATUS = :STATUS',
-            [
-                ':USERNAME' => $username,
-                ':ACTIVATION_HASH' => $activationHash,
-                ':STATUS' => $this::INACTIVE
-            ],
-        )->first();
-
-        if ($user == false) {
-            $this->log('warning', 'Activation attempt failed.', [$username, $activationHash]);
-            return false;
-        }
-
-        // Remove sensitive information
-        unset($user->PASSWORD);
-        unset($user->HASH);
-        unset($user->TOKEN);
-        unset($user->TOTP_SECRET);
-        unset($user->ACTIVATION_HASH);
-        unset($user->RESET_HASH);
-
-        // Activate the user and discard the activation hash
-        $this->update(
-            'Users',
-            [
-                'STATUS' => $this::ACTIVE,
-                'ACTIVATION_HASH' => ''
-            ],
-            'ID = :ID',
-            [
-                ':ID' => $user->ID
-            ]
-        );
-
-        return $user;
-    }
-
-    // Handle creating a reset hash for when user forgot their password
-    public function forgot($username) {
-
-        // Get the user
-        $user = $this->read(
-            'Users',
-            'USERNAME = :USERNAME AND STATUS = :STATUS',
-            [
-                ':USERNAME' => $username,
-                ':STATUS' => $this::ACTIVE
-            ]
-        )->first();
-
-        if ($user == false) {
-            $this->log('warning', 'Forgot password attempt failed.', [$username]);
-            return false;
-        }
-
-        // Generate the password reset hash for the user
-        $resetHash = hash('sha1', bin2hex(random_bytes(32)));
-
-        // Remove sensitive information
-        unset($user->PASSWORD);
-        unset($user->HASH);
-        unset($user->TOKEN);
-        unset($user->TOTP_SECRET);
-        unset($user->ACTIVATION_HASH);
-
-        // Include the RESET_HASH hash in the response
-        $user->RESET_HASH = $resetHash;
-
-        // Update the user record
-        $this->update(
-            'Users',
-            [
-                'STATUS' => $this::ACTIVE,
-                'RESET_HASH' => $resetHash
-            ],
-            'ID = :ID',
-            [
-                ':ID' => $user->ID
-            ]
-        );
-
-        return $user;
-    }
-
-    // Handle resetting password
-    public function reset($resetHash, $newPassword) {
-
-        // Get the user
-        $user = $this->read(
-            'Users',
-            'RESET_HASH = :RESET_HASH AND STATUS = :STATUS',
-            [
-                ':RESET_HASH' => $resetHash,
-                ':STATUS' => $this::ACTIVE
-            ]
-        )->first();
-
-        if ($user == false) {
-            $this->log('warning', 'Reset password attempt failed.', [$resetHash]);
-            return false;
-        }
-
-        // Remove sensitive information
-        unset($user->PASSWORD);
-        unset($user->HASH);
-        unset($user->TOKEN);
-        unset($user->TOTP_SECRET);
-        unset($user->ACTIVATION_HASH);
-        unset($user->RESET_HASH);
-
-        // Update the user record
-        $this->update(
-            'Users',
-            [
-                'PASSWORD' => $newPassword,
-                'RESET_HASH' => ''
-            ],
-            'ID = :ID',
-            [
-                ':ID' => $user->ID
-            ]
-        );
 
         return $user;
     }

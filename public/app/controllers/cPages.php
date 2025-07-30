@@ -18,17 +18,24 @@ class cPages extends \app\models\mPages {
 
     // Method to save or edit a page.
     public function save($request) {
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
+            $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload contains the necessary data.
-        if (isset($request->payload) == false || empty($request->payload->URL) == true || empty($request->payload->TITLE) == true || empty($request->payload->TEXT) == true)
+        if (isset($request->payload) == false ||
+            empty($request->payload->URL) == true ||
+            empty($request->payload->TITLE) == true ||
+            empty($request->payload->TEXT) == true)
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
-            $this->error('You can\'t edit this page.');
+        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+            $this->error('You can\'t edit a hard coded page.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -52,18 +59,18 @@ class cPages extends \app\models\mPages {
         // Check if the page exists in the database.
         $PageExists = $this->run(
             "SELECT
-                COUNT(*) AS `PageExists`
+                `ID`
             FROM
-                Pages
+                `Pages`
             WHERE
-                URL = :URL
+                `URL` = :URL
             ",
             [
                 ':URL' => $request->payload->URL
             ]
-        )->first()->PageExists;
+        )->first();
 
-        if ($PageExists == false) {
+        if ($PageExists === false) {
             // Create a new record in the 'Pages' table.
             $this->create('Pages', [
                 'URL' => $request->payload->URL,
@@ -91,23 +98,31 @@ class cPages extends \app\models\mPages {
             );
         }
 
+        // Invalidate the cache
+        $cacheKey = 'cCMS:' . $request->payload->URL;
+        $this->unsetCache($cacheKey);
+
         $this->output();
     }
 
     // Method to restore or delete a page.
     public function restoreDeletePage($request) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
+            $this->error('Missing or invalid CSRF token.');
 
         // Check if the request payload is complete.
         if (isset($request->payload) == false || empty($request->payload->URL) == true)
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
-            $this->error('You can\'t delete hard coded page.');
+        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+            $this->error('You can\'t delete a hard coded page.');
 
-        if ($this->success == false) {
+        if ($this->success === false) {
             $this->output();
             return $this;
         }
@@ -117,20 +132,20 @@ class cPages extends \app\models\mPages {
             "SELECT
                 *
             FROM
-                Pages
+                `Pages`
             WHERE
-                URL = :URL
+                `URL` = :URL
             ",
             [
                 ':URL' => $request->payload->URL
             ]
         )->first();
 
-        if ($page != false) {
+        if ($page !== false) {
             // Update the record: toggle the STATUS between ACTIVE and INACTIVE.
             $this->update('Pages',
                 [
-                    'STATUS' => ($page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
+                    'STATUS' => ((int) $page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
                 ],
                 'URL = :URL',
                 [
@@ -138,6 +153,10 @@ class cPages extends \app\models\mPages {
                 ]
             );
         }
+
+        // Invalidate the cache
+        $cacheKey = 'cCMS:' . $request->payload->URL;
+        $this->unsetCache($cacheKey);
 
         $this->output();
     }

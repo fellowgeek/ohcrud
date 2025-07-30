@@ -8,6 +8,10 @@ define('__OHCRUD_ALLOWED_IPS__', [
     '127.0.0.1',
 ]);
 
+// Enable or disable filtering for allowed origins for Cross-Origin Resource Sharing (CORS).
+// Set to false if you want to allow all origins. ( not recommended )
+define('___OHCRUD_ALLOWED_ORIGINS_ENABLED__', false);
+
 // List of allowed remote origins for Cross-Origin Resource Sharing (CORS).
 define('__OHCRUD_ALLOWED_ORIGINS__', [
     'http://localhost',
@@ -16,6 +20,7 @@ define('__OHCRUD_ALLOWED_ORIGINS__', [
 
 // Define API endpoints and their corresponding controller classes.
 define('__OHCRUD_ENDPOINTS__', [
+    __OHCRUD_BASE_API_ROUTE__ . '/admin/' => 'app\controllers\cAdmin',
     __OHCRUD_BASE_API_ROUTE__ . '/themes/' => 'app\controllers\cThemes',
     __OHCRUD_BASE_API_ROUTE__ . '/pages/' => 'app\controllers\cPages',
     __OHCRUD_BASE_API_ROUTE__ . '/users/' => 'app\controllers\cUsers',

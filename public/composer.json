@@ -20,7 +20,7 @@
             ],
 	    "psr-4": {
             "app\\": "app/",
-            "OhCrud\\": "ohcrud/"
+            "ohCRUD\\": "ohcrud/"
         }
     }
 }

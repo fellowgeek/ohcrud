@@ -1,0 +1,97 @@
+<?php
+    // Sanitize the table name
+    $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['table'] ?? 'Users'));
+?>
+
+<input type="hidden" id="TABLE" name="TABLE" value="<?= $table ?>" />
+<input type="hidden" id="PAGE_CURRENT" name="PAGE_CURRENT" value="1" />
+<input type="FILE" id="FILE" multiple style="display: none;" />
+
+<div class="card data-table data-table-init">
+    <div class="card-header">
+        <div class="data-table-title"><?= $table ?? '' ?></div>
+        <div class="data-table-actions">
+<?php
+    switch ($table) {
+        case 'Users':
+            print <<<END
+            <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">
+                <i class="icon f7-icons">table_badge_more</i>
+            </a>
+            <a id="btnNewUserRecord" class="link icon-only">
+                <i class="icon f7-icons">plus</i>
+            </a>
+            END;
+            break;
+
+        case 'Files':
+            print <<<END
+            <a id="btnFileView" class="link icon-only" data-link="?action=files&page=1">
+                <i class="icon f7-icons">rectangle_grid_3x2_fill</i>
+            </a>
+            <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">
+                <i class="icon f7-icons">table_badge_more</i>
+            </a>
+            <a id="btnUploadFile" class="link icon-only">
+                <i class="icon f7-icons">arrow_up_square</i>
+            </a>
+            END;
+            break;
+
+        default:
+            print <<<END
+            <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">
+                <i class="icon f7-icons">table_badge_more</i>
+            </a>
+            <a id="btnNewRecord" class="link icon-only">
+                <i class="icon f7-icons">plus</i>
+            </a>
+            END;
+            break;
+    }
+?>
+        </div>
+    </div>
+
+    <table>
+        <thead class="tableHeader">
+        </thead>
+        <tbody class="tableBody">
+        </tbody>
+    </table>
+
+    <div class="data-table-footer">
+        <div class="data-table-rows-select">Per page:
+            <div class="input input-dropdown">
+                <select id="LIMIT" name="LIMIT">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+        <div class="data-table-pagination">
+            <span ID="RECORDS_DISPLAYED" class="data-table-pagination-label">...</span>
+            <div class="pagination-wrapper">
+                <a ID="btnPagePrevious" href="#" class="link disabled">
+                    <i class="icon icon-prev color-gray"></i>
+                </a>
+                <a ID="btnPageNext" href="#" class="link">
+                    <i class="icon icon-next color-gray"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Columns Toggle Popover -->
+<div class="popover columns-toggle-popover">
+    <div class="popover-angle"></div>
+    <div class="popover-inner list list-strong-ios list-dividers-ios inset-ios">
+        <ul id="listColumnsToggle">
+        </ul>
+    </div>
+</div>

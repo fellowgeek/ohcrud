@@ -1,0 +1,16 @@
+#btnCMSEdit {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    border-radius: 6px;
+    border: 2px solid #999;
+    background-color: whitesmoke;
+    background-image: url('/global/images/pencil.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    text-align: center;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    z-index: 9999;
+}

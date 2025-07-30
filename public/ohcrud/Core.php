@@ -1,5 +1,5 @@
 <?php
-namespace OhCrud;
+namespace ohCRUD;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -8,7 +8,7 @@ use stdClass;
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
-// Class Core - core operations class for OhCrud, all other OhCrud classed inherit from this class
+// Class Core - core operations class for ohCRUD, all other ohCRUD classed inherit from this class
 class Core {
 
     const ACTIVE = 1;
@@ -26,6 +26,7 @@ class Core {
     public $outputHeadersSent = false;
     public $outputStatusCode = 200;
     public $runtime;
+    public $version = '2.5';
 
     // Set the output type for the response.
     public function setOutputType($outputType) {
@@ -125,7 +126,7 @@ class Core {
             print($output);
         }
 
-        if (PHP_SAPI == 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
+        if (PHP_SAPI === 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
             $this->debug();
         }
 
@@ -140,8 +141,21 @@ class Core {
         if (headers_sent() == false && $this->outputHeadersSent == false) {
             $this->outputHeadersSent = true;
             http_response_code($this->outputStatusCode);
+            // Disable broswer side caching
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Cache-Control: post-check=0, pre-check=0', false);
+            header('Pragma: no-cache');
+            // Set X-Frame-Options to prevent clickjacking
+            header('X-Frame-Options: ' . __X_FRAME_OPTIONS__ ?? 'SAMEORIGIN');
+            // Set X-Content-Type-Options to prevent MIME type sniffing
+            header('X-Content-Type-Options: ' . __X_CONTENT_TYPE_OPTIONS__ ?? 'nosniff');
             foreach ($this->outputHeaders as $outputHeader) {
                 header($outputHeader);
+            }
+            // Remove X-Powered-By header for security reasons
+            if (ini_get('expose_php') == true) {
+                ini_set('expose_php', 'Off');
+                header_remove("X-Powered-By");
             }
         }
         return $this;
@@ -164,17 +178,18 @@ class Core {
         }
 
         $hash = md5($key) . '.cache';
+        $path = __OHCRUD_CACHE_PATH__ . $hash;
 
-        if (file_exists(__OHCRUD_CACHE_PATH__ . $hash) == false) {
+        if (file_exists($path) == false) {
             return false;
         }
 
-        $age = time() - filemtime(__OHCRUD_CACHE_PATH__ . $hash);
+        $age = time() - filemtime($path);
         if ($age >= $duration) {
             return false;
         }
 
-        $data = unserialize(file_get_contents(__OHCRUD_CACHE_PATH__ . $hash));
+        $data = @unserialize(file_get_contents($path), ['allowed_classes' => false]);
         return $data;
     }
 
@@ -186,16 +201,20 @@ class Core {
         }
 
         $hash = md5($key) . '.cache';
-        $data = serialize($data);
-        return file_put_contents(__OHCRUD_CACHE_PATH__ . $hash, $data);
+        $path = __OHCRUD_CACHE_PATH__ . $hash;
+
+        $serialized = serialize($data);
+        return file_put_contents($path, $serialized, LOCK_EX);
     }
 
     // Remove data from cache.
     public function unsetCache($key) {
 
         $hash = md5($key) . '.cache';
-        if ( \file_exists(__OHCRUD_CACHE_PATH__ . $hash) == true) {
-            \unlink(__OHCRUD_CACHE_PATH__ . $hash);
+        $path = __OHCRUD_CACHE_PATH__ . $hash;
+
+        if (file_exists($path) == true) {
+            unlink($path);
             return true;
         }
         return false;
@@ -223,15 +242,15 @@ class Core {
     }
 
     // Log messages using Monolog if logging is enabled.
-    public function log($level, $message, array $context = array()) {
+    public function log($level, $message, array $context = array(), $channel = 'system', $logFile = 'app.log') {
 
         if (__OHCRUD_LOG_ENABLED__ == false) {
             return $this;
         }
 
-        $logger = new Logger('OHCRUD');
-        $stream = new StreamHandler(__OHCRUD_LOG_FILE__, Logger::DEBUG);
-        $stream->setFormatter(new \Monolog\Formatter\LineFormatter("[%datetime%] %channel%.%level_name%:\n%message%\n%context%\n----------------------------------------\n", "Y-m-d H:i:s"));
+        $logger = new Logger($channel);
+        $stream = new StreamHandler(__OHCRUD_LOG_PATH__ . $logFile, Logger::DEBUG);
+        $stream->setFormatter(new \Monolog\Formatter\JsonFormatter());
         $logger->pushHandler($stream);
 
         try {
@@ -287,7 +306,7 @@ class Core {
 
     // Custom exception handler for uncaught exceptions
     public function coreExceptionHandler($exception) {
-        $this->log('error', $exception->getMessage(), debug_backtrace());
+        $this->log('error', $exception->getMessage(), debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
     }
 
     // Shutdown function to handle fatal errors
@@ -299,8 +318,14 @@ class Core {
     }
 
     // Run a CLI route in the background
-    public function background($command) {
-        shell_exec('php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &');
+    public function background($command, $wait = 0) {
+        if ($wait > 0) {
+            pclose(
+                popen('sleep ' . $wait . ' && php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &', 'r')
+            );
+        } else {
+            exec('php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &');
+        }
     }
 
     // Output messages in the console (for CLI environment).
@@ -343,23 +368,19 @@ class Core {
         // Shoud debug panel hide the line number?
         $GLOBALS['debugShowLineNo'] = $showLineNumber;
 
-        if (isset($expression) == true) {
-            if (is_object($expression) == true) {
-                $clone = clone $expression;
-                if (isset($clone->config) == true) {
-                    $clone->config = 'Redacted from debug.';
-                }
-            } else {
-                $clone = $expression;
-            }
-            r($clone);
-        } else {
-            $clone = clone $this;
-            if (isset($clone->config) == true) {
+        if (isset($expression) == false) {
+            $expression = $this;
+        }
+
+        if (is_object($expression) == true) {
+            $clone = clone $expression;
+            if (property_exists($clone, 'config') == true) {
                 $clone->config = 'Redacted from debug.';
             }
-            r($clone);
+        } else {
+            $clone = $expression;
         }
+        r($clone);
 
         return $this;
     }

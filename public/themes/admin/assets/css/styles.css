@@ -1,0 +1,331 @@
+/*
+  Global Styles
+*/
+
+/* Fix for the iOS list dividers */
+.ios .list-dividers-ios .item-inner::after {
+    width: calc(100% - 15px);
+}
+
+.ios .data-table-pagination a.link,
+.ios .data-table-rows-select a.link {
+    width: 38px !important;
+    height: 38px !important;
+}
+
+.dialog-text {
+    text-align: left !important;
+}
+
+/* simplemde Styles */
+.editor-toolbar {
+    border: none !important;
+}
+
+.CodeMirror {
+    border: none !important;
+    font-family: 'Menlo', monospace;
+    font-size: 14px;
+}
+
+.editor-statusbar {
+    padding: 8px 15px;
+    text-transform: lowercase;
+}
+
+.editor-statusbar span {
+    padding: 1px 4px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.editor-toolbar {
+    opacity: 1;
+}
+
+.editor-toolbar a:hover {
+    border: 1px solid transparent !important;
+    background-color: var(--f7-page-bg-color) !important;
+}
+
+/* Helper Classes */
+.outline {
+    outline: 1px dashed #f0f;
+    background-color: rgba(255, 0, 255, 0.1);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.margin-top-15px {
+    margin-top: 15px !important;
+}
+
+.margin-top-10rem {
+    margin-top: 10rem !important;
+}
+
+.margin-bottom-15px {
+    margin-bottom: 15px !important;
+}
+
+.font-small {
+    font-size: 12px !important;
+}
+
+.font-medium {
+    font-size: 14px !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.monospace {
+    font-family: monospace, 'Courier New', Courier;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/*
+User Interface
+*/
+.page-current {
+    background-image: url('../img/patterns/noisy_grid_2.png');
+}
+
+.container {
+    height: 100%;
+    overflow: scroll;
+}
+
+.ohcrud-loader {
+    width: 35px;
+}
+
+.CodeMirror {
+    height: max(calc(100vh - 350px), 500px);
+}
+
+.CodeMirror-cursor {
+    border-left: 2px solid #000;
+}
+
+.card-login,
+.card-totp {
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(calc(100% - 32px), 500px);
+}
+
+input.formRecordInput,
+input.formUserRecordInput {
+    padding-left: 5px !important;
+}
+
+input[readonly="true"],
+input[readonly] {
+    background-color: var(--f7-page-bg-color) !important;
+    opacity: 0.8 !important;
+    color: #666 !important;
+}
+
+.input-code {
+    font-weight: bold;
+    letter-spacing: 10px;
+}
+
+.tableHeader th,
+.tableBody td {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tableBody td[data-detected-type="datetime"],
+.tableBody td[data-detected-type="date"],
+.tableBody td[data-detected-type="time"],
+.tableBody td[data-detected-type="timestamp"] {
+    font-family: monospace, 'Courier New', Courier;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tableBody td[data-detected-type="message"] {
+    max-width: 500px;
+}
+
+.data-table-row-selected {
+    background-color: var(--f7-button-tonal-bg-color) !important;
+}
+
+.chip-label {
+    font-size: 12px;
+}
+
+#formCreateRecord .item-media,
+#formEditRecord .item-media {
+    color: var(--f7-table-head-text-color);
+}
+
+.ios .data-table-actions a.link.icon-only {
+    width: unset;
+    height: unset;
+}
+
+.data-table td.actions-cell,
+.data-table th.actions-cell {
+    padding-right: 20px;
+}
+
+.pagination-wrapper {
+    margin-right: 10px;
+}
+
+.block-icon {
+    position: absolute;
+    width: 32px;
+    z-index: 999;
+    overflow: visible;
+}
+
+.block-icon-1 {
+    top: -5px;
+    right: 20px;
+}
+
+.block-icon-2 {
+    top: -5px;
+    right: 55px;
+}
+
+.totp-qr-code {
+    margin: auto;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    padding: 10px;
+    max-width: 200px;
+    border-radius: 12px;
+    outline: 1px solid #000;
+    background-color: whitesmoke;
+}
+
+.file-card-header {
+    height: 180px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.file-card-chip {
+    color: whitesmoke;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 0px 5px 0px 5px;
+    border-radius: 5px !important;
+    height: 24px;
+}
+
+.file-card-header-background {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+.file-icon {
+    position: absolute;
+    font-size: 110px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: transparent;
+    color: white;
+}
+
+.file-card {
+    background-color: var(--f7-page-bg-color) !important;
+}
+
+/*
+Dark Mode
+*/
+.dark .page-current {
+    background-image: url('../img/patterns/cartographer.png');
+}
+
+.dark input[readonly="true"],
+.dark input[readonly] {
+    background-color: #333 !important;
+    opacity: 0.8 !important;
+    color: #666 !important;
+}
+
+.dark input:autofill,
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+    color: var(--f7-input-text-color) !important;
+    -webkit-text-fill-color: var(--f7-input-text-color) !important;
+}
+
+.dark .CodeMirror {
+    background: unset !important;
+    color: var(--f7-input-text-color);
+}
+
+.dark .editor-toolbar a {
+    color: var(--f7-table-head-text-color) !important;
+}
+
+.dark .editor-toolbar i.separator {
+    border-left: 1px solid var(--f7-table-head-text-color);
+    border-right: 1px solid #333;
+}
+
+.editor-toolbar.disabled-for-preview a {
+    color: var(--f7-table-head-text-color) !important;
+    background-color: var(--f7-list-strong-bg-color) !important;
+}
+
+.editor-toolbar.disabled-for-preview a:hover,
+.editor-toolbar.disabled-for-preview a.active {
+    border: 1px solid transparent !important;
+    background-color: var(--f7-page-bg-color) !important
+}
+
+.dark .editor-toolbar.disabled-for-preview {
+    background-color: var(--f7-list-strong-bg-color) !important;
+
+}
+
+.dark .editor-preview,
+.editor-preview-side {
+    background-color: #333 !important;
+}
+
+.dark .CodeMirror-cursor {
+    border-left: 2px solid #fff;
+}
+
+.dark .CodeMirror-selected {
+    background: #587ca4 !important;
+}
+
+.dark .totp-qr-code {
+    opacity: 0.8;
+}
+
+/*
+Responsive
+*/
+@media (min-width:1920px) {
+    .xxlarge-grid-cols-6 {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (min-width:2560px) {
+    .xxxlarge-grid-cols-7 {
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    }
+}

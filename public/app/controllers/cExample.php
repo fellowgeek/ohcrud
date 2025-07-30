@@ -1,11 +1,13 @@
 <?php
 namespace app\controllers;
 
+use OTPHP\TOTP;
+
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cExample - a sample controller provided by OhCRUD framework with a public and protected endpoint
-class cExample extends \OhCrud\DB {
+class cExample extends \ohCRUD\DB {
 
     // Define permissions for the controller.
     public $permissions = [
@@ -18,7 +20,7 @@ class cExample extends \OhCrud\DB {
     // This function returns information about the current user of the API
     public function whoami($request) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         $this->data = $_SESSION['User']->USERNAME ?? 'unknown';
         $this->output();
@@ -28,7 +30,7 @@ class cExample extends \OhCrud\DB {
     public function protectedEndPoint($request) {
 
         // Set the output type to JSON.
-        $this->setOutputType(\OhCrud\Core::OUTPUT_JSON);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Perform a read operation on the 'Users' table with a specific condition.
         $this->update(
@@ -52,10 +54,13 @@ class cExample extends \OhCrud\DB {
     public function publicEndPoint($request) {
 
         // Set the output type to HTML.
-        $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_HTML);
 
-        // Debug the session data and display it.
-        $this->debug($_SESSION, 'Session:');
+        // Return a hello world message.
+        // $this->data = "Hello from ohCRUD!";
+
+        $response = $this->details('', true);
+        $this->debug($response);
 
         // Output the result.
         $this->output();

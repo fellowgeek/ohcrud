@@ -8,7 +8,7 @@ use HTMLPurifier;
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cCMS - CMS controller used by the OhCRUD framework
-class cCMS extends \OhCrud\DB {
+class cCMS extends \ohCRUD\DB {
 
     // The path of the requested content.
     public $path;
@@ -24,12 +24,14 @@ class cCMS extends \OhCrud\DB {
     public $cssFiles = [];
     // JavaScript files to include.
     public $jsFiles = [];
-    // Flag indicating whether the user is in edit mode.
-    public $editMode = false;
+    // Flag indicating whether the user is in action mode.
+    public $actionMode = false;
+    // Flag indicating whether should use cache.
+    public $useCache = true;
     // Flag indicating whether the user is logged in.
     public $loggedIn = false;
     // Request data.
-    public $request = [];
+    public object $request;
     // Instance for managing pages.
     public $pages;
     // Markdown processor.
@@ -40,6 +42,8 @@ class cCMS extends \OhCrud\DB {
     public $recursiveContentCounter = 0;
     // Max recursive content
     public $maxRecursiveContent = 7;
+    // Allowed CMS actions
+    public $allowedActions = ['edit', 'users', 'tables', 'files', 'logs', 'settings'];
 
     public function __construct($request) {
         parent::__construct();
@@ -50,9 +54,22 @@ class cCMS extends \OhCrud\DB {
 
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
-        // Set edit mode
-        if ($this->loggedIn == true && isset($this->request->action) == true && $this->request->action == 'edit') {
-            $this->editMode = true;
+
+        // Set action mode
+        if ($this->loggedIn == true && in_array($this->request->action ?? '', $this->allowedActions) == true) {
+            $this->actionMode = $this->request->action;
+            $this->useCache = false;
+        }
+
+        // Redirect to login page if not logged in
+        if ($this->loggedIn == false && in_array($this->request->action ?? '', $this->allowedActions) == true) {
+            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->request->action);
+            return;
+        }
+
+        // Disable cache for login pages
+        if ($GLOBALS['PATH'] === '/login/') {
+            $this->useCache = false;
         }
 
         // Setup markdown processor and HTML purifier
@@ -65,34 +82,32 @@ class cCMS extends \OhCrud\DB {
     // Handler for all incoming requests
     public function defaultPathHandler($path) {
 
-        $this->setOutputType(\OhCrud\Core::OUTPUT_HTML);
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_HTML);
 
         // Normalize path
         $this->path = \strtolower($path);
 
         // Get cached response (if any)
-        $cachedResponse = $this->getCache(__CLASS__ . __FUNCTION__ . $this->path, 3600);
-        if ($this->loggedIn == false && $cachedResponse != false) {
+        $cacheKey = 'cCMS:' . $this->path . http_build_query($_GET ?? '');
+        $cachedResponse = $this->getCache($cacheKey, 3600);
+        if ($this->useCache == true && $cachedResponse !== false) {
             $this->data = $cachedResponse;
+            // Inject the uncachable content
+            $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
+            $this->data = str_ireplace("{{CMS:UNCACHABLE-JS}}", $this->getUnCachableContentJS(), $this->data);
+            // Output the HTML page
             $this->output();
             return;
-        } else {
-            $this->unsetCache(__CLASS__ . __FUNCTION__ . $this->path);
         }
 
         // Include application javascript & css files
-        $this->includeCSSFile('/global-assets/css/styles.css', 2);
-        $this->includeJSFile('/global-assets/js/application.js', 1);
-
-        // Add assets for page editor if needed
-        if ($this->editMode == true) {
-            $this->includeCSSFile('/global-assets/css/simplemde.min.css', 1);
-            $this->includeJSFile('/global-assets/js/simplemde.min.js', 2);
-            $this->includeJSFile('/global-assets/js/editor.js', 3);
-        }
+        $this->includeCSSFile('/global/css/global.css', 2);
+        $this->includeJSFile('/global/js/global.js', 1);
 
         // Get content and set theme & layout from content
         $this->content = $this->getContent($this->path);
+
+        // Set theme and layout
         $this->theme = $this->content->theme;
         $this->layout = $this->content->layout;
 
@@ -103,10 +118,15 @@ class cCMS extends \OhCrud\DB {
         $this->processTheme();
 
         // Set cache
-        if ($this->editMode == false) {
-            $this->setCache(__CLASS__ . __FUNCTION__ . $this->path, $this->data);
+        if ($this->actionMode == false && $this->content->is404 == false) {
+            $this->setCache($cacheKey, $this->data);
         }
 
+        // Inject the uncachable content
+        $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
+        $this->data = str_ireplace("{{CMS:UNCACHABLE-JS}}", $this->getUnCachableContentJS(), $this->data);
+
+        // Output the HTML page
         $this->output();
     }
 
@@ -161,8 +181,14 @@ class cCMS extends \OhCrud\DB {
         $content = new \app\models\mContent;
 
         // Try getting page content from file
-        if (\file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
+        if (file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
             $content = $this->getContentFromFile($path);
+            // Handle special paths
+            if ($path === '/login/') {
+                // Set theme and layout
+                $content->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                $content->layout = 'login';
+            }
             return $content;
         }
 
@@ -176,11 +202,11 @@ class cCMS extends \OhCrud\DB {
         )->first();
 
         // Check if page does not exists
-        if ($page == false || $page->STATUS != \app\models\mPages::ACTIVE) {
+        if ($page === false || (int) $page->STATUS != $this::ACTIVE) {
             if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
-            if (($this->request->action ?? '') != 'edit') {
+            if (($this->request->action ?? '') !== 'edit') {
                 $content = $this->getContentFromFile($path, true);
             }
             if (($page->STATUS ?? -1) == $this::INACTIVE) {
@@ -197,15 +223,108 @@ class cCMS extends \OhCrud\DB {
         $content->layout = $page->LAYOUT;
 
         // Check if user has permission
-        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? $_SESSION['User']->PERMISSIONS : false;
-        if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions != false)) {
+        $page->PERMISSIONS = (int) $page->PERMISSIONS;
+        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
+        if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions !== false)) {
             $content->text = $page->TEXT;
             $content->html = $this->purifier->purify($this->parsedown->text($page->TEXT));
         } else {
-            $content->html = '<mark>Oh CRUD! You are not allowed to see this.</mark>';
+            $content->html = '<mark>ohCRUD! You are not allowed to see this.</mark>';
         }
 
         return $content;
+    }
+
+    // Load hard-coded content
+    private function getContentFromFile($path, $is404 = false) {
+        $content = new \app\models\mContent;
+        $content->type = \app\models\mContent::TYPE_FILE;
+        $content->title = ucwords(trim($path, '/'));
+        ob_start();
+        include(__SELF__ . 'app/views/cms/' . trim(($is404 ? '404' : $path), '/') . '.phtml');
+        $content->text = ob_get_clean();
+        $content->html = $content->text;
+
+        return $content;
+    }
+
+    // Process embedded content and components
+    private function processContent($content) {
+        // Skip processing when in action mode
+        if ($this->actionMode == true) {
+            return $content;
+        }
+
+        // Check for embedded content
+        $regex = '/(?<=\{{)(?!CMS:VERSION|CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $matches = [];
+        $matchCount = preg_match_all($regex, $content->html, $matches);
+
+        // If embedded content is found, process it
+        if ($matchCount > 0) {
+            $this->recursiveContentCounter++;
+            foreach ($matches[0] as $match) {
+                if ($this->path === '/' . $match . '/' || $this->recursiveContentCounter > $this->maxRecursiveContent) {
+                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>ohCRUD! Recursive content not allowed.</mark>', $content->html);
+                    continue;
+                }
+                $embeddedContent = $this->getContent('/' . $match . '/', false);
+                if ($embeddedContent->is404 == true) {
+                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>ohCRUD! Content not found.</mark>', $content->html);
+                    continue;
+                }
+                $content->html = str_ireplace('{{' . $match . '}}', $embeddedContent->html, $content->html);
+            }
+            // Check for resursive embedded content
+            $matchCount = $matchCount = $this->getContentPatternMatchCount($content->html);
+            if ($matchCount > 0) {
+                $content = $this->processContent($content);
+            }
+        }
+
+        // Check for components
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $matches = [];
+        $matchCount = preg_match_all($regex, $content->html, $matches);
+
+        // If component is found, process it
+        if ($matchCount > 0) {
+            $this->recursiveContentCounter++;
+            foreach ($matches[0] as $match) {
+                if ($this->recursiveContentCounter > $this->maxRecursiveContent) {
+                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>ohCRUD! Recursive content not allowed.</mark>', $content->html);
+                    continue;
+                }
+                $embeddedContent = $this->getComponent($match, false);
+                if ($embeddedContent->is404 == true) {
+                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>ohCRUD! Component not found.</mark>', $content->html);
+                    continue;
+                }
+                // Cleanup parsedown extra paragraphs (if exists)
+                $content->html = str_ireplace('<p>[[' . $match . ']]</p>', '[[' . $match . ']]', $content->html);
+                // Replace the component code with the component output
+                $content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $content->html);
+            }
+            // Check for resursive components
+            $matchCount = $this->getContentPatternMatchCount($content->html);
+            if ($matchCount > 0) {
+                $content = $this->processContent($content);
+            }
+        }
+
+        $this->recursiveContentCounter = 0;
+        return $content;
+    }
+
+    // This function is used to count the number of content patterns in a text
+    private function getContentPatternMatchCount($text) {
+        $matchCount = 0;
+        $regex = '/(?<=\{{)(?!CMS:VERSION|CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $matchCount += preg_match_all($regex, $text);
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $matchCount += preg_match_all($regex, $text);
+
+        return $matchCount;
     }
 
     // Load component(s)
@@ -220,7 +339,7 @@ class cCMS extends \OhCrud\DB {
         array_shift($componentParameters);
 
         // Check if the component exists
-        if (\file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
+        if (file_exists(__SELF__ . 'app/components/' . $componentClassFile . '.php') == true && class_exists($componentClass) == true) {
 
             $component = new $componentClass($this->request, $this->path);
             $component->output($componentParameters);
@@ -246,53 +365,85 @@ class cCMS extends \OhCrud\DB {
         return $content;
     }
 
-    // Load hard-coded content
-    private function getContentFromFile($path, $is404 = false, $isSystem = false) {
-        $content = new \app\models\mContent;
-        $content->type = \app\models\mContent::TYPE_FILE;
-        $content->title = ucwords(trim($path, '/'));
-        ob_start();
-        include(__SELF__ . 'app/views/cms/' . trim(($is404 ? '404' : $path), '/') . '.phtml');
-        $content->text = ob_get_clean();
-        $content->html = $content->text;
+    // Get uncachable content HTML
+    private function getUnCachableContentHTML() {
+        $output = '';
 
-        return $content;
-    }
-
-    // Get themes and layouts
-    private function getThemes() {
-        $scan = glob('themes/*/*.html');
-
-        $themes = [];
-        foreach ($scan as $layoutFile) {
-            $matches = [];
-            preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
-            if (isset($matches[1]) == true) {
-                $theme = $matches[1];
-            }
-
-            $matches = [];
-            preg_match('/themes\/(.*?)\/(.*?)\.html/', $layoutFile, $matches);
-            if (isset($matches[2]) == true) {
-                $layout = $matches[2];
-            }
-
-            $themes[$theme][] = $layout;
+        if ($this->loggedIn == true) {
+            $output.= '<div id="btnCMSEdit" data-url="' . $this->path . '?action=edit"></div>';
         }
 
-        return \base64_encode(json_encode($themes));
+        return $output;
+    }
+
+    // Get uncachable content JS
+    private function getUnCachableContentJS() {
+        $output = '';
+
+        // Include Javascript constants and assets
+        $output .= "<script>\n";
+        $output .= "const __SITE__ = '" . __SITE__ . "';\n";
+        $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
+        $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
+        $output .= "const __PATH__ = '" . $this->path . "';\n";
+        $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
+        $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
+        $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
+        $output .= "const __LOGGED_IN__ = " . ($this->loggedIn ? 'true' : 'false') . ";\n";
+        $output .= "document.querySelector('.cmsLogin').textContent = '" . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . "';\n";
+        $output .= "</script>\n";
+
+        return $output;
+    }
+
+    // Get footer
+    private function getFooter() {
+        $footer = '';
+        $footer .= '<p><a href="/" class="external">HOME</a>';
+        $footer .= ' | ';
+        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . __SITE__ ;
+        $footer .= ' | ';
+        $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION;
+        $footer .= ' | ';
+        $loginUrl = '/login/';
+        if ($this->path !== '/login/') {
+            $loginUrl .= '?redirect=' . urlencode($this->path);
+        }
+        $footer .= '<a href="' . $loginUrl . '" class="external cmsLogin"></a></p>';
+        return $footer;
     }
 
     // Process theme
     private function processTheme() {
 
         $output = '';
-        $javascriptGlobals = '';
 
         // Fallback to default theme ans layout if file does not exist
-        if (\file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false || $this->editMode == true) {
+        if (file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false) {
             $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
             $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
+        // Handle admin themes and layouts
+        if ($this->loggedIn == true && isset($this->request->action) == true) {
+            switch ($this->request->action) {
+                case 'edit':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'edit';
+                    break;
+                case 'files':
+                case 'tables':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'tables';
+                    break;
+                case 'logs':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'logs';
+                    break;
+                default:
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = __OHCRUD_CMS_ADMIN_LAYOUT__;
+            }
         }
 
         // Load theme and layout
@@ -315,118 +466,34 @@ class cCMS extends \OhCrud\DB {
         $output = $themeContent->html;
 
         // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
-        $editIconHTML = ($this->loggedIn && $this->content->type == \app\models\mContent::TYPE_DB) ? '<div id="ohcrud-editor-edit" data-url="' . $this->path . '?action=edit"></div>' . "\n" : '';
-
         $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
         $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
 
-        if ($this->editMode == true) {
-            $output = str_ireplace('{{CMS:CONTENT}}',       $this->getContentFromFile('cms', false, true)->html, $output);
-            $output = str_ireplace('{{CMS:THEMES}}',        $this->getThemes(), $output);
-            $output = str_ireplace('{{CMS:THEME}}',         $this->content->theme, $output);
-            $output = str_ireplace('{{CMS:LAYOUT}}',        $this->content->layout, $output);
-            $output = str_ireplace('{{CMS-IS-DELETED}}',    $this->content->isDeleted, $output);
+        if ($this->actionMode == true) {
+            $output = str_ireplace('{{CMS:CONTENT}}', $this->getContentFromFile($this->actionMode, false, true)->html, $output);
+            $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
+            $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
+            $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
         }
 
         // Replace OhCRUD templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:PATH}}", $this->path, $output);
         $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
-        $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . $editIconHTML, $output);
+        $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . "{{CMS:UNCACHABLE-HTML}}", $output);
         $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
 
-        // Include Javascript constants and assets
-        $javascriptGlobals .= "<script>\n";
-        $javascriptGlobals .= "const __SITE__ = '" . __SITE__ . "';\n";
-        $javascriptGlobals .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
-        $javascriptGlobals .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
-        $javascriptGlobals .= "const __PATH__ = '" . $this->path . "';\n";
-        $javascriptGlobals .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
-        $javascriptGlobals .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
-        $javascriptGlobals .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
-        $javascriptGlobals .= "</script>\n";
-        $output = str_ireplace("{{CMS:JAVASCRIPT}}", $javascriptGlobals . $this->content->javascript, $output);
-        // Include OhCRUD footer into the template
-        $output = str_ireplace("{{CMS:OHCRUD}}", '<p>Oh CRUD! by <a href="https://erfan.me">ERFAN REED</a> - Copyright &copy; ' . date('Y') . ' - All rights reserved. Page generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION . ' | <a href="/login/">LOGIN</a></p>', $output);
+        // Include javascript assets and uncachable javascript constants
+        $output = str_ireplace("{{CMS:JAVASCRIPT}}", "{{CMS:UNCACHABLE-JS}}" . $this->content->javascript, $output);
+
+        // Include ohCRUD footer into the template
+        $output = str_ireplace("{{CMS:OHCRUD}}", $this->getFooter(), $output);
+
+        // Version
+        $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
 
         $this->data = $output;
-    }
-
-    // Process embedded content and components
-    private function processContent($content) {
-        // Skip processing when in edit mode
-        if ($this->editMode == true) {
-            return $content;
-        }
-
-        // Check for embedded content
-        $regex = '/(?<=\{{)(?!CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
-        $matches = [];
-        $matchCount = preg_match_all($regex, $content->html, $matches);
-
-        // If embedded content is found, process it
-        if ($matchCount > 0) {
-            $this->recursiveContentCounter++;
-            foreach ($matches[0] as $match) {
-                if ($this->path == '/' . $match . '/' || $this->recursiveContentCounter > $this->maxRecursiveContent) {
-                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>Oh CRUD! Recursive content not allowed.</mark>', $content->html);
-                    continue;
-                }
-                $embeddedContent = $this->getContent('/' . $match . '/', false);
-                if ($embeddedContent->is404 == true) {
-                    $content->html = str_ireplace('{{' . $match . '}}', '<mark>Oh CRUD! Content not found.</mark>', $content->html);
-                    continue;
-                }
-                $content->html = str_ireplace('{{' . $match . '}}', $embeddedContent->html, $content->html);
-            }
-            // Check for resursive embedded content
-            $matchCount = $matchCount = $this->getContentPatternMatchCount($content->html);
-            if ($matchCount > 0) {
-                $content = $this->processContent($content);
-            }
-        }
-
-        // Check for components
-        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
-        $matches = [];
-        $matchCount = preg_match_all($regex, $content->html, $matches);
-
-        // If component is found, process it
-        if ($matchCount > 0) {
-            $this->recursiveContentCounter++;
-            foreach ($matches[0] as $match) {
-                if ($this->recursiveContentCounter > $this->maxRecursiveContent) {
-                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>Oh CRUD! Recursive content not allowed.</mark>', $content->html);
-                    continue;
-                }
-                $embeddedContent = $this->getComponent($match, false);
-                if ($embeddedContent->is404 == true) {
-                    $content->html = str_ireplace('[[' . $match . ']]', '<mark>Oh CRUD! Component not found.</mark>', $content->html);
-                    continue;
-                }
-                $content->html = str_ireplace('[[' . $match . ']]', $embeddedContent->html, $content->html);
-            }
-            // Check for resursive components
-            $matchCount = $this->getContentPatternMatchCount($content->html);
-            if ($matchCount > 0) {
-                $content = $this->processContent($content);
-            }
-        }
-
-        $this->recursiveContentCounter = 0;
-        return $content;
-    }
-
-    // This function is used to count the number of content patterns in a text
-    private function getContentPatternMatchCount($text) {
-        $matchCount = 0;
-        $regex = '/(?<=\{{)(?!CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
-        $matchCount += preg_match_all($regex, $text);
-        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
-        $matchCount += preg_match_all($regex, $text);
-
-        return $matchCount;
     }
 
 }

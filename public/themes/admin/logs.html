@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		{{CMS:META}}
+		<title>ohCRUD Admin - Logs</title>
+		<link rel="stylesheet" href="/assets/css/framework7-bundle.min.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/framework7-icons.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/font-awesome.min.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/simplemde.min.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/styles.css" media="all" />
+		{{CMS:STYLESHEET}}
+		<link rel="icon" type="image/png" href="/assets/img/favicon.png" />
+	</head>
+	<body>
+		<div id="app">
+			<!-- Status bar overlay for fullscreen mode-->
+			<div class="statusbar-overlay"></div>
+
+			<!-- Right panel with reveal effect-->
+			<div class="panel panel-left panel-push">
+
+				<div class="page">
+
+					<div class="page-content">
+
+						<div class="block row">
+                        	<div class="col">
+                            	<button id="btnLogout" class="button button-fill color-red">LOGOUT</button>
+                        	</div>
+                    	</div>
+
+						<!-- SYSTEM -->
+						<div class="block-header">SYSTEM</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Users">
+										<div class="item-media">
+											<i class="f7-icons">person</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Users</div>
+										</div>
+									</a>
+								</li>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Pages">
+										<div class="item-media">
+											<i class="f7-icons">doc_richtext</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Pages</div>
+										</div>
+									</a>
+								</li>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Files">
+										<div class="item-media">
+											<i class="f7-icons">doc</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Files</div>
+										</div>
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<!-- TABLES -->
+						<div class="block-header">TABLES</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul id="listTables">
+							</ul>
+						</div>
+
+						<!-- LOGS -->
+						<div class="block-header">LOGS</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul id="listLogs">
+							</ul>
+						</div>
+
+						<!-- APPEARANCE -->
+						<div class="block-header">APPEARANCE</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li class="item-content">
+									<div class="item-inner">
+										<div class="item-title">Dark Mode</div>
+										<div class="item-after">
+											<label class="toggle">
+												<input type="checkbox" id="appDarkMode" class="settings">
+												<span class="toggle-icon"></span>
+											</label>
+										</div>
+									</div>
+								</li>
+							</ul>
+						</div>
+
+						<br />
+
+						<div class="block-header font-small">V {{CMS:VERSION}}</div>
+
+					</div>
+				</div>
+
+			</div>
+
+			<!-- Context Popup -->
+			<div class="popup popup-push context-popup" data-close-on-escape="true" data-row-key-value="">
+				<div class="view">
+					<div class="page">
+						<div class="navbar">
+							<div class="navbar-bg"></div>
+							<div class="navbar-inner">
+								<div class="title">Log Context</div>
+								<div class="right">
+									<!-- Link to close popup -->
+									<a class="link popup-close"><i class="f7-icons">xmark</i></a>
+								</div>
+							</div>
+						</div>
+						<div class="page-content">
+
+                            <div id="logHeader" class="block margin-top-15px margin-bottom-15px">
+                            </div>
+
+                            <div class="block-title margin-top-15px">Context</div>
+                            <div class="list list-strong-ios list-dividers-ios inset-ios margin-top-15px">
+                                <ul id="logContext">
+                                </ul>
+                            </div>
+
+                            <div class="block-title">Extra</div>
+                            <div class="card monospace">
+                                <div id="logExtra" class="card-content card-content-padding"></div>
+                            </div>
+
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Your main view, should have " view-main" class -->
+			<div class="view view-main view-init safe-areas" data-url="/">
+				<div class="page" data-name="logs">
+
+					<!-- Settings -->
+					<div class="fab fab-left-bottom">
+						<a href="#" class="panel-open" data-panel="left">
+							<i class="f7-icons">gear_alt</i>
+						</a>
+					</div>
+
+					<!-- Scrollable page content-->
+					<div class="container">{{CMS:CONTENT}}</div>
+
+				</div>
+			</div>
+		</div>
+
+		<div class="font-small text-center">
+			{{CMS:OHCRUD}}
+		</div>
+
+		<script src="/assets/js/framework7-bundle.min.js"></script>
+		<script src="/assets/js/qrcode.min.js"></script>
+		<script src="/assets/js/admin.js"></script>
+		{{CMS:JAVASCRIPT}}
+	</body>
+</html>

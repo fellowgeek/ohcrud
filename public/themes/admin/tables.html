@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		{{CMS:META}}
+		<title>ohCRUD Admin - Tables</title>
+		<link rel="stylesheet" href="/assets/css/framework7-bundle.min.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/framework7-icons.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/font-awesome.min.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/simplemde.min.css" media="all" />
+		<link rel="stylesheet" href="/assets/css/styles.css" media="all" />
+		{{CMS:STYLESHEET}}
+		<link rel="icon" type="image/png" href="/assets/img/favicon.png" />
+	</head>
+	<body>
+		<div id="app">
+			<!-- Status bar overlay for fullscreen mode-->
+			<div class="statusbar-overlay"></div>
+
+			<!-- Right panel with reveal effect-->
+			<div class="panel panel-left panel-push">
+
+				<div class="page">
+
+					<div class="page-content">
+
+						<div class="block row">
+                        	<div class="col">
+                            	<button id="btnLogout" class="button button-fill color-red">LOGOUT</button>
+                        	</div>
+                    	</div>
+
+						<!-- SYSTEM -->
+						<div class="block-header">SYSTEM</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Users">
+										<div class="item-media">
+											<i class="f7-icons">person</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Users</div>
+										</div>
+									</a>
+								</li>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Pages">
+										<div class="item-media">
+											<i class="f7-icons">doc_richtext</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Pages</div>
+										</div>
+									</a>
+								</li>
+								<li>
+									<a class="item-link item-content external" href="/?action=tables&table=Files">
+										<div class="item-media">
+											<i class="f7-icons">doc</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Files</div>
+										</div>
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<!-- TABLES -->
+						<div class="block-header">TABLES</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul id="listTables">
+							</ul>
+						</div>
+
+						<!-- LOGS -->
+						<div class="block-header">LOGS</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul id="listLogs">
+							</ul>
+						</div>
+
+						<!-- APPEARANCE -->
+						<div class="block-header">APPEARANCE</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li class="item-content">
+									<div class="item-inner">
+										<div class="item-title">Dark Mode</div>
+										<div class="item-after">
+											<label class="toggle">
+												<input type="checkbox" id="appDarkMode" class="settings">
+												<span class="toggle-icon"></span>
+											</label>
+										</div>
+									</div>
+								</li>
+							</ul>
+						</div>
+
+						<br />
+
+						<div class="block-header font-small">V {{CMS:VERSION}}</div>
+
+					</div>
+				</div>
+
+			</div>
+
+			<!-- Create Record Popup -->
+			<div class="popup popup-push create-record-popup" data-close-on-escape="true">
+				<div class="view">
+					<div class="page">
+						<div class="navbar">
+							<div class="navbar-bg"></div>
+							<div class="navbar-inner">
+								<div class="title">Create Record</div>
+								<div class="right">
+									<!-- Link to close popup -->
+									<a class="link popup-close"><i class="f7-icons">xmark</i></a>
+								</div>
+							</div>
+						</div>
+						<div class="page-content">
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul id="formCreateRecord" class="padding-bottom"></ul>
+
+								<div class="block inset">
+									<div class="grid grid-cols-2 grid-gap">
+										<button id="btnFormCreateSave" class="button button-fill" data-row-key-column="" data-row-key-value="">SAVE</button>
+										<button id="btnFormCreateCancel" class="button button-outline" data-row-key-column="" data-row-key-value="">CANCEL</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Edit Record Popup -->
+			<div class="popup popup-push edit-record-popup" data-close-on-escape="true">
+				<div class="view">
+					<div class="page">
+						<div class="navbar">
+							<div class="navbar-bg"></div>
+							<div class="navbar-inner">
+								<div class="title">Edit Record</div>
+								<div class="right">
+									<!-- Link to close popup -->
+									<a class="link popup-close"><i class="f7-icons">xmark</i></a>
+								</div>
+							</div>
+						</div>
+						<div class="page-content">
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul id="formEditRecord" class="padding-bottom"></ul>
+
+								<div class="block inset">
+									<div class="grid grid-cols-2 grid-gap">
+										<button id="btnFormEditSave" class="button button-fill" data-row-key-column="" data-row-key-value="">SAVE</button>
+										<button id="btnFormEditCancel" class="button button-outline" data-row-key-column="" data-row-key-value="">CANCEL</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Edit User Popup -->
+			<div class="popup popup-push create-edit-user-popup" data-close-on-escape="true">
+				<div class="view">
+					<div class="page">
+						<div class="navbar">
+							<div class="navbar-bg"></div>
+							<div class="navbar-inner">
+								<div class="title">Edit User</div>
+								<div class="right">
+									<!-- Link to close popup -->
+									<a class="link popup-close"><i class="f7-icons">xmark</i></a>
+								</div>
+							</div>
+						</div>
+						<div id="formUserEditRecord" class="page-content">
+
+							<div class="block-header">GENERAL</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-key"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">ID</div>
+												<div class="item-input-wrap">
+													<input id="Users-ID" name="ID" type="number" readonly validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-font"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">USERNAME</div>
+												<div class="item-input-wrap">
+													<input id="Users-USERNAME" name="USERNAME" type="text" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-envelope-o"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">EMAIL</div>
+												<div class="item-input-wrap">
+													<input id="Users-EMAIL" name="EMAIL" type="email" required validate pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" data-error-message="Please enter a valid email address" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-snowflake-o"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">HASH</div>
+												<div class="item-input-wrap">
+													<input id="Users-HASH" name="HASH" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-font"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">NAME</div>
+												<div class="item-input-wrap">
+													<input id="Users-NAME" name="NAME" type="text" required value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+								</ul>
+							</div>
+
+							<div class="block-header">ACCESS</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">GROUP</div>
+												<div class="item-input-wrap">
+													<input id="Users-GROUP" name="GROUP" type="number" required validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">PERMISSIONS</div>
+												<div class="item-input-wrap">
+													<input id="Users-PERMISSIONS" name="PERMISSIONS" type="number" required validate pattern="^-?\d+$" data-error-message="Please enter a valid integer number" value="" spellcheck="false" autocorrect="off" autocapitalize="off" step="any" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-toggle-on"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">STATUS</div>
+												<div class="item-after">
+													<label class="toggle">
+														<input id="Users-STATUS" name="STATUS" type="checkbox" required value="0" class="formUserRecordInput">
+														<span class="toggle-icon"></span>
+													</label>
+												</div>
+											</div>
+										</div>
+									</li>
+								</ul>
+							</div>
+
+							<div class="block-header">SECURITY</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-shield"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">PASSWORD</div>
+												<div class="item-input-wrap">
+													<input id="Users-PASSWORD" name="PASSWORD" type="password" required value="" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="new-password" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li class="margin-top">
+										<button id="btnUserFormToken" class="button block-icon block-icon-1">
+											<span class="f7-icons">eye</span>
+										</button>
+										<button id="btnUserFormRefreshToken" class="button block-icon block-icon-2">
+											<span class="f7-icons">arrow_2_circlepath_circle</span>
+										</button>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-font"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">TOKEN</div>
+												<div class="item-input-wrap">
+													<input id="Users-TOKEN" name="TOKEN" type="password" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-toggle-on"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">TOTP</div>
+												<div class="item-after">
+													<label class="toggle">
+														<input id="Users-TOTP" name="TOTP" type="checkbox" required value="0" class="formUserRecordInput">
+														<span class="toggle-icon"></span>
+													</label>
+												</div>
+											</div>
+										</div>
+									</li>
+									<li class="margin-top">
+										<button id="btnUserFormTOTPQRCode" class="button block-icon block-icon-1">
+											<span class="f7-icons">qrcode</span>
+										</button>
+										<button id="btnUserFormTOTPRefresh" class="button block-icon block-icon-2">
+											<span class="f7-icons">arrow_2_circlepath_circle</span>
+										</button>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-snowflake-o"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">TOTP_SECRET</div>
+												<div class="item-input-wrap">
+													<input id="Users-TOTP_SECRET" name="TOTP_SECRET" type="password" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+
+								</ul>
+							</div>
+
+							<div class="block-header">OHCRUD DB STAMP</div>
+							<div class="list list-strong-ios list-dividers-ios inset-ios">
+								<ul class="padding-bottom">
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-calendar"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">CDATE</div>
+												<div class="item-input-wrap">
+													<input id="Users-CDATE" name="CDATE" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-calendar"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">MDATE</div>
+												<div class="item-input-wrap">
+													<input id="Users-MDATE" name="MDATE" type="text" readonly data-error-message="Please enter a valid date and time" value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">CUSER</div>
+												<div class="item-input-wrap">
+													<input id="Users-CUSER" name="CUSER" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="item-content item-input">
+											<div class="item-media">
+												<i class="fa fa-hashtag"></i>
+											</div>
+											<div class="item-inner">
+												<div class="item-title item-label">MUSER</div>
+												<div class="item-input-wrap">
+													<input id="Users-MUSER" name="MUSER" type="text" readonly value="" spellcheck="false" autocorrect="off" autocapitalize="off" class="formUserRecordInput">
+												</div>
+											</div>
+										</div>
+									</li>
+								</ul>
+							</div>
+
+							<div class="block inset">
+								<div class="grid grid-cols-2 grid-gap margin-horizontal">
+									<button id="btnUserFormCreateEditSave" class="button button-fill" data-mode="" data-row-key-column="" data-row-key-value="">SAVE</button>
+									<button id="btnUserFormCreateEditCancel" class="button button-outline" data-row-key-column="" data-row-key-value="">CANCEL</button>
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Your main view, should have " view-main" class -->
+			<div class="view view-main view-init safe-areas" data-url="/">
+				<div class="page" data-name="tables">
+
+					<!-- Settings -->
+					<div class="fab fab-left-bottom">
+						<a href="#" class="panel-open" data-panel="left">
+							<i class="f7-icons">gear_alt</i>
+						</a>
+					</div>
+
+					<!-- Scrollable page content-->
+					<div class="container">{{CMS:CONTENT}}</div>
+
+				</div>
+			</div>
+		</div>
+
+		<div class="font-small text-center">
+			{{CMS:OHCRUD}}
+		</div>
+
+		<script src="/assets/js/framework7-bundle.min.js"></script>
+		<script src="/assets/js/qrcode.min.js"></script>
+		<script src="/assets/js/admin.js"></script>
+		{{CMS:JAVASCRIPT}}
+	</body>
+</html>
