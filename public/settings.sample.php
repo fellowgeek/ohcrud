@@ -35,7 +35,7 @@ define('__OHCRUD_LOG_PATH__', '/logs/');
 define('__OHCRUD_CACHE_ENABLED__', false);
 define('__OHCRUD_CACHE_PATH__', '/ramdisk/');
 
-// Define the secret used for password hashing (should be unique for each application).
+// Define the secret used for password hashing and encryption (should be unique for each application).
 define('__OHCRUD_SECRET__', 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
 
 // Set the session lifetime in seconds.

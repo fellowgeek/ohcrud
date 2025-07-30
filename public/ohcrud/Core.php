@@ -242,7 +242,7 @@ class Core {
     }
 
     // Log messages using Monolog if logging is enabled.
-    public function log($level, $message, array $context = array(), $channel = 'ohCRUD', $logFile = 'app.log') {
+    public function log($level, $message, array $context = array(), $channel = 'system', $logFile = 'app.log') {
 
         if (__OHCRUD_LOG_ENABLED__ == false) {
             return $this;
@@ -368,23 +368,19 @@ class Core {
         // Shoud debug panel hide the line number?
         $GLOBALS['debugShowLineNo'] = $showLineNumber;
 
-        if (isset($expression) == true) {
-            if (is_object($expression) == true) {
-                $clone = clone $expression;
-                if (isset($clone->config) == true) {
-                    $clone->config = 'Redacted from debug.';
-                }
-            } else {
-                $clone = $expression;
-            }
-            r($clone);
-        } else {
-            $clone = clone $this;
-            if (isset($clone->config) == true) {
+        if (isset($expression) == false) {
+            $expression = $this;
+        }
+
+        if (is_object($expression) == true) {
+            $clone = clone $expression;
+            if (property_exists($clone, 'config') == true) {
                 $clone->config = 'Redacted from debug.';
             }
-            r($clone);
+        } else {
+            $clone = $expression;
         }
+        r($clone);
 
         return $this;
     }
