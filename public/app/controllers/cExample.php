@@ -33,17 +33,16 @@ class cExample extends \ohCRUD\DB {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Perform a read operation on the 'Users' table with a specific condition.
-        $this->update(
+        $this->read(
             'Users',
-            [
-                'NAME' => 'test'
-            ],
-            'ID=:ID',
+            'ID = :ID',
             [
                 ':ID' => 1
-            ]
-
+            ],
+            'ID, USERNAME, NAME, EMAIL, STATUS, CDATE, MDATE, CUSER, MUSER',
         );
+
+
 
         // Output the result.
         $this->output();
@@ -57,10 +56,7 @@ class cExample extends \ohCRUD\DB {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_HTML);
 
         // Return a hello world message.
-        // $this->data = "Hello from ohCRUD!";
-
-        $response = $this->details('', true);
-        $this->debug($response);
+        $this->data = "Hello from ohCRUD!";
 
         // Output the result.
         $this->output();
