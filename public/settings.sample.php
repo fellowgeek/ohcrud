@@ -43,6 +43,10 @@ define('__OHCRUD_SESSION_LIFETIME__', 3600);
 // Should the session cookie be secure?
 define('__OHCRUD_SESSION_SECURE_COOKIE__', true);
 
+// Security headers
+define('__X_FRAME_OPTIONS__', 'SAMEORIGIN'); // Prevent clickjacking
+define('__X_CONTENT_TYPE_OPTIONS__', 'nosniff'); // Prevent MIME type sniffing
+
 // Determine whether OhCRUD should add (CDATE, MDATE, CUSER, MUSER) columns to every table.
 define('__OHCRUD_DB_STAMP__', true);
 

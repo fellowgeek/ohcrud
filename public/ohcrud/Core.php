@@ -142,11 +142,20 @@ class Core {
             $this->outputHeadersSent = true;
             http_response_code($this->outputStatusCode);
             // Disable broswer side caching
-            header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-            header("Cache-Control: post-check=0, pre-check=0", false);
-            header("Pragma: no-cache");
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Cache-Control: post-check=0, pre-check=0', false);
+            header('Pragma: no-cache');
+            // Set X-Frame-Options to prevent clickjacking
+            header('X-Frame-Options: ' . __X_FRAME_OPTIONS__ ?? 'SAMEORIGIN');
+            // Set X-Content-Type-Options to prevent MIME type sniffing
+            header('X-Content-Type-Options: ' . __X_CONTENT_TYPE_OPTIONS__ ?? 'nosniff');
             foreach ($this->outputHeaders as $outputHeader) {
                 header($outputHeader);
+            }
+            // Remove X-Powered-By header for security reasons
+            if (ini_get('expose_php') == true) {
+                ini_set('expose_php', 'Off');
+                header_remove("X-Powered-By");
             }
         }
         return $this;
