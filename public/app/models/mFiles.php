@@ -41,11 +41,12 @@ class mFiles extends \ohCRUD\DB {
                             `ID` int(11) unsigned NOT NULL AUTO_INCREMENT,
                             `NAME` varchar(128) NOT NULL DEFAULT '',
                             `PATH` varchar(256) NOT NULL DEFAULT '',
-                            `SIZE` bigint(20) unsigned NOT NULL DEFAULT '0',
+                            `SIZE` bigint(20) unsigned NOT NULL DEFAULT 0,
                             `TYPE` varchar(32) NOT NULL DEFAULT '',
                             `IP` varchar(32) NOT NULL DEFAULT '',
                             `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                             PRIMARY KEY (`ID`),
+                            UNIQUE KEY `idx_NAME` (`NAME`) USING BTREE,
                             UNIQUE KEY `idx_PATH` (`PATH`) USING BTREE
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                     ";
