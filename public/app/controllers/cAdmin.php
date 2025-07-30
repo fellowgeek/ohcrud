@@ -450,7 +450,7 @@ class cAdmin extends \ohCRUD\DB {
             $checkPasswordSecurity = $this->checkPasswordSecurity($request->payload->PASSWORD);
             if ($checkPasswordSecurity === 'secure') {
                 $request->payload->PASSWORD = password_hash(
-                    $request->payload->PASSWORD,
+                    $request->payload->PASSWORD . __OHCRUD_SECRET__,
                     PASSWORD_BCRYPT,
                     [
                         'cost' => 14
