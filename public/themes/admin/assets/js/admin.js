@@ -1589,7 +1589,7 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
 
     // Function to determine if a field should be readonly
     function isReadonly(column) {
-        return (column.EXTRA === 'auto_increment' || ['CDATE', 'MDATE', 'CUSER', 'MUSER'].includes(column.NAME));
+        return (column.EXTRA === 'auto_increment' || column.PRIMARY_KEY === true || ['CDATE', 'MDATE', 'CUSER', 'MUSER'].includes(column.NAME));
     }
 
     // Function to get field value from row data
