@@ -339,12 +339,8 @@ class Users extends \ohCRUD\DB {
 
     // Generate a randomized API token based on the username
     public function generateToken($username) {
-        $randomString = '';
-        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        for($i = 0; $i < 32; $i++) {
-            $randomString .= $characters[rand(0, strlen($characters) - 1)];
-        }
-        return hash('sha1', __OHCRUD_SECRET__ . (isset($_SERVER["SERVER_NAME"]) ? $_SERVER["SERVER_NAME"] : PHP_SAPI) . $username . $randomString . time());
+        $randomString = bin2hex(random_bytes(32));
+        return hash('sha1', __OHCRUD_SECRET__ . $username . $randomString . time());
     }
 
 }
