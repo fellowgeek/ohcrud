@@ -48,12 +48,12 @@ class Users extends \ohCRUD\DB {
                         `HASH` varchar(128) NOT NULL DEFAULT '',
                         `PASSWORD` varchar(256) NOT NULL DEFAULT '',
                         `NAME` varchar(64) NOT NULL DEFAULT '',
-                        `GROUP` int(10) unsigned NOT NULL DEFAULT '0',
-                        `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT '0',
+                        `GROUP` int(10) unsigned NOT NULL DEFAULT 0,
+                        `PERMISSIONS` int(10) unsigned NOT NULL DEFAULT 0,
                         `TOKEN` varchar(256) NOT NULL DEFAULT '',
                         `TOTP_SECRET` varchar(256) NOT NULL DEFAULT '',
                         `STATUS` tinyint(1) NOT NULL DEFAULT 0,
-                        `TOTP` int(10) unsigned NOT NULL DEFAULT '0',
+                        `TOTP` int(10) unsigned NOT NULL DEFAULT 0,
                         PRIMARY KEY (`ID`),
                         UNIQUE KEY `idx_USERNAME` (`USERNAME`) USING BTREE,
                         UNIQUE KEY `idx_EMAIL` (`EMAIL`) USING BTREE,
@@ -339,12 +339,8 @@ class Users extends \ohCRUD\DB {
 
     // Generate a randomized API token based on the username
     public function generateToken($username) {
-        $randomString = '';
-        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        for($i = 0; $i < 32; $i++) {
-            $randomString .= $characters[rand(0, strlen($characters) - 1)];
-        }
-        return hash('sha1', __OHCRUD_SECRET__ . (isset($_SERVER["SERVER_NAME"]) ? $_SERVER["SERVER_NAME"] : PHP_SAPI) . $username . $randomString . time());
+        $randomString = bin2hex(random_bytes(32));
+        return hash('sha1', __OHCRUD_SECRET__ . $username . $randomString . time());
     }
 
 }
