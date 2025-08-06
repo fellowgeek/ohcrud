@@ -6,9 +6,9 @@
         }
     ],
     "require": {
-        "monolog/monolog": "^1.22.1",
+        "monolog/monolog": "^3.8.1",
         "fellowgeek/php-ref": "dev-master",
-        "erusev/parsedown": "^1.7",
+        "michelf/php-markdown": "^2.0.0",
         "ezyang/htmlpurifier": "^4.10",
         "filp/whoops": "^2.3",
         "spomky-labs/otphp": "^11.2.0"

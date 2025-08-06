@@ -46,7 +46,6 @@ class cPages extends \app\models\mPages {
         $purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
 
         $request->payload->TITLE = $purifier->purify($request->payload->TITLE);
-        $request->payload->TEXT = $purifier->purify($request->payload->TEXT);
 
         // Set default values for THEME and LAYOUT if missing in the payload.
         if (isset($request->payload->THEME) == false) {
