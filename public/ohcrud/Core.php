@@ -331,7 +331,7 @@ class Core {
     // Output messages in the console (for CLI environment).
     public function console($message = '', $color = 'WHT', $shouldAddNewLine = true) {
 
-        if ( PHP_SAPI != 'cli') {
+        if ( PHP_SAPI !== 'cli') {
             return false;
         }
 

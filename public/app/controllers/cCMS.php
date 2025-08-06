@@ -1,8 +1,8 @@
 <?php
 namespace app\controllers;
 
-use Parsedown;
 use HTMLPurifier;
+use Michelf\MarkdownExtra;
 
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
@@ -35,7 +35,7 @@ class cCMS extends \ohCRUD\DB {
     // Instance for managing pages.
     public $pages;
     // Markdown processor.
-    public $parsedown;
+    public $markdownExtra;
     // HTML purifier for security.
     public $purifier;
     // Recursive content counter.
@@ -72,8 +72,11 @@ class cCMS extends \ohCRUD\DB {
             $this->useCache = false;
         }
 
-        // Setup markdown processor and HTML purifier
-        $this->parsedown = new Parsedown();
+        // Setup markdown processor
+        $this->markdownExtra = new MarkdownExtra();
+        $this->markdownExtra->enhanced_ordered_list = true;
+
+        // Setup HTML purifier
         $this->purifier = new HTMLPurifier();
         $this->purifier->config->set('HTML.SafeIframe', true);
         $this->purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
@@ -227,7 +230,10 @@ class cCMS extends \ohCRUD\DB {
         $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
         if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions !== false)) {
             $content->text = $page->TEXT;
-            $content->html = $this->purifier->purify($this->parsedown->text($page->TEXT));
+            // Process strikethrough text
+            $page->TEXT = preg_replace('/~~(.*?)~~/i', '<del>$1</del>', $page->TEXT);
+            // Convert Markdown to HTML
+            $content->html = $this->purifier->purify($this->markdownExtra->transform($page->TEXT));
         } else {
             $content->html = '<mark>ohCRUD! You are not allowed to see this.</mark>';
         }
