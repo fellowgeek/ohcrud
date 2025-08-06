@@ -17,6 +17,7 @@ class cExample extends \ohCRUD\DB {
         'publicEndPoint' => __OHCRUD_PERMISSION_ALL__
     ];
 
+
     // This function returns information about the current user of the API
     public function whoami($request) {
 
@@ -42,11 +43,8 @@ class cExample extends \ohCRUD\DB {
             'ID, USERNAME, NAME, EMAIL, STATUS, CDATE, MDATE, CUSER, MUSER',
         );
 
-
-
         // Output the result.
         $this->output();
-
     }
 
     // This function handles the public endpoint.
@@ -60,7 +58,6 @@ class cExample extends \ohCRUD\DB {
 
         // Output the result.
         $this->output();
-
     }
 
 }

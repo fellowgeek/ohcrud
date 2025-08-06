@@ -122,7 +122,7 @@ class Router extends \ohCRUD\Core {
             if ((int) $expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions !== false))
                 $methodHasPermission = true;
         } else {
-            $methodHasPermission = true;
+            $methodHasPermission = false;
         }
 
         return ($objectHasPermission && $methodHasPermission);
