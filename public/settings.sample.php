@@ -93,3 +93,9 @@ define('__OHCRUD_CMS_ADMIN_LAYOUT__', 'edit');
 
 define('__OHCRUD_CMS_DEFAULT_THEME__', 'default');
 define('__OHCRUD_CMS_DEFAULT_LAYOUT__', 'index');
+
+// Enable or disable minification of CSS files
+define('__OHCRUD_MINIFY_CSS__', false);
+
+// Enable or disable minification of JavaScript files
+define('__OHCRUD_MINIFY_JS__', false);
