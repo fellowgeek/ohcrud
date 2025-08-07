@@ -11,7 +11,8 @@
         "michelf/php-markdown": "^2.0.0",
         "ezyang/htmlpurifier": "^4.10",
         "filp/whoops": "^2.3",
-        "spomky-labs/otphp": "^11.2.0"
+        "spomky-labs/otphp": "^11.2.0",
+        "matthiasmullie/minify": "^1.3.75"
     },
     "autoload": {
         "files": [

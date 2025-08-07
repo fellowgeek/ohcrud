@@ -3,6 +3,7 @@ namespace app\controllers;
 
 use HTMLPurifier;
 use Michelf\MarkdownExtra;
+use MatthiasMullie\Minify;
 
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
@@ -38,6 +39,9 @@ class cCMS extends \ohCRUD\DB {
     public $markdownExtra;
     // HTML purifier for security.
     public $purifier;
+    // Minifier instances for CSS and JS.
+    public $minifierCSS;
+    public $minifierJS;
     // Recursive content counter.
     public $recursiveContentCounter = 0;
     // Max recursive content
@@ -80,6 +84,10 @@ class cCMS extends \ohCRUD\DB {
         $this->purifier = new HTMLPurifier();
         $this->purifier->config->set('HTML.SafeIframe', true);
         $this->purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
+
+        // Setup minifiers
+        $this->minifierCSS = new Minify\CSS();
+        $this->minifierJS = new Minify\JS();
     }
 
     // Handler for all incoming requests
@@ -104,7 +112,7 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Include application javascript & css files
-        $this->includeCSSFile('/global/css/global.css', 2);
+        $this->includeCSSFile('/global/css/global.css', 1);
         $this->includeJSFile('/global/js/global.js', 1);
 
         // Get content and set theme & layout from content
@@ -158,7 +166,29 @@ class cCMS extends \ohCRUD\DB {
     private function getCSSAssets() {
         $this->content->stylesheet = '';
         foreach ($this->cssFiles as $cssFile => $priority) {
-            $this->content->stylesheet .= '<link rel="stylesheet" href="' . $cssFile . '" media="all" />' . "\n";
+
+            $cssRelativePath = $cssFile;
+            $cssAbsolutePath = rtrim(__SELF__, '/') . $cssFile;
+
+            // Check if the file is already minified
+            if (file_exists($cssAbsolutePath) == true && __OHCRUD_MINIFY_CSS__ == true) {
+                $fileHash = md5_file($cssAbsolutePath);
+                $minifiedCSSRelativePath = '/global/minified/' . $fileHash . '.min.css';
+                $minifiedCSSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.css';
+                if (file_exists($minifiedCSSAbsolutePath) == false) {
+                    // Add the CSS file to the minifier
+                    $this->minifierCSS->add($cssAbsolutePath);
+                    // Minify the CSS files and save them to a minified file
+                    $this->minifierCSS->minify($minifiedCSSAbsolutePath);
+                }
+                // Use the minified CSS file
+                $cssFile = $minifiedCSSRelativePath;
+            } else {
+                // Use the original CSS file
+                $cssFile = $cssRelativePath;
+            }
+
+            $this->content->stylesheet .= '<link rel="stylesheet" href="' . $cssFile . '" media="all" data-x="blah" />' . "\n";
         }
     }
 
@@ -174,6 +204,28 @@ class cCMS extends \ohCRUD\DB {
     private function getJSAssets() {
         $this->content->javascript = '';
         foreach ($this->jsFiles as $jsFile => $priority) {
+
+            $jsRelativePath = $jsFile;
+            $jsAbsolutePath = rtrim(__SELF__, '/') . $jsFile;
+
+            // Check if the file is already minified
+            if (file_exists($jsAbsolutePath) == true && __OHCRUD_MINIFY_JS__ == true) {
+                $fileHash = md5_file($jsAbsolutePath);
+                $minifiedJSRelativePath = '/global/minified/' . $fileHash . '.min.js';
+                $minifiedJSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.js';
+                if (file_exists($minifiedJSAbsolutePath) == false) {
+                    // Add the JS file to the minifier
+                    $this->minifierJS->add($jsAbsolutePath);
+                    // Minify the JS files and save them to a minified file
+                    $this->minifierJS->minify($minifiedJSAbsolutePath);
+                }
+                // Use the minified JS file
+                $jsFile = $minifiedJSRelativePath;
+            } else {
+                // Use the original JS file
+                $jsFile = $jsRelativePath;
+            }
+
             $this->content->javascript .= '<script src="' . $jsFile . '"></script>' . "\n";
         }
     }

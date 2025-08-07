@@ -1,0 +1,1 @@
+Minified JavaScript and CSS assets will be automatically stored in this folder. Ensure it is writable by the web server user.
