@@ -4,6 +4,21 @@ namespace app\components\clock;
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
+/*
+
+  Clock Component
+
+  This component is responsible for displaying the current time in form of an analog clock.
+
+  This component serves as a simple demonstration of how to create a component in OhCRUD.
+
+  Usage:
+  [[Clock/Clock]]
+
+  It can be used in pages, templates, or components to render a clock on the page.
+
+*/
+
 class Clock extends \app\components\Component {
 
     // Constructor for this class, which takes a $request parameter.

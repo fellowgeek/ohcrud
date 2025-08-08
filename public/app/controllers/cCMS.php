@@ -3,6 +3,7 @@ namespace app\controllers;
 
 use HTMLPurifier;
 use Michelf\MarkdownExtra;
+use MatthiasMullie\Minify;
 
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
@@ -38,6 +39,9 @@ class cCMS extends \ohCRUD\DB {
     public $markdownExtra;
     // HTML purifier for security.
     public $purifier;
+    // Minifier instances for CSS and JS.
+    public $minifierCSS;
+    public $minifierJS;
     // Recursive content counter.
     public $recursiveContentCounter = 0;
     // Max recursive content
@@ -80,6 +84,10 @@ class cCMS extends \ohCRUD\DB {
         $this->purifier = new HTMLPurifier();
         $this->purifier->config->set('HTML.SafeIframe', true);
         $this->purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
+
+        // Setup minifiers
+        $this->minifierCSS = new Minify\CSS();
+        $this->minifierJS = new Minify\JS();
     }
 
     // Handler for all incoming requests
@@ -104,7 +112,7 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Include application javascript & css files
-        $this->includeCSSFile('/global/css/global.css', 2);
+        $this->includeCSSFile('/global/css/global.css', 1);
         $this->includeJSFile('/global/js/global.js', 1);
 
         // Get content and set theme & layout from content
@@ -158,7 +166,29 @@ class cCMS extends \ohCRUD\DB {
     private function getCSSAssets() {
         $this->content->stylesheet = '';
         foreach ($this->cssFiles as $cssFile => $priority) {
-            $this->content->stylesheet .= '<link rel="stylesheet" href="' . $cssFile . '" media="all" />' . "\n";
+
+            $cssRelativePath = $cssFile;
+            $cssAbsolutePath = rtrim(__SELF__, '/') . $cssFile;
+
+            // Check if the file is already minified
+            if (file_exists($cssAbsolutePath) == true && __OHCRUD_CMS_MINIFY_CSS__ == true) {
+                $fileHash = md5_file($cssAbsolutePath);
+                $minifiedCSSRelativePath = '/global/minified/' . $fileHash . '.min.css';
+                $minifiedCSSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.css';
+                if (file_exists($minifiedCSSAbsolutePath) == false) {
+                    // Add the CSS file to the minifier
+                    $this->minifierCSS->add($cssAbsolutePath);
+                    // Minify the CSS files and save them to a minified file
+                    $this->minifierCSS->minify($minifiedCSSAbsolutePath);
+                }
+                // Use the minified CSS file
+                $cssFile = $minifiedCSSRelativePath;
+            } else {
+                // Use the original CSS file
+                $cssFile = $cssRelativePath;
+            }
+
+            $this->content->stylesheet .= '<link rel="stylesheet" href="' . $cssFile . '" media="all" data-x="blah" />' . "\n";
         }
     }
 
@@ -174,6 +204,28 @@ class cCMS extends \ohCRUD\DB {
     private function getJSAssets() {
         $this->content->javascript = '';
         foreach ($this->jsFiles as $jsFile => $priority) {
+
+            $jsRelativePath = $jsFile;
+            $jsAbsolutePath = rtrim(__SELF__, '/') . $jsFile;
+
+            // Check if the file is already minified
+            if (file_exists($jsAbsolutePath) == true && __OHCRUD_CMS_MINIFY_JS__ == true) {
+                $fileHash = md5_file($jsAbsolutePath);
+                $minifiedJSRelativePath = '/global/minified/' . $fileHash . '.min.js';
+                $minifiedJSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.js';
+                if (file_exists($minifiedJSAbsolutePath) == false) {
+                    // Add the JS file to the minifier
+                    $this->minifierJS->add($jsAbsolutePath);
+                    // Minify the JS files and save them to a minified file
+                    $this->minifierJS->minify($minifiedJSAbsolutePath);
+                }
+                // Use the minified JS file
+                $jsFile = $minifiedJSRelativePath;
+            } else {
+                // Use the original JS file
+                $jsFile = $jsRelativePath;
+            }
+
             $this->content->javascript .= '<script src="' . $jsFile . '"></script>' . "\n";
         }
     }
@@ -396,10 +448,45 @@ class cCMS extends \ohCRUD\DB {
         $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
         $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
         $output .= "const __LOGGED_IN__ = " . ($this->loggedIn ? 'true' : 'false') . ";\n";
-        $output .= "document.querySelector('.cmsLogin').textContent = '" . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . "';\n";
+        $output .= "const __OHCRUD_CMS_LAZY_LOAD_IMAGES__ = " . (__OHCRUD_CMS_LAZY_LOAD_IMAGES__ ? 'true' : 'false') . ";\n";
+        $output .= "document.querySelector('.cmsLogin') ? document.querySelector('.cmsLogin').textContent = '" . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . "' : null;\n";
         $output .= "</script>\n";
 
         return $output;
+    }
+
+    // Add lazy loading to all images in the content
+    private function addLazyLoadingToImages(string $html) {
+        // The regular expression pattern to find all <img> tags.
+        $pattern = '/<img(.*?)>/is';
+
+        // preg_replace_callback processes each match with a custom function.
+        return preg_replace_callback($pattern, function ($matches) {
+            // $matches[0] is the full matched <img> tag string.
+            // $matches[1] is the captured content (the attributes).
+            $tag_content = $matches[1];
+
+            // Check if 'loading="lazy"' is already present.
+            if (preg_match('/loading\s*=\s*(["\']?)lazy\1/i', $tag_content)) {
+                // The loading attribute is already set to 'lazy', so return the original tag.
+                return $matches[0];
+            }
+
+            // If the tag already has a 'loading' attribute, but it's not 'lazy',
+            // we'll just return the original tag to avoid overriding it.
+            // This is a safety check for cases like loading="eager" or loading="auto".
+            if (preg_match('/loading\s*=\s*(["\']?).*?\1/i', $tag_content)) {
+                return $matches[0];
+            }
+
+            // At this point, the tag does not have a loading attribute.
+            $modified_tag = $matches[0];
+
+            // Add 'loading="lazy"' to the tag just before the closing bracket.
+            $modified_tag = preg_replace('/>$/', ' loading="lazy">', $modified_tag);
+
+            return $modified_tag;
+        }, $html);
     }
 
     // Get footer
@@ -498,6 +585,11 @@ class cCMS extends \ohCRUD\DB {
 
         // Version
         $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
+
+        // Add lazy loading to all images in the content
+        if (__OHCRUD_CMS_LAZY_LOAD_IMAGES__ == true) {
+            $output = $this->addLazyLoadingToImages($output);
+        }
 
         $this->data = $output;
     }

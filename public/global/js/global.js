@@ -35,9 +35,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Handle the edit button
     let btnCMSEdit = document.getElementById('btnCMSEdit');
     if (btnCMSEdit != null) {
-        btnCMSEdit.addEventListener('click', function() {
+        btnCMSEdit.addEventListener('click', function () {
             window.location.href = btnCMSEdit.dataset.url;
         });
     }
-
 });

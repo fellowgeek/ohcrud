@@ -1,17 +1,32 @@
-*.DS_Store
+# macOS system files
+.DS_Store
 ._*
+
+# PHP-related
+composer.phar
 vendor/
 settings.php
+
+# IDE/editor configs
 .vscode/
-.DS_Store
-composer.phar
-public/global-assets/files
-public/global/files
-public/data.db
-public/app.log
-private/cert.pem
-private/key.pem
-@TODO
-public/data_justshareme.db
+
+# Log files
 logs/
 logs/app.log
+
+# Databases
+data.db
+
+# SSL keys and certificates
+private/cert.pem
+private/key.pem
+
+# Minified assets
+public/global/minified/*.min.css
+public/global/minified/*.min.js
+
+# Uploaded/generated files
+public/global/files
+
+# TODO markers
+private/@TODO
