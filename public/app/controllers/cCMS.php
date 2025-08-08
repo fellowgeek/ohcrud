@@ -171,7 +171,7 @@ class cCMS extends \ohCRUD\DB {
             $cssAbsolutePath = rtrim(__SELF__, '/') . $cssFile;
 
             // Check if the file is already minified
-            if (file_exists($cssAbsolutePath) == true && __OHCRUD_MINIFY_CSS__ == true) {
+            if (file_exists($cssAbsolutePath) == true && __OHCRUD_CMS_MINIFY_CSS__ == true) {
                 $fileHash = md5_file($cssAbsolutePath);
                 $minifiedCSSRelativePath = '/global/minified/' . $fileHash . '.min.css';
                 $minifiedCSSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.css';
@@ -209,7 +209,7 @@ class cCMS extends \ohCRUD\DB {
             $jsAbsolutePath = rtrim(__SELF__, '/') . $jsFile;
 
             // Check if the file is already minified
-            if (file_exists($jsAbsolutePath) == true && __OHCRUD_MINIFY_JS__ == true) {
+            if (file_exists($jsAbsolutePath) == true && __OHCRUD_CMS_MINIFY_JS__ == true) {
                 $fileHash = md5_file($jsAbsolutePath);
                 $minifiedJSRelativePath = '/global/minified/' . $fileHash . '.min.js';
                 $minifiedJSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.js';
@@ -448,10 +448,45 @@ class cCMS extends \ohCRUD\DB {
         $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
         $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
         $output .= "const __LOGGED_IN__ = " . ($this->loggedIn ? 'true' : 'false') . ";\n";
-        $output .= "document.querySelector('.cmsLogin').textContent = '" . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . "';\n";
+        $output .= "const __OHCRUD_CMS_LAZY_LOAD_IMAGES__ = " . (__OHCRUD_CMS_LAZY_LOAD_IMAGES__ ? 'true' : 'false') . ";\n";
+        $output .= "document.querySelector('.cmsLogin') ? document.querySelector('.cmsLogin').textContent = '" . ($this->loggedIn == true ? 'LOGOUT' : 'LOGIN') . "' : null;\n";
         $output .= "</script>\n";
 
         return $output;
+    }
+
+    // Add lazy loading to all images in the content
+    private function addLazyLoadingToImages(string $html) {
+        // The regular expression pattern to find all <img> tags.
+        $pattern = '/<img(.*?)>/is';
+
+        // preg_replace_callback processes each match with a custom function.
+        return preg_replace_callback($pattern, function ($matches) {
+            // $matches[0] is the full matched <img> tag string.
+            // $matches[1] is the captured content (the attributes).
+            $tag_content = $matches[1];
+
+            // Check if 'loading="lazy"' is already present.
+            if (preg_match('/loading\s*=\s*(["\']?)lazy\1/i', $tag_content)) {
+                // The loading attribute is already set to 'lazy', so return the original tag.
+                return $matches[0];
+            }
+
+            // If the tag already has a 'loading' attribute, but it's not 'lazy',
+            // we'll just return the original tag to avoid overriding it.
+            // This is a safety check for cases like loading="eager" or loading="auto".
+            if (preg_match('/loading\s*=\s*(["\']?).*?\1/i', $tag_content)) {
+                return $matches[0];
+            }
+
+            // At this point, the tag does not have a loading attribute.
+            $modified_tag = $matches[0];
+
+            // Add 'loading="lazy"' to the tag just before the closing bracket.
+            $modified_tag = preg_replace('/>$/', ' loading="lazy">', $modified_tag);
+
+            return $modified_tag;
+        }, $html);
     }
 
     // Get footer
@@ -550,6 +585,11 @@ class cCMS extends \ohCRUD\DB {
 
         // Version
         $output = str_ireplace("{{CMS:VERSION}}", $this->version, $output);
+
+        // Add lazy loading to all images in the content
+        if (__OHCRUD_CMS_LAZY_LOAD_IMAGES__ == true) {
+            $output = $this->addLazyLoadingToImages($output);
+        }
 
         $this->data = $output;
     }
