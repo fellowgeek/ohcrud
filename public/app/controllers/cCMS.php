@@ -165,30 +165,31 @@ class cCMS extends \ohCRUD\DB {
     // Get CSS assets
     private function getCSSAssets() {
         $this->content->stylesheet = '';
-        foreach ($this->cssFiles as $cssFile => $priority) {
 
-            $cssRelativePath = $cssFile;
-            $cssAbsolutePath = rtrim(__SELF__, '/') . $cssFile;
-
-            // Check if the file is already minified
-            if (file_exists($cssAbsolutePath) == true && __OHCRUD_CMS_MINIFY_CSS__ == true) {
-                $fileHash = md5_file($cssAbsolutePath);
-                $minifiedCSSRelativePath = '/global/minified/' . $fileHash . '.min.css';
-                $minifiedCSSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.css';
-                if (file_exists($minifiedCSSAbsolutePath) == false) {
-                    // Add the CSS file to the minifier
-                    $this->minifierCSS->add($cssAbsolutePath);
-                    // Minify the CSS files and save them to a minified file
-                    $this->minifierCSS->minify($minifiedCSSAbsolutePath);
-                }
-                // Use the minified CSS file
-                $cssFile = $minifiedCSSRelativePath;
-            } else {
-                // Use the original CSS file
-                $cssFile = $cssRelativePath;
+        // If __OHCRUD_CMS_MINIFY_CSS__ is enabled, first calculate a combined hash of all CSS files
+        $basePath = rtrim(__SELF__, '/');
+        $basePathMinified = __SELF__ . '/global/minified/';
+        if (__OHCRUD_CMS_MINIFY_CSS__ == true) {
+            $combinedHash = $this->getCombinedFilesHash($basePath, array_keys($this->cssFiles), 'sha1');
+            if (file_exists($basePathMinified . $combinedHash . '.min.css') == true) {
+                // If the combined minified file already exists, use it
+                $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
+                return;
             }
 
-            $this->content->stylesheet .= '<link rel="stylesheet" href="' . $cssFile . '" media="all" data-x="blah" />' . "\n";
+            // If the combined minified file does not exist, create it
+            foreach ($this->cssFiles as $cssFile => $priority) {
+                $this->minifierCSS->add($basePath . $cssFile);
+            }
+            $this->minifierCSS->minify($basePathMinified . $combinedHash . '.min.css');
+
+            // Use the combined minified file
+            $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
+            return;
+        }
+
+        foreach ($this->cssFiles as $cssFile => $priority) {
+            $this->content->stylesheet .= '<link rel="stylesheet" href="' . $cssFile . '" media="all" />' . "\n";
         }
     }
 
@@ -203,31 +204,51 @@ class cCMS extends \ohCRUD\DB {
     // Get Javascript assets
     private function getJSAssets() {
         $this->content->javascript = '';
-        foreach ($this->jsFiles as $jsFile => $priority) {
 
-            $jsRelativePath = $jsFile;
-            $jsAbsolutePath = rtrim(__SELF__, '/') . $jsFile;
-
-            // Check if the file is already minified
-            if (file_exists($jsAbsolutePath) == true && __OHCRUD_CMS_MINIFY_JS__ == true) {
-                $fileHash = md5_file($jsAbsolutePath);
-                $minifiedJSRelativePath = '/global/minified/' . $fileHash . '.min.js';
-                $minifiedJSAbsolutePath = rtrim(__SELF__, '/') . '/global/minified/' . $fileHash . '.min.js';
-                if (file_exists($minifiedJSAbsolutePath) == false) {
-                    // Add the JS file to the minifier
-                    $this->minifierJS->add($jsAbsolutePath);
-                    // Minify the JS files and save them to a minified file
-                    $this->minifierJS->minify($minifiedJSAbsolutePath);
-                }
-                // Use the minified JS file
-                $jsFile = $minifiedJSRelativePath;
-            } else {
-                // Use the original JS file
-                $jsFile = $jsRelativePath;
+        // If __OHCRUD_CMS_MINIFY_JS__ is enabled, first calculate a combined hash of all JS files
+        $basePath = rtrim(__SELF__, '/');
+        $basePathMinified = __SELF__ . '/global/minified/';
+        if (__OHCRUD_CMS_MINIFY_JS__ == true) {
+            $combinedHash = $this->getCombinedFilesHash($basePath, array_keys($this->jsFiles), 'sha1');
+            if (file_exists($basePathMinified . $combinedHash . '.min.js') == true) {
+                // If the combined minified file already exists, use it
+                $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
+                return;
             }
 
+            // If the combined minified file does not exist, create it
+            foreach ($this->jsFiles as $jsFile => $priority) {
+                $this->minifierJS->add($basePath . $jsFile);
+            }
+            $this->minifierJS->minify($basePathMinified . $combinedHash . '.min.js');
+
+            // Use the combined minified file
+            $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
+            return;
+        }
+
+        foreach ($this->jsFiles as $jsFile => $priority) {
             $this->content->javascript .= '<script src="' . $jsFile . '"></script>' . "\n";
         }
+    }
+
+    // Get combined hash of all files
+    private function getCombinedFilesHash($basePath, $files, $algo = 'sha1') {
+
+        // Initialize the hashing context
+        $ctx = hash_init($algo);
+
+        // Loop through each file and update the hash context
+        foreach ($files as $file) {
+            if (is_readable($basePath. $file) == false) {
+                return false;
+            }
+            // Stream the file directly into the hash function
+            hash_update_file($ctx, $basePath. $file);
+        }
+
+        // Finalize the hash and return it
+        return hash_final($ctx);
     }
 
     // Load content
