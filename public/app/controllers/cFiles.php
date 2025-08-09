@@ -60,7 +60,7 @@ class cFiles extends \app\models\mFiles {
         $NAME = pathinfo($BASENAME, PATHINFO_FILENAME);
         $TYPE = strtolower(pathinfo($BASENAME, PATHINFO_EXTENSION));
         $PATH = 'global/files/' . md5($BASENAME . microtime()) . '.' . $TYPE;
-        $TEMP  = $_FILES[0]['tmp_name'];
+        $TEMP = $_FILES[0]['tmp_name'];
 
         // Check allowed file extension
         if (in_array($TYPE, $this->filesAllowed) == false) {
@@ -89,14 +89,29 @@ class cFiles extends \app\models\mFiles {
             return $this;
         }
 
+        // If the file is an image, get its dimensions.
+        if (in_array($TYPE, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
+            $dimensions = $this->getImageDimensions(__SELF__ . $PATH);
+            if ($dimensions === false) {
+                $WIDTH = null;
+                $HEIGHT = null;
+            } else {
+                $WIDTH = $dimensions['width'];
+                $HEIGHT = $dimensions['height'];
+            }
+        }
+
         // Prepare parameters for file insertion into the database.
         $filesParameters = [
-            'NAME'      => $NAME,
-            'PATH'      => '/' . $PATH,
-            'SIZE'      => $_FILES[0]['size'] ?? 0,
-            'TYPE'      => $TYPE,
-            'IP'        => $_SERVER['REMOTE_ADDR'] ?? '',
-            'STATUS'    => $this::ACTIVE
+            'NAME' => $NAME,
+            'PATH' => '/' . $PATH,
+            'SIZE' => $_FILES[0]['size'] ?? 0,
+            'TYPE' => $TYPE,
+            'W' => $WIDTH ?? null,
+            'H' => $HEIGHT ?? null,
+            'MDATE' => date('Y-m-d H:i:s'),
+            'IP' => $_SERVER['REMOTE_ADDR'] ?? '',
+            'STATUS' => $this::ACTIVE
         ];
 
         // Create a new file entry in the database using the 'create' method.
@@ -128,7 +143,7 @@ class cFiles extends \app\models\mFiles {
             $this->error('Filename is required.', 400);
         }
 
-        $basePath = 'global/files/';
+        $basePath = __SELF__ . 'global/files/';
         $originalFilePath = $basePath . basename($request->filename); // Use basename for security
 
         if (!file_exists($originalFilePath)) {
@@ -140,11 +155,11 @@ class cFiles extends \app\models\mFiles {
         $height = isset($request->h) ? (int)$request->h : null;
         $quality = isset($request->q) ? (int)$request->q : null;
 
-        if ($width !== null && ($width <= 0 || $width > 2000)) {
-            $this->error('Width must be a positive integer up to 2000.', 400);
+        if ($width !== null && ($width <= 0 || $width > 3840)) {
+            $this->error('Width must be a positive integer up to 3840.', 400);
         }
-        if ($height !== null && ($height <= 0 || $height > 2000)) {
-            $this->error('Height must be a positive integer up to 2000.', 400);
+        if ($height !== null && ($height <= 0 || $height > 2160)) {
+            $this->error('Height must be a positive integer up to 2160.', 400);
         }
         if ($quality !== null && ($quality < 1 || $quality > 100)) {
             $this->error('Quality must be an integer between 1 and 100.', 400);
@@ -175,8 +190,8 @@ class cFiles extends \app\models\mFiles {
         }
 
         // Image Processing
-        $imageInfo = getimagesize($originalFilePath);
-        $mime = $imageInfo['mime'];
+        $imageInfo = @getimagesize($originalFilePath);
+        $mime = $imageInfo['mime'] ?? '';
 
         $sourceImage = null;
         switch ($mime) {
@@ -193,7 +208,10 @@ class cFiles extends \app\models\mFiles {
                 $sourceImage = imagecreatefromwebp($originalFilePath);
                 break;
             default:
+                $this->setOutputType(\ohCRUD\Core::OUTPUT_HTML);
                 $this->error('Unsupported image format.', 415);
+                $this->output();
+                return;
         }
 
         if (!$sourceImage) {
@@ -267,7 +285,63 @@ class cFiles extends \app\models\mFiles {
         header("Cache-Control: public, max-age=2592000"); // Cache for 30 days
         header("Expires: " . gmdate("D, d M Y H:i:s", time() + 2592000) . " GMT");
         readfile($filePath);
-        exit;
+        die();
+    }
+
+    /**
+     * Returns the dimensions of an image file.
+     *
+     * @param string $filePath Path to the image file.
+     * @return array|false An associative array with 'width' and 'height' keys, or false if the file does not exist or is not an image.
+     */
+    private function getImageDimensions($filePath) {
+        if (file_exists($filePath) == false) {
+            return false;
+        }
+
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $dimensions = ['width' => null, 'height' => null];
+
+        // Special handling for SVG
+        if ($ext === 'svg') {
+            $svgContent = file_get_contents($filePath);
+
+            $widthPattern = '/<svg[^>]+?width=["\']([0-9.]+)(?:px|em|pt|%)?["\']/i';
+            $heightPattern = '/<svg[^>]+?height=["\']([0-9.]+)(?:px|em|pt|%)?["\']/i';
+
+            // First, try to get dimensions from the 'width' and 'height' attributes.
+            if (preg_match($widthPattern, $svgContent, $matches)) {
+                $dimensions['width'] = (int) $matches[1];
+            }
+            if (preg_match($heightPattern, $svgContent, $matches)) {
+                $dimensions['height'] = (int) $matches[1];
+            }
+
+            // If width and height are not found, try to get them from the 'viewBox'.
+            if (is_null($dimensions['width']) && is_null($dimensions['height'])) {
+                // The viewBox attribute is typically 'min-x min-y width height'.
+                $viewBoxPattern = '/<svg[^>]+?viewBox=["\']\s*([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s*["\']/i';
+
+                if (preg_match($viewBoxPattern, $svgContent, $matches)) {
+                    // The third and fourth captured values are the width and height.
+                    $dimensions['width'] = (int) $matches[3];
+                    $dimensions['height'] = (int) $matches[4];
+                }
+            }
+
+            return $dimensions;
+        }
+
+        // For raster images
+        $size = @getimagesize($filePath);
+        if ($size === false) {
+            return false;
+        }
+
+        $dimensions['width'] = $size[0];
+        $dimensions['height'] = $size[1];
+
+        return $dimensions;
     }
 
 }
