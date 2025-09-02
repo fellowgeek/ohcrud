@@ -28,8 +28,8 @@ class mFiles extends \ohCRUD\DB {
                             `PATH`	TEXT,
                             `SIZE`	INTEGER,
                             `TYPE`	TEXT,
-                            `W`	TEXT,
-                            `H`	TEXT,
+                            `W`	INTEGER,
+                            `H`	INTEGER,
                             `IP`	TEXT,
                             `STATUS`    INTEGER
                         );
@@ -45,8 +45,8 @@ class mFiles extends \ohCRUD\DB {
                             `PATH` varchar(256) NOT NULL DEFAULT '',
                             `SIZE` bigint(20) unsigned NOT NULL DEFAULT 0,
                             `TYPE` varchar(32) NOT NULL DEFAULT '',
-                            `W` varchar(32) DEFAULT NULL,
-                            `H` varchar(32) DEFAULT NULL,
+                            `W` bigint(20) unsigned DEFAULT 0,
+                            `H` bigint(20) unsigned DEFAULT 0,
                             `IP` varchar(32) NOT NULL DEFAULT '',
                             `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                             PRIMARY KEY (`ID`),
