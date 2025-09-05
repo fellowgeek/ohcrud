@@ -410,9 +410,7 @@ class cCMS extends \ohCRUD\DB {
     private function getComponent($componentString, $shouldSetOutputStatusCode = true) {
 
         $content = new \app\models\mContent;
-        $componentParameters = [];
-
-        parse_str(str_replace('|', '&', $componentString), $componentParameters);
+        $componentParameters = $this->parseString($componentString);
         $componentClassFile = key($componentParameters);
         $componentClass = '\app\components\\' . str_replace('/', '\\', $componentClassFile);
         array_shift($componentParameters);
@@ -442,6 +440,34 @@ class cCMS extends \ohCRUD\DB {
         }
 
         return $content;
+    }
+
+    // Parse component string into an associative array
+    private function parseString(string $input_string) {
+        $result = [];
+
+        // Split the string by the pipe '|' delimiter.
+        $parts = explode('|', $input_string);
+
+        if (empty($parts)) {
+            return $result;
+        }
+
+        // Process all parts, which can be 'key=value' or 'key' format.
+        foreach ($parts as $part) {
+            $kv_pair = explode('=', $part, 2);
+
+            $key = trim($kv_pair[0]);
+            $value = count($kv_pair) === 2 ? trim($kv_pair[1]) : '';
+
+            // Add the key-value pair to the result.
+            // It's a key with an empty string value if there's no '='.
+            if ($key !== '') {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
     }
 
     // Get uncachable content HTML
