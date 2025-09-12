@@ -411,7 +411,7 @@ class cCMS extends \ohCRUD\DB {
 
         $content = new \app\models\mContent;
         $componentParameters = $this->parseString($componentString);
-        $componentClassFile = key($componentParameters);
+        $componentClassFile = str_replace('\\', '/', key($componentParameters));
         $componentClass = '\app\components\\' . str_replace('/', '\\', $componentClassFile);
         array_shift($componentParameters);
 
