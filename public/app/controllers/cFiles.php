@@ -150,6 +150,14 @@ class cFiles extends \app\models\mFiles {
             $this->error('Image not found.', 404);
         }
 
+        // Check if cache is enabled
+        $cacheEnabled = true;
+        if (isset($request->rand) == true) {
+            $cacheEnabled = false;
+        } else {
+            $cacheEnabled = true;
+        }
+
         // Validate optional parameters
         $width = isset($request->w) ? (int)$request->w : null;
         $height = isset($request->h) ? (int)$request->h : null;
@@ -184,7 +192,7 @@ class cFiles extends \app\models\mFiles {
         $newFilename = "{$original_filename}{$suffix}.{$extension}";
         $newFilePath = $basePath . $newFilename;
 
-        if (file_exists($newFilePath)) {
+        if (file_exists($newFilePath) && $cacheEnabled == true) {
             $this->serveImage($newFilePath);
             return;
         }
@@ -247,7 +255,7 @@ class cFiles extends \app\models\mFiles {
 
         imagecopyresampled($newImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
 
-        // Save & Output New Image
+        // Save the new image
         switch ($mime) {
             case 'image/jpeg':
                 // Default quality 75 if not set
@@ -265,10 +273,12 @@ class cFiles extends \app\models\mFiles {
                 break;
         }
 
+        // Clean up
         imagedestroy($sourceImage);
         imagedestroy($newImage);
 
-        $this->serveImage($newFilePath);
+        // Output New Image
+        $this->serveImage($newFilePath, $cacheEnabled);
     }
 
     /**
@@ -276,14 +286,20 @@ class cFiles extends \app\models\mFiles {
      *
      * @param string $filePath Path to the image file.
      */
-    private function serveImage($filePath) {
+    private function serveImage($filePath, $cache = true) {
         $imageInfo = getimagesize($filePath);
         $mime = $imageInfo['mime'];
 
         header("Content-Type: {$mime}");
         header("Content-Length: " . filesize($filePath));
-        header("Cache-Control: public, max-age=2592000"); // Cache for 30 days
-        header("Expires: " . gmdate("D, d M Y H:i:s", time() + 2592000) . " GMT");
+        if ($cache === false) {
+            header("Cache-Control: no-cache, no-store, must-revalidate");
+            header("Pragma: no-cache");
+            header("Expires: 0");
+        } else {
+            header("Cache-Control: public, max-age=2592000"); // Cache for 30 days
+            header("Expires: " . gmdate("D, d M Y H:i:s", time() + 2592000) . " GMT");
+        }
         readfile($filePath);
         die();
     }
