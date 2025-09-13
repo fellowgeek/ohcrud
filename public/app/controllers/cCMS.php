@@ -473,9 +473,10 @@ class cCMS extends \ohCRUD\DB {
     // Get uncachable content HTML
     private function getUnCachableContentHTML() {
         $output = '';
+        $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->path);
 
         if ($this->loggedIn == true) {
-            $output.= '<div id="btnCMSEdit" data-url="' . $this->path . '?action=edit"></div>';
+            $output.= '<div id="btnCMSEdit" data-url="' . $path . '?action=edit"></div>';
         }
 
         return $output;
@@ -484,13 +485,14 @@ class cCMS extends \ohCRUD\DB {
     // Get uncachable content JS
     private function getUnCachableContentJS() {
         $output = '';
+        $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->path);
 
         // Include Javascript constants and assets
         $output .= "<script>\n";
         $output .= "const __SITE__ = '" . __SITE__ . "';\n";
         $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
         $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
-        $output .= "const __PATH__ = '" . $this->path . "';\n";
+        $output .= "const __PATH__ = '" . $path . "';\n";
         $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
         $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
         $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";

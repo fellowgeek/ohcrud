@@ -1,3 +1,8 @@
+<?php
+    // Sanitize the path
+    $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->purifier->purify($path));
+?>
+
 <div class="center-vh">
     <h1>ohCRUD! You just got 404'd.</h1>
     <p>The page you requested at: <b><?= $path ?></b> could not be found.</p>
