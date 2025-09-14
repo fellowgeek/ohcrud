@@ -26,7 +26,19 @@ public/global/minified/*.min.css
 public/global/minified/*.min.js
 
 # Uploaded/generated files
-public/global/files
+public/global/files/*.jpg
+public/global/files/*.jpeg
+public/global/files/*.png
+public/global/files/*.gif
+public/global/files/*.webp
+public/global/files/*.svg
+public/global/files/*.csv
+public/global/files/*.pdf
+public/global/files/*.xml
+public/global/files/*.xlsx
+public/global/files/*.json
+public/global/files/*.zip
+public/global/files/*.mp3
 
 # TODO markers
 private/@TODO

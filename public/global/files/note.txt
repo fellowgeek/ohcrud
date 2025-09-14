@@ -1,0 +1,1 @@
+Uploaded files and cached images will be stored in this folder. Ensure it is writable by the web server user.

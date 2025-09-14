@@ -57,16 +57,6 @@ class mFiles extends \ohCRUD\DB {
                     $this->run($sql);
                     break;
             }
-
-            // Seed the 'Files' table if it doesn't exist and if the database setup was successful.
-            if ($tableExists === false && $this->success === true) {
-                $this->create(
-                    'Files',
-                    [
-                        'NAME' => uniqid()
-                    ]
-                );
-            }
         }
     }
 
