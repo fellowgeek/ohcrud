@@ -177,7 +177,7 @@ class Core {
             return false;
         }
 
-        $hash = md5($key) . '.cache';
+        $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
         if (file_exists($path) == false) {
@@ -200,7 +200,7 @@ class Core {
             return false;
         }
 
-        $hash = md5($key) . '.cache';
+        $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
         $serialized = serialize($data);
@@ -210,7 +210,7 @@ class Core {
     // Remove data from cache.
     public function unsetCache($key) {
 
-        $hash = md5($key) . '.cache';
+        $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
         if (file_exists($path) == true) {
