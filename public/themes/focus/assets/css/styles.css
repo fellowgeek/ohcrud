@@ -4,9 +4,13 @@
     --text: #e7e9ee;
     --muted: #a9afbd;
     --line: #232735;
-    --accent: #5c7dc2;
+    --accent: #93bbff;
     --accent-weak: color-mix(in oklab, var(--accent) 40%, transparent);
     --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    --info: #60a5fa;
+    --success: #84cc16;
+    --warn: #f59e0b;
+    --danger: #ef4444;
 }
 
 :root[data-theme="light"] {
@@ -27,6 +31,7 @@
 html,
 body {
     height: 100%;
+    min-height: 100vh;
 }
 
 body {
@@ -141,6 +146,7 @@ main {
     width: min(70vw, 1800px);
     margin: 0 auto;
     padding: 48px 20px 80px;
+    min-height: calc(100vh - 150px);
 }
 
 .post-header .eyebrow {
@@ -213,14 +219,16 @@ main {
     margin: 42px 0;
 }
 
-.section h2, h2 {
+.section h2,
+h2 {
     font-weight: 700;
     letter-spacing: -.01em;
     font-size: clamp(1.4rem, 2.2vw, 2rem);
     margin: 28px 0 12px;
 }
 
-.section h3, h3 {
+.section h3,
+h3 {
     font-weight: 700;
     font-size: clamp(1.1rem, 1.4vw, 1.25rem);
     margin: 24px 0 8px;
@@ -359,8 +367,10 @@ pre .copy-btn {
     position: absolute;
     top: 10px;
     right: 10px;
-    border: 1px solid var(--line);
-    background: #0f1219;
+    /* border: 1px solid var(--line); */
+    border: none;
+    /* background: #0f1219; */
+    background: transparent;
     color: var(--muted);
     padding: 6px 10px;
     border-radius: 8px;
@@ -434,19 +444,19 @@ details.callout[open] {
 }
 
 .notice.info {
-    color: #60a5fa
+    color: var(--info);
 }
 
-.notice.succss {
-    color: #84cc16;
+.notice.success {
+    color: var(--success);
 }
 
 .notice.warn {
-    color: #f59e0b
+    color: var(--warn);
 }
 
 .notice.danger {
-    color: #ef4444
+    color: var(--danger)
 }
 
 mark {
@@ -454,6 +464,108 @@ mark {
     color: inherit;
     padding: 0 .2em;
     border-radius: .25em
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5ch;
+    padding: .6em 1em;
+    border-radius: 10px;
+    border: 1px solid color-mix(in oklab, var(--accent) 55%, var(--line));
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    box-shadow: var(--shadow);
+    transition: filter .12s ease, box-shadow .12s ease;
+    margin: .35rem .5rem .35rem 0
+}
+
+.btn:hover {
+    filter: saturate(1.05);
+    box-shadow: 0 12px 28px color-mix(in oklab, var(--muted) 25%, transparent)
+}
+
+.btn-outline {
+    background: transparent !important;
+    color: var(--accent);
+    border-color: color-mix(in oklab, var(--accent) 70%, var(--line));
+    box-shadow: none;
+    border-width: 2px
+}
+
+.btn-outline:hover {
+    background: transparent;
+    filter: none;
+    box-shadow: 0 8px 20px color-mix(in oklab, var(--muted) 18%, transparent);
+    border-color: color-mix(in oklab, var(--accent) 85%, var(--line))
+}
+
+:root[data-theme="light"] .btn--outline:hover {
+    background: transparent
+}
+
+.btn-muted {
+    background: var(--muted);
+    border-color: color-mix(in oklab, var(--muted) 55%, var(--line))
+}
+
+.btn-info {
+    background: var(--info);
+    border-color: color-mix(in oklab, var(--info) 55%, var(--line))
+}
+
+.btn-success {
+    background: var(--success);
+    border-color: color-mix(in oklab, var(--success) 55%, var(--line))
+}
+
+.btn-warn {
+    background: var(--warn);
+    border-color: color-mix(in oklab, var(--warn) 55%, var(--line))
+}
+
+.btn-danger {
+    background: var(--danger);
+    border-color: color-mix(in oklab, var(--danger) 55%, var(--line))
+}
+
+.btn-outline.btn-muted {
+    color: var(--muted);
+    border-color: color-mix(in oklab, var(--muted) 70%, var(--line))
+}
+
+.btn-outline.btn-info {
+    color: var(--info);
+    border-color: color-mix(in oklab, var(--info) 70%, var(--line))
+}
+
+.btn-outline.btn-success {
+    color: var(--success);
+    border-color: color-mix(in oklab, var(--success) 70%, var(--line))
+}
+
+.btn-outline.btn-warn {
+    color: var(--warn);
+    border-color: color-mix(in oklab, var(--warn) 70%, var(--line))
+}
+
+.btn-outline.btn-danger {
+    color: var(--danger);
+    border-color: color-mix(in oklab, var(--danger) 70%, var(--line))
+}
+
+.btn-outline.btn-info:hover {
+    background: transparent
+}
+
+.btn-outline.btn-warn:hover {
+    background: transparent
+}
+
+.btn-outline.btn-danger:hover {
+    background: transparent
 }
 
 :root[data-theme="light"] mark {
@@ -487,6 +599,14 @@ code:not([class]) {
         margin: 0;
         padding: 16px 14px 56px;
     }
+
+    .site-footer {
+        font-size: 0.8rem;
+    }
+
+    .cms-app {
+        display: none;
+    }
 }
 
 :root[data-theme="light"] p,
@@ -495,7 +615,8 @@ code:not([class]) {
     color: var(--text);
 }
 
-:root[data-theme="light"] .section h3, :root[data-theme="light"] h3 {
+:root[data-theme="light"] .section h3,
+:root[data-theme="light"] h3 {
     color: #1a2233;
 }
 
@@ -517,7 +638,9 @@ code:not([class]) {
 }
 
 :root[data-theme="light"] pre .copy-btn {
-    background: rgba(0, 0, 0, 0.3);
+    /* background: rgba(0, 0, 0, 0.3); */
+    background: transparent;
+    color: var(--text);
     color: whitesmoke;
 }
 

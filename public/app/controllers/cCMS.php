@@ -335,7 +335,7 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Check for embedded content
-        $regex = '/(?<=\{{)(?!CMS:VERSION|CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $regex = '/(?<=\{{)(?!CMS:(.*?)).*?(?=\}})/i';
         $matches = [];
         $matchCount = preg_match_all($regex, $content->html, $matches);
 
@@ -398,7 +398,7 @@ class cCMS extends \ohCRUD\DB {
     // This function is used to count the number of content patterns in a text
     private function getContentPatternMatchCount($text) {
         $matchCount = 0;
-        $regex = '/(?<=\{{)(?!CMS:VERSION|CMS:META|CMS:TITLE|CMS:STYLESHEET|CMS:CONTENT|CMS:OHCRUD|CMS:JAVASCRIPT).*?(?=\}})/i';
+        $regex = '/(?<=\{{)(?!CMS:(.*?)).*?(?=\}})/i';
         $matchCount += preg_match_all($regex, $text);
         $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
         $matchCount += preg_match_all($regex, $text);
@@ -473,9 +473,10 @@ class cCMS extends \ohCRUD\DB {
     // Get uncachable content HTML
     private function getUnCachableContentHTML() {
         $output = '';
+        $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->path);
 
         if ($this->loggedIn == true) {
-            $output.= '<div id="btnCMSEdit" data-url="' . $this->path . '?action=edit"></div>';
+            $output.= '<div id="btnCMSEdit" data-url="' . $path . '?action=edit"></div>';
         }
 
         return $output;
@@ -484,13 +485,14 @@ class cCMS extends \ohCRUD\DB {
     // Get uncachable content JS
     private function getUnCachableContentJS() {
         $output = '';
+        $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->path);
 
         // Include Javascript constants and assets
         $output .= "<script>\n";
         $output .= "const __SITE__ = '" . __SITE__ . "';\n";
         $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
         $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
-        $output .= "const __PATH__ = '" . $this->path . "';\n";
+        $output .= "const __PATH__ = '" . $path . "';\n";
         $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
         $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
         $output .= "const __CSRF__ = '" . $this->CSRF() . "';\n";
@@ -557,6 +559,7 @@ class cCMS extends \ohCRUD\DB {
     private function processTheme() {
 
         $output = '';
+        $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->path);
 
         // Fallback to default theme ans layout if file does not exist
         if (file_exists(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html') == false) {
@@ -616,11 +619,17 @@ class cCMS extends \ohCRUD\DB {
             $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
         }
 
-        // Replace OhCRUD templates with the proccessed content from the cms
-        $output = str_ireplace("{{CMS:PATH}}", $this->path, $output);
-        $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
+        // Replace ohCRUD core content templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . "{{CMS:UNCACHABLE-HTML}}", $output);
         $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
+
+        // Replace ohCRUD templates with the proccessed content from the cms
+        $output = str_ireplace("{{CMS:APP}}", __APP__, $output);
+        $output = str_ireplace("{{CMS:SITE}}", __SITE__, $output);
+        $output = str_ireplace("{{CMS:DOMAIN}}", __DOMAIN__, $output);
+        $output = str_ireplace("{{CMS:SUB_DOMAIN}}", __SUB_DOMAIN__, $output);
+        $output = str_ireplace("{{CMS:PATH}}", $path, $output);
+        $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
 

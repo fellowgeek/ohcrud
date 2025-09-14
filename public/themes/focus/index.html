@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     {{CMS:STYLESHEET}}
-    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/styles.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.css" />
     <meta name="color-scheme" content="dark" />
 </head>
@@ -19,7 +19,7 @@
 
     <header class="site-header">
         <div class="wrap">
-            <a class="brand" href="/">OHCRUD</a>
+            <a class="brand" href="/">{{CMS:APP}}</a>
             <button class="theme-toggle" type="button" aria-label="Toggle color mode">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path fill="none" stroke="currentColor" stroke-width="1.8"
@@ -37,7 +37,9 @@
 
     <footer class="site-footer">
         <div class="wrap">
-            <span>{{CMS:OHCRUD}}</span>
+            <div>
+                <span>{{CMS:OHCRUD}}</span>
+            </div>
             <a href="#">Back to top</a>
         </div>
     </footer>
@@ -56,7 +58,7 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js" defer></script>
-    <script type="module" src="assets/js/script.js"></script>
+    <script type="module" src="assets/js/script.min.js"></script>
     {{CMS:JAVASCRIPT}}
 </body>
 

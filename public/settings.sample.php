@@ -91,14 +91,14 @@ define('__OHCRUD_DB_CONFIG__', serialize([
 define('__OHCRUD_CMS_ADMIN_THEME__', 'admin');
 define('__OHCRUD_CMS_ADMIN_LAYOUT__', 'edit');
 
-define('__OHCRUD_CMS_DEFAULT_THEME__', 'default');
+define('__OHCRUD_CMS_DEFAULT_THEME__', 'focus');
 define('__OHCRUD_CMS_DEFAULT_LAYOUT__', 'index');
 
 // Automatically lazy load all images in the CMS ( adds loading="lazy" to all <img> tags )
 define('__OHCRUD_CMS_LAZY_LOAD_IMAGES__', false);
 
 // Enable or disable minification of CSS files
-define('__OHCRUD_MINIFY_CSS__', false);
+define('__OHCRUD_CMS_MINIFY_CSS__', false);
 
 // Enable or disable minification of JavaScript files
-define('__OHCRUD_MINIFY_JS__', false);
+define('__OHCRUD_CMS_MINIFY_JS__', false);

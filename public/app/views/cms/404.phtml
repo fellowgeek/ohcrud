@@ -1,8 +1,32 @@
-<div class="center-vh">
-    <h1>ohCRUD! You just got 404'd.</h1>
-    <p>The page you requested at: <b><?= $path ?></b> could not be found.</p>
-    <p>Use your browser's <b>Back</b> button to navigate to the page you have previously come from, or you could edit this page by pressing the edit button.</p>
-    <br/>
-    <a class="btn btn-primary external" href="/">Home</a>
-    <a class="btn external" href="<?= isset($_SESSION['User']) ? $path . '?action=edit' : '/login/?redirect=' . $path . '?action=edit' ?>">Edit</a>
-</div>
+<?php
+    // Sanitize the path
+    $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->purifier->purify($path));
+?>
+
+<header class="post-header">
+    <p class="eyebrow">OHCRUD!</p>
+    <h1>You just got 404'd.</h1>
+    <p class="meta"><?= $path ?></p>
+</header>
+
+<br/>
+
+<p>Looks like you’ve wandered into uncharted territory. The page you requested at <b><?= $path ?></b> is missing in action.</p>
+
+<p>Maybe it never existed, maybe it packed its bags and left, or maybe it’s just hiding behind the server racks laughing at us.</p>
+
+<p>Here’s what you can do instead:</p>
+<ul>
+    <li>Hit your browser’s <b>Back</b> button to return to safer ground.</li>
+    <li>Double-check the address bar to make sure there are no typos (we’ve all been there).</li>
+    <li>If you’re feeling brave, press the <b>Edit</b> button to help create or fix this page.</li>
+</ul>
+
+<p>Don’t worry, you haven’t broken the internet. It just needs a little guidance sometimes.</p>
+
+<br/>
+
+<p>
+    <a class="btn btn-outline btn-muted" href="/">Home</a>
+    <a class="btn btn-outline btn-muted" href="<?= isset($_SESSION['User']) ? $path . '?action=edit' : '/login/?redirect=' . $path . '?action=edit' ?>">Edit</a>
+</p>
