@@ -60,13 +60,36 @@ class Core {
         return $this;
     }
 
+    // Get a session variable.
+    public function getSession($key) {
+        session_start();
+        if (isset($_SESSION[$key]) == true) {
+            return $_SESSION[$key];
+        }
+        return false;
+    }
+
     // Unset a session variable.
     public function unsetSession($key) {
         session_start();
-        if (isset($key) == true) {
+        if (isset($_SESSION[$key]) == true) {
             unset($_SESSION[$key]);
         }
         session_write_close();
+        return $this;
+    }
+
+    // Regenerate session id
+    public function regenerateSession() {
+        session_start();
+        session_regenerate_id();
+        return $this;
+    }
+
+    // Clear all session variables.
+    public function clearSession() {
+        session_start();
+        session_destroy();
         return $this;
     }
 
