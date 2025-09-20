@@ -2140,7 +2140,7 @@ function loadLogData(log, page) {
                     }
 
                     // Format the extra data
-                    if (row.extra === null || row.extra === '' || row.extra.length === 0) {
+                    if (row.extra === null || row.extra === '' || row.extra.length === 0 || JSON.stringify(row.extra) === '{}') {
                         extra = `
                             <div class="chip">
                                 <div class="chip-label">EMPTY</div>
@@ -2155,7 +2155,7 @@ function loadLogData(log, page) {
                     }
 
                     // Format the context data
-                    if (row.context === null || row.context === '' || row.context.length === 0) {
+                    if (row.context === null || row.context === ''|| row.context.length === 0 || JSON.stringify(row.context) === '{}') {
                         context = `
                             <div class="chip">
                                 <div class="chip-label">EMPTY</div>
@@ -2186,7 +2186,7 @@ function loadLogData(log, page) {
                         <td data-detected-type="message">${row.message}</td>
                         <td>${extra}</td>
                         <td>${context}</td>
-                        <td data-detected-type="datetime">${row.datetime.date}</td>
+                        <td data-detected-type="datetime">${formatDatetime(row.datetime)}</td>
 
                         <td class="actions-cell">
                             <a class="btnContext link icon-only ${hasContext == true ? '' : 'disabled'}" data-row-key-value="${keyValue}" data-level="${window.btoa(level)}" data-message="${window.btoa(row.message)}" data-context="${row.context}" data-extra="${row.extra}"><i class="icon f7-icons">square_stack_3d_up</i></a>
@@ -2269,58 +2269,65 @@ function displayContextPopup(rowKeyValue, level, message, context, extra) {
     let lineNumber = '';
     let contextLength = contextDecoded.length;
     let contextHTML = '';
-    contextDecoded.forEach((item, index) => {
-        className = '';
-        typeName = '';
-        functionName = '';
-        fileName = '';
-        lineNumber = '';
 
-        if (item.file !== undefined && item.file !== null && item.line !== undefined && item.line !== null) {
-            className = item.class || '';
-            typeName = item.type || '';
-            functionName = item.function || '';
-            fileName = item.file;
-            lineNumber = item.line;
-        }
-
-        if (item.function !== undefined && item.function !== null && item.args !== undefined && item.args !== null && Array.isArray(item.args) === true) {
-            className = item.class || '';
-            typeName = item.type || '';
-            functionName = item.function;
-            fileName = item.args[0].file || '';
+    if (Array.isArray(contextDecoded) == true) {
+        contextDecoded.forEach((item, index) => {
+            className = '';
+            typeName = '';
+            functionName = '';
+            fileName = '';
             lineNumber = '';
-        }
 
-        if (className === '' && typeName === '' && functionName === '') {
-            contextHTML += `
-                <li>
-                    <div class="item-content">
-                        <div class="item-media"><i class="icon">&nbsp;</i></div>
-                        <div class="item-inner">
-                            <div class="item-title monospace">
-                                ${escapeHtml(JSON.stringify(item))}
+            if (item.file !== undefined && item.file !== null && item.line !== undefined && item.line !== null) {
+                className = item.class || '';
+                typeName = item.type || '';
+                functionName = item.function || '';
+                fileName = item.file;
+                lineNumber = item.line;
+            }
+
+            if (item.function !== undefined && item.function !== null && item.args !== undefined && item.args !== null && Array.isArray(item.args) === true) {
+                className = item.class || '';
+                typeName = item.type || '';
+                functionName = item.function;
+                fileName = item.args[0].file || '';
+                lineNumber = '';
+            }
+
+            if (className === '' && typeName === '' && functionName === '') {
+                contextHTML += `
+                    <li>
+                        <div class="item-content">
+                            <div class="item-media"><i class="icon">&nbsp;</i></div>
+                            <div class="item-inner">
+                                <div class="item-title monospace">
+                                    ${escapeHtml(JSON.stringify(item))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </li>
-            `;
-        } else {
-            contextHTML += `
-                <li>
-                    <div class="item-content">
-                        <div class="item-media"><i class="icon">${contextLength - index}</i></div>
-                        <div class="item-inner">
-                            <div class="item-title">
-                                <div class="item-header">${escapeHtml(fileName)}${lineNumber !== '' ? ':' + escapeHtml(lineNumber) : ''}</div>
-                                ${escapeHtml(className)}${escapeHtml(typeName)}${escapeHtml(functionName)}
+                    </li>
+                `;
+            } else {
+                contextHTML += `
+                    <li>
+                        <div class="item-content">
+                            <div class="item-media"><i class="icon">${contextLength - index}</i></div>
+                            <div class="item-inner">
+                                <div class="item-title">
+                                    <div class="item-header">${escapeHtml(fileName)}${lineNumber !== '' ? ':' + escapeHtml(lineNumber) : ''}</div>
+                                    ${escapeHtml(className)}${escapeHtml(typeName)}${escapeHtml(functionName)}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </li>
-            `;
+                    </li>
+                `;
+            }
+        });
+    } else {
+        if (contextDecoded !== null && Object.keys(contextDecoded).length > 0) {
+            contextHTML = '<pre>' + escapeHtml(JSON.stringify(contextDecoded, null, 2)) + '<pre>';
         }
-    });
+    }
     $$('#logContext').empty();
     $$('#logContext').html(contextHTML);
 
@@ -2471,6 +2478,26 @@ function isColumnVisible(tableName, columnName) {
     }
     // Column not found, default to visible
     return true;
+}
+
+// This function formats a ISO date to 'Y-m-d H:i:s'
+function formatDatetime(isoString) {
+  // 1. Create a new Date object from the ISO 8601 string.
+  const date = new Date(isoString);
+
+  // 2. Extract the individual components.
+  // We use padStart(2, '0') to ensure two digits for month, day, hour, etc.
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() is 0-indexed
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  // 3. Construct the new string in the desired format 'YYYY-MM-DD HH:MM:SS'.
+  const formattedString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+  return formattedString;
 }
 
 // This function converts a size in bytes to a human-readable string (e.g., 300 KB, 1.2 MB)
