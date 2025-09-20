@@ -212,7 +212,7 @@ class Core {
             return false;
         }
 
-        $data = @unserialize(file_get_contents($path), ['allowed_classes' => false]);
+        $data = @unserialize(file_get_contents($path), ['allowed_classes' => ['stdClass']]);
         return $data;
     }
 

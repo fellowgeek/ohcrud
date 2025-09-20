@@ -117,7 +117,12 @@ class cUsers extends \ohCRUD\DB {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         // Unset the User and tempUser sessions (user logout)
-        $this->clearSession();
+        $this->unsetSession('User');
+        $this->unsetSession('tempUser');
+
+        // Regenerate session ID
+        $this->regenerateSession();
+
         $this->output();
     }
 
