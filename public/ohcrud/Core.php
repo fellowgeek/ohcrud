@@ -60,13 +60,36 @@ class Core {
         return $this;
     }
 
+    // Get a session variable.
+    public function getSession($key) {
+        session_start();
+        if (isset($_SESSION[$key]) == true) {
+            return $_SESSION[$key];
+        }
+        return false;
+    }
+
     // Unset a session variable.
     public function unsetSession($key) {
         session_start();
-        if (isset($key) == true) {
+        if (isset($_SESSION[$key]) == true) {
             unset($_SESSION[$key]);
         }
         session_write_close();
+        return $this;
+    }
+
+    // Regenerate session id
+    public function regenerateSession() {
+        session_start();
+        session_regenerate_id();
+        return $this;
+    }
+
+    // Clear all session variables.
+    public function clearSession() {
+        session_start();
+        session_destroy();
         return $this;
     }
 
@@ -177,7 +200,7 @@ class Core {
             return false;
         }
 
-        $hash = md5($key) . '.cache';
+        $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
         if (file_exists($path) == false) {
@@ -189,7 +212,7 @@ class Core {
             return false;
         }
 
-        $data = @unserialize(file_get_contents($path), ['allowed_classes' => false]);
+        $data = @unserialize(file_get_contents($path), ['allowed_classes' => ['stdClass']]);
         return $data;
     }
 
@@ -200,7 +223,7 @@ class Core {
             return false;
         }
 
-        $hash = md5($key) . '.cache';
+        $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
         $serialized = serialize($data);
@@ -210,7 +233,7 @@ class Core {
     // Remove data from cache.
     public function unsetCache($key) {
 
-        $hash = md5($key) . '.cache';
+        $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
         if (file_exists($path) == true) {
