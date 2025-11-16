@@ -1,5 +1,5 @@
 <header class="post-header">
     <p class="eyebrow"><?php print($eyebrow); ?></p>
     <h1><?php print($title); ?></h1>
-    <p class="meta"><?php if ($author != '') print('By ' . $author); ?> <?php if ($updated != '') print('— Last updated ' . $updated);  ?></p>
+    <p class="meta"><?php if ($author != '') print('By ' . $author); ?> <?php if ($updated != '') print($verb . ' ' . $updated);  ?></p>
 </header>

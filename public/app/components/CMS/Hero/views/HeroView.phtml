@@ -1,0 +1,19 @@
+<div class="hero-grid">
+    <div class="hero-content">
+        <h1><?php print($title); ?></h1>
+        <p><?php print($details); ?></p>
+
+<?php
+    if ($cta != '' && $link != '') {
+?>
+        <p>
+            <a href="#download" class="btn btn-info btn-outline">Download App</a>
+        </p>
+<?php
+    }
+?>
+    </div>
+    <div class="hero-mockup">
+        <img src="<?php print($image); ?>" alt="<?php print($alt); ?>" />
+    </div>
+</div>

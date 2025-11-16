@@ -1,24 +1,24 @@
 <?php
-namespace app\components\CMS\Figure;
+namespace app\components\CMS\UseCase;
 
 // prevent direct access
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 /*
 
-  Figure Component
+  UseCase Component
 
-  This component is used to display a figure (image) with captions, designed to work best with the "focus" theme.
+  This component is used to display
 
   Usage:
-  [[CMS\Figure\Figure|image={Image URL}|alt={Alt Text}|caption={Caption Text}]]
+  [[CMS\UseCase\UseCase|caption={Caption Text}|details={Detailed Description}]]
 
   Example:
-  [[CMS\Figure\Figure|image=/global/files/76617425834173c813283a6ec0e89d49.jpg|alt=Astronaut Buzz Aldrin|caption=Astronaut Buzz Aldrin - NASA]]
+  [[CMS\UseCase\UseCase|caption=For Creative Professionals|details=Manage multiple research projects, organize notes, and maintain deep focus during study sessions.]]
 
 */
 
-class Figure extends \app\components\Component {
+class UseCase extends \app\components\Component {
 
     // Constructor for this class, which takes a $request parameter.
     public function __construct($request, $path) {
@@ -29,16 +29,15 @@ class Figure extends \app\components\Component {
 
     public function output($parameters = []) {
 
-
-        $parameters['image'] = $parameters['image'] ?? '';
-        $parameters['alt'] = $parameters['alt'] ?? '';
+        // Set default values for parameters if they are not provided
         $parameters['caption'] = $parameters['caption'] ?? '';
+        $parameters['details'] = $parameters['details'] ?? '';
 
         // Set component parameters to be extraxted in the view
         $this->variables = $parameters;
 
         // Component HTML content
-        $this->content->html = $this->loadView($this->directory . 'views/FigureView.phtml');
+        $this->content->html = $this->loadView($this->directory . 'views/UseCaseView.phtml');
 
     }
 

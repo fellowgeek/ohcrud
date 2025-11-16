@@ -362,7 +362,7 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Check for components
-        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/is';
         $matches = [];
         $matchCount = preg_match_all($regex, $content->html, $matches);
 
@@ -400,7 +400,7 @@ class cCMS extends \ohCRUD\DB {
         $matchCount = 0;
         $regex = '/(?<=\{{)(?!CMS:(.*?)).*?(?=\}})/i';
         $matchCount += preg_match_all($regex, $text);
-        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/is';
         $matchCount += preg_match_all($regex, $text);
 
         return $matchCount;

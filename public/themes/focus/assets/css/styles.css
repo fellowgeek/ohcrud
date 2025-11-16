@@ -44,6 +44,12 @@ body {
     text-rendering: optimizeLegibility;
 }
 
+hr {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 60px 0;
+}
+
 .progress {
     position: fixed;
     inset: 0 0 auto 0;
@@ -259,6 +265,11 @@ a {
     text-decoration-thickness: 1px;
 }
 
+img {
+    max-width: 100%;
+    height: auto;
+}
+
 blockquote {
     margin: 20px 0;
     padding: 18px 20px;
@@ -421,6 +432,10 @@ details.callout[open] {
     gap: 12px;
     align-items: center;
     justify-content: space-between;
+}
+
+.site-footer p {
+    font-size: 1rem;
 }
 
 .site-footer a {
