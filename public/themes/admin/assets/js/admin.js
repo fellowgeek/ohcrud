@@ -223,7 +223,7 @@ $$(document).on('page:init', function (e, pageObject) {
             element: document.getElementById('TEXT'),
             autofocus: true,
             autosave: {
-                enabled: true,
+                enabled: false,
                 uniqueId: __PATH__,
                 delay: 1000,
             },
