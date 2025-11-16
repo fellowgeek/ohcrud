@@ -1087,6 +1087,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Clear the log file
         file_put_contents($filepath, '');
+        $this->log('info', 'Log file truncated.');
         $this->success = true;
 
         $this->output();

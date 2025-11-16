@@ -87,6 +87,11 @@ define('__OHCRUD_DB_CONFIG__', serialize([
 // IMPORTANT
 // API end points defined in routes.php.
 
+// CMS Settings
+
+// Define CMS cache duration in seconds
+define('__OHCRUD_CMS_CACHE_DURATION__', 3600); // 1 hour
+
 // Define defualt themes for the CMS and admin dashboard
 define('__OHCRUD_CMS_ADMIN_THEME__', 'admin');
 define('__OHCRUD_CMS_ADMIN_LAYOUT__', 'edit');

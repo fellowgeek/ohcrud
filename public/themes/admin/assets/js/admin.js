@@ -715,6 +715,9 @@ $$(document).on('page:init', function (e, pageObject) {
                 setTimeout(() => {
                     clearLogFile(log);
                 }, 250);
+                setTimeout(() => {
+                    loadLogData(logName, 1);
+                }, 3000);
             }, null);
         });
 
