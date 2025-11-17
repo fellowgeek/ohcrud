@@ -1,0 +1,160 @@
+/* Documentation-specific styles */
+.doc-layout {
+    display: flex;
+    max-width: 1800px;
+    margin: 0 auto;
+    gap: 40px;
+    position: relative;
+}
+
+.doc-sidebar {
+    position: sticky;
+    top: 80px;
+    width: 280px;
+    height: fit-content;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-top-right-radius: 14px;
+    border-top-left-radius: 0px;
+    border-bottom-right-radius: 14px;
+    border-bottom-left-radius: 0px;
+    box-shadow: var(--shadow);
+}
+
+.doc-sidebar h4 {
+    margin: 0 0 12px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-section {
+    margin-bottom: 12px;
+}
+
+.toc-section>a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.toc-section>a:hover {
+    background: var(--accent-weak);
+}
+
+.toc-section>a.active {
+    background: var(--accent-weak);
+    color: var(--accent);
+}
+
+.toc-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    color: var(--muted);
+    transition: transform 0.2s ease;
+}
+
+.toc-section.collapsed .toc-toggle {
+    transform: rotate(-90deg);
+}
+
+.toc-subsections {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 0 0;
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.toc-section.collapsed .toc-subsections {
+    max-height: 0;
+}
+
+.toc-subsections li {
+    margin: 2px 0;
+}
+
+.toc-subsections a {
+    display: block;
+    padding: 2px 12px 2px 24px;
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
+}
+
+.toc-subsections a:hover {
+    background: rgba(200, 200, 255, 0.15);
+    color: var(--text);
+}
+
+.toc-subsections a.active {
+    background: rgba(200, 200, 255, 0.15);
+    color: var(--accent);
+}
+
+.doc-content {
+    flex: 1;
+    min-width: 0;
+    padding: 20px 20px 80px;
+}
+
+.doc-content section {
+    scroll-margin-top: 80px;
+}
+
+.doc-content h2,
+.doc-content h3 {
+    scroll-margin-top: 80px;
+}
+
+/* Mobile responsiveness */
+@media (min-width: 1800px) {
+
+    .doc-sidebar {
+        border-top-right-radius: 14px;
+        border-top-left-radius: 14px;
+        border-bottom-right-radius: 14px;
+        border-bottom-left-radius: 14px;
+    }
+
+}
+
+@media (max-width: 768px) {
+    .doc-sidebar {
+        display: none;
+    }
+
+    .doc-content {
+        padding: 16px 14px 56px;
+    }
+}
+
+.doc-content {
+    padding: 16px 14px 56px;
+}

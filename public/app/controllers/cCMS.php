@@ -100,7 +100,7 @@ class cCMS extends \ohCRUD\DB {
 
         // Get cached response (if any)
         $cacheKey = 'cCMS:' . $this->path . http_build_query($_GET ?? '');
-        $cachedResponse = $this->getCache($cacheKey, 3600);
+        $cachedResponse = $this->getCache($cacheKey, __OHCRUD_CMS_CACHE_DURATION__);
         if ($this->useCache == true && $cachedResponse !== false) {
             $this->data = $cachedResponse;
             // Inject the uncachable content
@@ -362,7 +362,7 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Check for components
-        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/is';
         $matches = [];
         $matchCount = preg_match_all($regex, $content->html, $matches);
 
@@ -400,7 +400,7 @@ class cCMS extends \ohCRUD\DB {
         $matchCount = 0;
         $regex = '/(?<=\{{)(?!CMS:(.*?)).*?(?=\}})/i';
         $matchCount += preg_match_all($regex, $text);
-        $regex = '/(?<=\[\[)(.*?)(?=\]\])/i';
+        $regex = '/(?<=\[\[)(.*?)(?=\]\])/is';
         $matchCount += preg_match_all($regex, $text);
 
         return $matchCount;
@@ -600,17 +600,49 @@ class cCMS extends \ohCRUD\DB {
         $themeContent->html = $output;
         $themeContent = $this->processContent($themeContent);
 
-        // gather CSS and JS assets
-        $this->getMetaTags();
-        $this->getCSSAssets();
-        $this->getJSAssets();
-
         // Set HTML output
         $output = $themeContent->html;
 
         // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
         $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
         $output = preg_replace("@(<script|<link|<img)(.*?)src=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2src=\"" . "/themes/". $this->theme. "/$6\"", $output);
+
+        if (__OHCRUD_CMS_MINIFY_CSS__ == true) {
+            // Minify CSS files in the theme
+            $output = preg_replace_callback(
+                "@<link(.*?)href=\"(?!(http://)|(https://)|(\[)|(data:))/?(.*?\.css[^\"]*)\"(.*?)>@i",
+                function ($matches) {
+                    if (isset($matches[6]) == true) {
+                        $originalPath = '/' . $matches[6];
+                        $this->includeCSSFile($originalPath, 10);
+                    }
+                    // remove the HTML tag
+                    return '';
+                },
+                $output
+            );
+        }
+
+        if (__OHCRUD_CMS_MINIFY_JS__ == true) {
+            // Minify JS files in the theme
+            $output = preg_replace_callback(
+                "@<script(.*?)src=\"(?!(http://)|(https://)|(\[)|(data:))/?(.*?\.js[^\"]*)\"(.*?)>(.*?)</script>@is",
+                function ($matches) {
+                    if (isset($matches[6]) == true) {
+                        $originalPath = '/' . $matches[6];
+                        $this->includeJSFile($originalPath, 10);
+                    }
+                    // remove the HTML tag
+                    return '';
+                },
+                $output
+            );
+        }
+
+        // Gather and process CSS and JS assets
+        $this->getMetaTags();
+        $this->getCSSAssets();
+        $this->getJSAssets();
 
         if ($this->actionMode == true) {
             $output = str_ireplace('{{CMS:CONTENT}}', $this->getContentFromFile($this->actionMode, false, true)->html, $output);

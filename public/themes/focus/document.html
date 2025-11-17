@@ -9,8 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.css" />
+    <link rel="stylesheet" href="assets/css/document.css" />
     {{CMS:STYLESHEET}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.css" />
     <meta name="color-scheme" content="dark" />
 </head>
 
@@ -30,9 +31,20 @@
     </header>
 
     <main id="main">
-        <article class="post">
-            {{CMS:CONTENT}}
-        </article>
+        <div class="doc-layout">
+            <!-- Dynamic Table of Contents Sidebar -->
+            <aside class="doc-sidebar" role="navigation" aria-label="Table of Contents">
+                <h4>Table of Contents</h4>
+                <ul class="toc-list" id="toc-list">
+                    <!-- Generated dynamically by JavaScript -->
+                </ul>
+            </aside>
+
+            <!-- Main Documentation Content -->
+            <article class="doc-content post">
+                {{CMS:CONTENT}}
+            </article>
+        </div>
     </main>
 
     <footer class="site-footer">
@@ -46,9 +58,9 @@
 
     <script type="importmap">
     {
-        "imports": {
+      "imports": {
         "prism": "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"
-        }
+      }
     }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
@@ -59,6 +71,7 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js" defer></script>
     <script type="module" src="assets/js/script.js"></script>
+    <script type="module" src="assets/js/document.js"></script>
     {{CMS:JAVASCRIPT}}
 </body>
 

@@ -705,9 +705,21 @@ class cAdmin extends \ohCRUD\DB {
             )->first();
 
             if ($file != false) {
-                $basePath = 'global/files/';
-                $absoluteFilePath = $basePath . basename($file->PATH);
-                unlink($absoluteFilePath);
+                $fileInfo = pathinfo($file->PATH);
+                $filesFound = glob('global/files/' . $fileInfo['filename'] . '_*.' . $fileInfo['extension']);
+                // Delete the main file
+                if (file_exists(__SELF__ . $file->PATH) == true) {
+                    unlink(__SELF__ . $file->PATH);
+                }
+                // Delete all resized versions of the file
+                if (is_array($filesFound) == true) {
+                    foreach ($filesFound as $foundFile) {
+                        $absoluteFilePath = __SELF__ . $foundFile;
+                        if (file_exists($absoluteFilePath) == true) {
+                            unlink($absoluteFilePath);
+                        }
+                    }
+                }
             }
         }
 
@@ -1075,6 +1087,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Clear the log file
         file_put_contents($filepath, '');
+        $this->log('info', 'Log file truncated.');
         $this->success = true;
 
         $this->output();

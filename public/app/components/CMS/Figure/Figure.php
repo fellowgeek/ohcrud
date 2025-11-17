@@ -11,7 +11,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
   This component is used to display a figure (image) with captions, designed to work best with the "focus" theme.
 
   Usage:
-  [[CMS\Figure\Figure|]]
+  [[CMS\Figure\Figure|image={Image URL}|alt={Alt Text}|caption={Caption Text}]]
 
   Example:
   [[CMS\Figure\Figure|image=/global/files/76617425834173c813283a6ec0e89d49.jpg|alt=Astronaut Buzz Aldrin|caption=Astronaut Buzz Aldrin - NASA]]

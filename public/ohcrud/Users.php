@@ -59,8 +59,6 @@ class Users extends \ohCRUD\DB {
                         UNIQUE KEY `idx_EMAIL` (`EMAIL`) USING BTREE,
                         UNIQUE KEY `idx_HASH` (`HASH`) USING BTREE,
                         UNIQUE KEY `idx_TOKEN` (`TOKEN`) USING BTREE,
-                        UNIQUE KEY `idx_ACTIVATION_HASH` (`ACTIVATION_HASH`) USING BTREE,
-                        UNIQUE KEY `idx_RESET_HASH` (`RESET_HASH`) USING BTREE,
                         KEY `idx_GROUP` (`GROUP`) USING BTREE,
                         KEY `idx_STATUS` (`STATUS`) USING BTREE
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -230,8 +228,6 @@ class Users extends \ohCRUD\DB {
                 unset($user->HASH);
                 unset($user->TOKEN);
                 unset($user->TOTP_SECRET);
-                unset($user->ACTIVATION_HASH);
-                unset($user->RESET_HASH);
 
                 // Create a user session and log in the user
                 $this->setSession('User', $user);
@@ -273,8 +269,6 @@ class Users extends \ohCRUD\DB {
             unset($user->HASH);
             unset($user->TOKEN);
             unset($user->TOTP_SECRET);
-            unset($user->ACTIVATION_HASH);
-            unset($user->RESET_HASH);
 
             // Check if the user has TOTP enabled
             if ((int) $user->TOTP == $this::ACTIVE) {
@@ -327,8 +321,6 @@ class Users extends \ohCRUD\DB {
         unset($user->HASH);
         unset($user->TOKEN);
         unset($user->TOTP_SECRET);
-        unset($user->ACTIVATION_HASH);
-        unset($user->RESET_HASH);
 
         // Create the user session and log in the user
         $this->setSession('User', $user);

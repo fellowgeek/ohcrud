@@ -11,7 +11,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
   This component is used to display the article header, designed to work best with the "focus" theme.
 
   Usage:
-  [[CMS\Header\Header|eyebrow=eyebrow|title=title|author=author|updated=updated]]
+  [[CMS\Header\Header|eyebrow={Eyebrow}|title={Title}|author={Author}|updated={Updated}|verb={Verb}]]
 
   Example:
   [[CMS\Header\Header|eyebrow=The Constitutional Foundation of Innovation|title=How a Young Nation Shaped the Modern World|author=Erfan Reed|updated=September 11, 2025]]
@@ -33,6 +33,7 @@ class Header extends \app\components\Component {
         $parameters['title'] = $parameters['title'] ?? '';
         $parameters['author'] = $parameters['author'] ?? '';
         $parameters['updated'] = $parameters['updated'] ?? '';
+        $parameters['verb'] = $parameters['verb'] ?? '— Last updated';
 
         // Set component parameters to be extraxted in the view
         $this->variables = $parameters;

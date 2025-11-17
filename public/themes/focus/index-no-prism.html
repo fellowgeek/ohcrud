@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.css" />
     {{CMS:STYLESHEET}}
     <meta name="color-scheme" content="dark" />
 </head>
@@ -37,27 +36,17 @@
 
     <footer class="site-footer">
         <div class="wrap">
-            <div>
-                <span>{{CMS:OHCRUD}}</span>
+            <div >
+                <span>&copy; <?php print(date("Y")); ?> <span class="cms-app">{{CMS:APP}}</span></span>
+                <span> | </span>
+                <span><a href="/privacy">Privacy Policy</a></span>
+                <span> | </span>
+                <span><a href="/terms">Terms of Service</a></span>
             </div>
             <a href="#">Back to top</a>
         </div>
     </footer>
 
-    <script type="importmap">
-    {
-        "imports": {
-        "prism": "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"
-        }
-    }
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup-templating.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-php.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js" defer></script>
     <script type="module" src="assets/js/script.js"></script>
     {{CMS:JAVASCRIPT}}
 </body>
