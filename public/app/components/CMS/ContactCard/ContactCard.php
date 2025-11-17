@@ -36,7 +36,7 @@ class ContactCard extends \app\components\Component {
         $parameters['group'] = $parameters['group'] ?? 'first';
 
 
-        // Set component parameters to be extraxted in the view
+        // Set component parameters to be extracted in the view
         $this->variables = $parameters;
 
         // Include component specific JS assets
