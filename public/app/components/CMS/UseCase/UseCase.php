@@ -33,7 +33,7 @@ class UseCase extends \app\components\Component {
         $parameters['caption'] = $parameters['caption'] ?? '';
         $parameters['details'] = $parameters['details'] ?? '';
 
-        // Set component parameters to be extraxted in the view
+        // Set component parameters to be extracted in the view
         $this->variables = $parameters;
 
         // Component HTML content
