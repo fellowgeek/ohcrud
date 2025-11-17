@@ -92,7 +92,7 @@ define('__OHCRUD_DB_CONFIG__', serialize([
 // Define CMS cache duration in seconds
 define('__OHCRUD_CMS_CACHE_DURATION__', 3600); // 1 hour
 
-// Define defualt themes for the CMS and admin dashboard
+// Define default themes for the CMS and admin dashboard
 define('__OHCRUD_CMS_ADMIN_THEME__', 'admin');
 define('__OHCRUD_CMS_ADMIN_LAYOUT__', 'edit');
 
