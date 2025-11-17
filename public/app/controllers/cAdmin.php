@@ -713,8 +713,8 @@ class cAdmin extends \ohCRUD\DB {
                 }
                 // Delete all resized versions of the file
                 if (is_array($filesFound) == true) {
-                    foreach ($filesFound as $file) {
-                        $absoluteFilePath = __SELF__ . $file;
+                    foreach ($filesFound as $foundFile) {
+                        $absoluteFilePath = __SELF__ . $foundFile;
                         if (file_exists($absoluteFilePath) == true) {
                             unlink($absoluteFilePath);
                         }
