@@ -8,7 +8,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
   ContactCard Component
 
-  This component is used to display a
+  This component is used to display a contact card with title, contact information, link, meta info, and group.
   Usage:
   [[CMS\ContactCard\ContactCard|title={Title}|contact={Contact Info}|link={Link URL}|meta={Meta Info}|group={Group}]]
 
