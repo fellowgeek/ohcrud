@@ -22,7 +22,6 @@ contactCards.forEach(card => {
 // Now, iterate through the created contactCardGroups and wrap them
 contactCardGroups.forEach(elementsInGroup => {
     if (elementsInGroup.length > 0) {
-        console.log(elementsInGroup);
         // Create the new div to wrap the group
         const contactsGrid = document.createElement('div');
         contactsGrid.classList.add('contact-grid');
