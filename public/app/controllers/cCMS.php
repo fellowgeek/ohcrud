@@ -626,7 +626,7 @@ class cCMS extends \ohCRUD\DB {
         if (__OHCRUD_CMS_MINIFY_JS__ == true) {
             // Minify JS files in the theme
             $output = preg_replace_callback(
-                "@<script(.*?)src=\"(?!(http://)|(https://)|(\[)|(data:))/?(.*?\.js[^\"]*)\"(.*?)>(.*?)</script>@is",
+                "@<script(.*?)src=\"(?!(http://)|(https://)|(\[)|(data:))/?(.*?\.js[^\"]*)\"(.*?)>(.*?)</script>@i",
                 function ($matches) {
                     if (isset($matches[6]) == true) {
                         $originalPath = '/' . $matches[6];
