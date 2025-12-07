@@ -653,7 +653,7 @@ class cCMS extends \ohCRUD\DB {
 
         // Replace ohCRUD core content templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . "{{CMS:UNCACHABLE-HTML}}", $output);
-        $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
+        $output = str_ireplace("{{CMS:CONTENT-TEXT}}", htmlspecialchars($this->content->text, ENT_QUOTES, 'UTF-8'), $output);
 
         // Replace ohCRUD templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:APP}}", __APP__, $output);
@@ -661,7 +661,7 @@ class cCMS extends \ohCRUD\DB {
         $output = str_ireplace("{{CMS:DOMAIN}}", __DOMAIN__, $output);
         $output = str_ireplace("{{CMS:SUB_DOMAIN}}", __SUB_DOMAIN__, $output);
         $output = str_ireplace("{{CMS:PATH}}", $path, $output);
-        $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
+        $output = str_ireplace("{{CMS:TITLE}}", htmlspecialchars($this->content->title, ENT_QUOTES, 'UTF-8'), $output);
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
 

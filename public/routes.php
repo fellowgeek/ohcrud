@@ -10,7 +10,7 @@ define('__OHCRUD_ALLOWED_IPS__', [
 
 // Enable or disable filtering for allowed origins for Cross-Origin Resource Sharing (CORS).
 // Set to false if you want to allow all origins. ( not recommended )
-define('___OHCRUD_ALLOWED_ORIGINS_ENABLED__', false);
+define('__OHCRUD_ALLOWED_ORIGINS_ENABLED__', false);
 
 // List of allowed remote origins for Cross-Origin Resource Sharing (CORS).
 define('__OHCRUD_ALLOWED_ORIGINS__', [
