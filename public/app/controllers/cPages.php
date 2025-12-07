@@ -32,7 +32,7 @@ class cPages extends \app\models\mPages {
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+        if ($this->isHardCoded($request->payload->URL) == true)
             $this->error('You can\'t edit a hard coded page.');
 
         if ($this->success === false) {
@@ -46,6 +46,7 @@ class cPages extends \app\models\mPages {
         $purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
 
         $request->payload->TITLE = $purifier->purify($request->payload->TITLE);
+        $request->payload->TEXT = $purifier->purify($request->payload->TEXT);
 
         // Set default values for THEME and LAYOUT if missing in the payload.
         if (isset($request->payload->THEME) == false) {
@@ -118,7 +119,7 @@ class cPages extends \app\models\mPages {
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
+        if ($this->isHardCoded($request->payload->URL) == true)
             $this->error('You can\'t delete a hard coded page.');
 
         if ($this->success === false) {
@@ -158,6 +159,22 @@ class cPages extends \app\models\mPages {
         $this->unsetCache($cacheKey);
 
         $this->output();
+
+    private function isHardCoded($url) {
+        $path = trim($url ?? '', '/');
+        if (empty($path)) {
+            return false;
+        }
+        $fullPath = __SELF__ . 'app/views/cms/' . $path . '.phtml';
+
+        $baseDir = realpath(__SELF__ . 'app/views/cms');
+        $realFullPath = realpath($fullPath);
+
+        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+            return true;
+        }
+
+        return false;
     }
 
 }

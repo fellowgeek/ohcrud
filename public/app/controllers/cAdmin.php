@@ -124,11 +124,34 @@ class cAdmin extends \ohCRUD\DB {
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
 
+        // Whitelist validation for ORDER and ORDER_BY clauses
+        $tableColumns = [];
+        $tableDetails = $this->details($table, true);
+        $tableObject = null;
+        if(is_object($tableDetails) && !empty(get_object_vars($tableDetails))) {
+            $tableName = array_keys(get_object_vars($tableDetails))[0];
+            $tableObject = $tableDetails->$tableName;
+        }
+
+        if(isset($tableObject->COLUMNS)) {
+            foreach($tableObject->COLUMNS as $column) {
+                $tableColumns[] = $column->NAME;
+            }
+        }
+
         // Default values for optional parameters.
         $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
         $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+
         $order = $request->payload->ORDER ??  'DESC';
+        if (strtoupper($order) !== 'ASC' && strtoupper($order) !== 'DESC') {
+            $order = 'DESC';
+        }
+
         $orderBy = $request->payload->ORDER_BY ?? $this->getPrimaryKeyColumn($table);
+        if ($orderBy != false && (empty($tableColumns) || in_array($orderBy, $tableColumns) == false)) {
+            $orderBy = $this->getPrimaryKeyColumn($table);
+        }
 
         // Get total records
         $totalRecords = $this->RUN("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;

@@ -48,6 +48,8 @@ class cCMS extends \ohCRUD\DB {
     public $maxRecursiveContent = 7;
     // Allowed CMS actions
     public $allowedActions = ['edit', 'users', 'tables', 'files', 'logs', 'settings'];
+    // Allowed components for instantiation
+    public $allowedComponents = [];
 
     public function __construct($request) {
         parent::__construct();
@@ -88,6 +90,9 @@ class cCMS extends \ohCRUD\DB {
         // Setup minifiers
         $this->minifierCSS = new Minify\CSS();
         $this->minifierJS = new Minify\JS();
+
+        // Scan for allowed components to build a whitelist.
+        $this->allowedComponents = $this->scanComponents(__SELF__ . 'app/components');
     }
 
     // Handler for all incoming requests
@@ -257,7 +262,7 @@ class cCMS extends \ohCRUD\DB {
         $content = new \app\models\mContent;
 
         // Try getting page content from file
-        if (file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
+        if ($this->isHardCoded($path) == true) {
             $content = $this->getContentFromFile($path);
             // Handle special paths
             if ($path === '/login/') {
@@ -319,8 +324,25 @@ class cCMS extends \ohCRUD\DB {
         $content = new \app\models\mContent;
         $content->type = \app\models\mContent::TYPE_FILE;
         $content->title = ucwords(trim($path, '/'));
+
+        $finalPath = $is404 ? '404' : $path;
+        $viewPath = 'app/views/cms/' . trim($finalPath, '/') . '.phtml';
+        $fullPath = __SELF__ . $viewPath;
+
+        // Mitigate path traversal.
+        $baseDir = realpath(__SELF__ . 'app/views/cms');
+        $realFullPath = realpath($fullPath);
+
+        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+            $this->log('warn', 'Local File Inclusion (LFI) attempt blocked.', ['path' => $path]);
+            $content->is404 = true;
+            $content->text = '';
+            $content->html = '';
+            return $content;
+        }
+
         ob_start();
-        include(__SELF__ . 'app/views/cms/' . trim(($is404 ? '404' : $path), '/') . '.phtml');
+        include($realFullPath);
         $content->text = ob_get_clean();
         $content->html = $content->text;
 
@@ -412,6 +434,14 @@ class cCMS extends \ohCRUD\DB {
         $content = new \app\models\mContent;
         $componentParameters = $this->parseString($componentString);
         $componentClassFile = str_replace('\\', '/', key($componentParameters));
+
+        // Check if the component is in the whitelist.
+        if (in_array($componentClassFile, $this->allowedComponents) == false) {
+            $this->log('warn', 'Component not in whitelist blocked.', ['component' => $componentClassFile]);
+            $content->is404 = true;
+            return $content;
+        }
+
         $componentClass = '\app\components\\' . str_replace('/', '\\', $componentClassFile);
         array_shift($componentParameters);
 
@@ -680,6 +710,45 @@ class cCMS extends \ohCRUD\DB {
         }
 
         $this->data = $output;
+    }
+
+    // Scan components directory and return a list of component paths
+    private function scanComponents($dir) {
+        $components = [];
+        try {
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+            foreach ($files as $file) {
+                if ($file->isDir()){
+                    continue;
+                }
+                if ($file->getExtension() == 'php') {
+                    $componentPath = str_replace(__SELF__ . 'app/components/', '', $file->getPathname());
+                    $componentPath = str_replace('.php', '', $componentPath);
+                    $components[] = $componentPath;
+                }
+            }
+        } catch(\Exception $e) {
+            $this->log('error', 'Failed to scan components directory.', ['error' => $e->getMessage()]);
+        }
+        return $components;
+    }
+
+    // Check if the requested path is a hard-coded file
+    private function isHardCoded($path) {
+        $path = trim($path ?? '', '/');
+        if (empty($path)) {
+            return false;
+        }
+        $fullPath = __SELF__ . 'app/views/cms/' . $path . '.phtml';
+
+        $baseDir = realpath(__SELF__ . 'app/views/cms');
+        $realFullPath = realpath($fullPath);
+
+        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+            return true;
+        }
+
+        return false;
     }
 
 }

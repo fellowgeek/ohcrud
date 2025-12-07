@@ -247,150 +247,28 @@ server {
 
 ## The Basics
 
-All ohCRUD classes inherit from the `Core` class. Ideally all of your models and controllers should do the same. If a class needs database functions it should inherit from the `DB` class, which itself inherits from `Core`.
+ohCRUD is built around a few core concepts that are important to understand.
 
-API and WEB endpoints are handled by the `Router` class. The Router checks if a user has the correct permissions to access the endpoint and routes the request to the correct class to handle.
+### Core Objects
 
-ohCRUD uses the `Users` class to authenticate users and check permissions. When `__OHCRUD_DEBUG_MODE__` is set to `TRUE`, if the Users table does not exist, ohCRUD will auto-create the table and insert a default admin user into it.
+The framework is composed of four main objects that handle most of the heavy lifting.
+
+-   **[Core](./Core.md)**: The base object that provides fundamental functionalities like logging, caching, session management, and error handling. All other ohCRUD classes inherit from this.
+-   **[DB](./DB.md)**: Extends the `Core` object and provides the database abstraction layer for all CRUD (Create, Read, Update, Delete) operations.
+-   **[Router](./Router.md)**: Handles all incoming requests, checks permissions, and routes them to the appropriate controller and method.
+-   **[Users](./Users.md)**: Extends the `DB` object and manages user authentication, authorization, and session management.
 
 ### Default Admin Credentials
+
+When `__OHCRUD_DEBUG_MODE__` is set to `TRUE`, if the `Users` table does not exist, ohCRUD will auto-create the table and insert a default admin user into it.
 
 *   **Username:** admin
 *   **Password:** admin
 
-### Core Object
+## Guides
 
-Every class in ohCRUD inherits from the `Core` object. This class is responsible for setting the output type and http headers and performing tasks like logging, error handling, remote requests, and debugging.
-
-#### Properties
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `data` | mixed | This property holds results of a remote request or database query or any data. |
-| `errors` | array | If any errors occur it will be included in this element. |
-| `success` | boolean | This is set to `TRUE` if the operation was successful or `FALSE` otherwise. |
-| `outputType` | string / null | Output can be set to `'HTML'`, `'JSON'` or `NULL`. |
-| `outputHeaders` | array | You can set HTML headers here. |
-| `outputHeadersSent` | boolean | This is set to `TRUE` if HTML headers have already been sent or `FALSE` otherwise. |
-| `outputStatusCode` | integer | This is set automatically if the operation is successful or if any errors happen. You can set your own HTTP status code here as well. |
-| `runtime` | float | Contains the script execution time in seconds. Only available when debug mode is on. |
-| `version` | string | The version of ohCRUD. |
-
-#### Methods
-
-All the methods in `Core` can be used in a chain, see the example below:
-
-```php
-$this->log('info', 'This is a test log.')->debug($_SERVER)->output();
-```
-
-| Method | Description | Return Value |
-| --- | --- | --- |
-| `setOutputType($outputType)` | Sets the output type for the response (e.g., 'HTML', 'JSON', or null). | `Core` Object |
-| `setOutputHeaders($outputHeaders = [])` | Sets custom HTTP headers for the response. | `Core` Object |
-| `setOutputStatusCode($outputStatusCode)` | Sets the HTTP status code for the response. | `Core` Object |
-| `setSession($key, $value)` | Sets a session variable. | `Core` Object |
-| `getSession($key)` | Gets a session variable. | mixed |
-| `unsetSession($key)` | Unsets a session variable. | `Core` Object |
-| `regenerateSession()` | Regenerates the session ID. | `Core` Object |
-| `clearSession()` | Destroys the entire session. | `Core` Object |
-| `CSRF()` | Generates and returns a CSRF token. | string |
-| `checkCSRF($token)` | Validates a CSRF token. | boolean |
-| `output()` | Generates and sends the response based on the `outputType`. | `Core` Object |
-| `headers()` | Sends the HTTP headers. | `Core` Object |
-| `redirect($url)` | Performs an HTTP redirect. | boolean |
-| `getCache($key, $duration = 3600)` | Retrieves data from the cache. | mixed |
-| `setCache($key, $data)` | Stores data in the cache. | boolean |
-| `unsetCache($key)` | Removes data from the cache. | boolean |
-| `encryptText($text, $password = '')` | Encrypts a string. | string |
-| `decryptText($encryptedText, $password = '')` | Decrypts a string. | string |
-| `log($level, $message, ...)` | Logs a message using Monolog. | `Core` Object |
-| `error($message, $outputStatusCode = 500)` | Logs an error and sets the response to an error state. | `Core` Object |
-| `registerCoreErrorHandlers()` | Registers custom error and exception handlers. | void |
-| `background($command, $wait = 0)` | Executes a CLI command in the background. | void |
-| `console($message, $color, ...)` | Outputs a colored message to the console (CLI only). | boolean |
-| `debug($expression, $label, ...)` | A wrapper for `php-ref` to debug variables. | `Core` Object |
-
-### Database Object
-
-The `DB` object is in charge of all the CRUD (*C*reate *R*ead *U*pdate *D*elete) work. This class inherits from `Core`, and comes with all the properties and methods that `Core` has.
-
-#### Properties
-
-In addition to the `Core` object properties, the `DB` object has:
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `lastInsertId` | integer | Stores the most recently generated auto-increment ID from a successful INSERT query. |
-| `config` | array | Configuration settings for the database. |
-| `db` | PDO | The PDO database connection instance. |
-| `SQL` | string | Stores the last SQL query executed. |
-
-#### Methods
-
-Same as `Core` object plus the following:
-
-| Method | Description | Return Value |
-| --- | --- | --- |
-| `run($sql, $bind=array(), ...)` | Executes any SQL query against the database. | `DB` Object |
-| `create($table, $data=array())` | Inserts a new record into the database. | `DB` Object |
-| `read($table, $where="", ...)` | Reads records from the database. | `DB` Object |
-| `update($table, $data, $where, ...)` | Updates records in the database. | `DB` Object |
-| `delete($table, $where, ...)` | Deletes records from the database. | `DB` Object |
-| `first()` | Returns the first element of the `data` property. This method will terminate a method chain. | Object |
-| `getPrimaryKeyColumn($table)` | Returns the primary key column name for a given table. | string / null |
-| `details($table = '', ...)` | Returns the details of all tables or a specific table. | \stdClass / void |
-
-### Router Object
-
-The `Router` object is your interface to the outside world, it will take a `path` which can be a `URI` or a `console argument` and will call upon the appropriate class and method to handle the request.
-
-To accomplish this task, the Router will look at the `__OHCRUD_ENDPOINTS__` constant and will call the class and method based on the defined namespace. If the path was not defined in `__OHCRUD_ENDPOINTS__`, then the Router will look at `__OHCRUD_DEFAULT_PATH_HANDLER__` and will route the request to the `defaultPathHandler` method of the class defined here.
-
-If the Router fails to find a path after trying the steps above, it will return a 404 error.
-
-#### Permissions
-
-Before calling objects and methods the Router checks the target class for the public `$permissions` array property.
-
-```php
-namespace app\models;
-
-class Example extends \ohCRUD\DB {
-
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'exampleMethodA' => 2,
-        'exampleMethodB' => 7
-    ];
-
-    // ...
-}
-```
-
-If a user is present in the `$_SESSION`, the Router will check that user's `PERMISSIONS` value against the number assigned to the target method in the `$permissions` array. If the user's `PERMISSIONS` value is *smaller than or equal to* the method's value it will grant access, otherwise it will return a 403 error.
-
-The `'object'` key in the `$permissions` array controls the global access to the object.
-
-To grant full access to a method or object without requiring the user to login, use the `__OHCRUD_PERMISSION_ALL__` constant.
-
-### Users Object
-
-The `Users` object is the ohCRUD's way of handling users and permissions. It extends the `DB` object.
-
-#### Methods
-
-Same as `DB` object plus the following:
-
-| Method | Description | Return Value |
-| --- | --- | --- |
-| `create($table, $data=array())` | Overrides the `DB::create` method to hash passwords and generate a token. | `Users` Object |
-| `update($table, $data, $where, ...)` | Overrides the `DB::update` method to hash passwords if a new password is provided. | `Users` Object |
-| `enableTOTP($id, $activateTOTP = true)` | Enables or re-generates TOTP for a user. | boolean |
-| `enableTOKEN($id)` | Enables or re-generates an API token for a user. | boolean |
-| `login($username, $password, $token = null)` | Authenticates a user with username/password or an API token. | \stdClass / boolean |
-| `verify($id, $TOTP_CODE)` | Verifies a TOTP code for a user. | \stdClass / boolean |
-| `generateToken($username)` | Generates a randomized API token. | string |
+- **[Theming](./Themes.md)**: Learn how to create and customize themes for your application.
+- **[Admin Panel](./Admin.md)**: An overview of the built-in administrative tools and capabilities.
 
 ## Errors & Logging
 
