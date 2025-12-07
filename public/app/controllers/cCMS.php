@@ -675,7 +675,7 @@ class cCMS extends \ohCRUD\DB {
         $this->getJSAssets();
 
         if ($this->actionMode == true) {
-            $output = str_ireplace('{{CMS:CONTENT}}', $this->getContentFromFile($this->actionMode, false, true)->html, $output);
+            $output = str_ireplace('{{CMS:CONTENT}}', $this->getAdminView($this->actionMode)->html, $output);
             $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
             $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
             $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
@@ -713,6 +713,28 @@ class cCMS extends \ohCRUD\DB {
     }
 
     // Scan components directory and return a list of component paths
+    // Load admin panel views
+    private function getAdminView($viewName) {
+        $content = new \app\models\mContent;
+        $viewPath = 'app/views/admin/' . $viewName . '.phtml';
+        $fullPath = __SELF__ . $viewPath;
+
+        // Security check
+        $baseDir = realpath(__SELF__ . 'app/views/admin');
+        $realFullPath = realpath($fullPath);
+
+        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+            $this->log('warn', 'Admin view Local File Inclusion (LFI) attempt blocked', ['view' => $viewName]);
+            $content->html = '<p>Admin view not found.</p>';
+            return $content;
+        }
+
+        ob_start();
+        include($realFullPath);
+        $content->html = ob_get_clean();
+        return $content;
+    }
+
     private function scanComponents($dir) {
         $components = [];
         try {
