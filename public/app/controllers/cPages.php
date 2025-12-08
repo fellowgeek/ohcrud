@@ -159,6 +159,7 @@ class cPages extends \app\models\mPages {
         $this->unsetCache($cacheKey);
 
         $this->output();
+    }
 
     private function isHardCoded($url) {
         $path = trim($url ?? '', '/');
