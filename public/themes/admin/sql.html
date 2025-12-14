@@ -6,17 +6,19 @@
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		{{CMS:META}}
-		<title>ohCRUD Admin - Edit: {{CMS:TITLE}}</title>
-        <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
+		<title>ohCRUD Admin - SQL</title>
+		<link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
 		<link rel="stylesheet" href="assets/css/framework7-bundle.min.css" media="all" />
 		<link rel="stylesheet" href="assets/css/framework7-icons.css" media="all" />
+		<link rel="stylesheet" href="assets/css/codemirror.min.css" media="all" />
+		<link rel="stylesheet" href="assets/css/xq-light.css" media="all" />
+		<link rel="stylesheet" href="assets/css/xq-dark.css" media="all" />
 		<link rel="stylesheet" href="assets/css/font-awesome.min.css" media="all" />
-		<link rel="stylesheet" href="assets/css/simplemde.min.css" media="all" />
 		<link rel="stylesheet" href="assets/css/styles.css" media="all" />
+		<link rel="stylesheet" href="assets/css/sql.css" media="all" />
 		{{CMS:STYLESHEET}}
 	</head>
 	<body>
-
 		<div id="app">
 			<!-- Status bar overlay for fullscreen mode-->
 			<div class="statusbar-overlay"></div>
@@ -131,7 +133,7 @@
 
 			<!-- Your main view, should have " view-main" class -->
 			<div class="view view-main view-init safe-areas" data-url="/">
-				<div class="page" data-name="edit">
+				<div class="page" data-name="sql">
 
 					<!-- Settings -->
 					<div class="fab fab-left-bottom panel-left-fab">
@@ -151,9 +153,10 @@
 			{{CMS:OHCRUD}}
 		</div>
 
-		<script src="/assets/js/framework7-bundle.min.js"></script>
-		<script src="/assets/js/simplemde.min.js"></script>
-		<script src="/assets/js/admin.js"></script>
+		<script src="assets/js/framework7-bundle.min.js"></script>
+		<script src="assets/js/codemirror.min.js"></script>
+		<script src="assets/js/sql.min.js"></script>
+		<script src="assets/js/admin.js"></script>
 		{{CMS:JAVASCRIPT}}
 	</body>
 </html>
