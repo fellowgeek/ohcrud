@@ -1,0 +1,4 @@
+.CodeMirror {
+    border: 1px solid #ccc;
+    max-height: max(calc(40vh - 300px), 250px);
+}
