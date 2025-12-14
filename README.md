@@ -1,6 +1,6 @@
 # ohCRUD
 
-![ohCRUD Logo](docs/logo.jpeg)
+![ohCRUD Logo](docs/logo.png)
 
 > "Ninety percent of everything is crud."
 >
