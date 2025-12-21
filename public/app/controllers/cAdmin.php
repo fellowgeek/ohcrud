@@ -1129,6 +1129,11 @@ class cAdmin extends \ohCRUD\DB {
             return $this;
         }
 
+        // Delay to mitigate brute force and timing attacks, only in production mode
+        if(__OHCRUD_DEBUG_MODE__ == false) {
+            usleep(rand(500000, 1000000));
+        }
+
         // Initializes variables
         $this->data = new \stdClass();
         $this->pagination = null;
