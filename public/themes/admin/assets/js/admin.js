@@ -2,9 +2,12 @@
 var app = null;
 // Assign Dom7 to $$ for easier DOM manipulation
 var $$ = Dom7;
+// Panel instance
+var panel = null;
 // global variables
 let themes = {};
 let ohCrudEditor = null;
+let sqlEditor = null;
 let columnDetails = {};
 const __CURRENT_THEME__ = $$('#currentTHEME').val();
 const __CURRENT_LAYOUT__ = $$('#currentLAYOUT').val();
@@ -22,6 +25,27 @@ document.addEventListener('DOMContentLoaded', function () {
             swipe: false,
             resizable: false,
         }, // Enable swipe panel
+    });
+
+    panel = app.panel.get('.panel-left');
+    if (panel.opened === true) {
+        $$('.panel-left-fab-icon').text('chevron_left');}
+    else {
+        $$('.panel-left-fab-icon').text('chevron_right');
+    }
+
+    $$('.panel-left-fab').click(function () {
+        panel.toggle();
+    });
+
+    // Event listener for when the left panel is opened
+    $$('.panel-left').on('panel:opened', function () {
+        $$('.panel-left-fab-icon').text('chevron_left');
+    });
+
+    // Event listener for when the left panel is closed
+    $$('.panel-left').on('panel:closed', function () {
+        $$('.panel-left-fab-icon').text('chevron_right');
     });
 });
 
@@ -46,8 +70,17 @@ $$(document).on('page:init', function (e, pageObject) {
     });
 
     $$('#appDarkMode').on('change', function() {
-        appDarkMode = $$(this).prop('checked');
-        setDarkMode(appDarkMode === true ? 'Y' : 'N');
+        appDarkModeToggle = $$(this).prop('checked');
+        setDarkMode(appDarkModeToggle === true ? 'Y' : 'N');
+        if (sqlEditor !== null) {
+            let sqlEditorTheme = '';
+            if (appDarkModeToggle === true) {
+                sqlEditorTheme = 'xq-dark';
+            } else {
+                sqlEditorTheme = 'xq-light';
+            }
+            sqlEditor.setOption('theme', sqlEditorTheme);
+        }
     });
 
     // If the login page is initialized
@@ -665,6 +698,75 @@ $$(document).on('page:init', function (e, pageObject) {
         }
     }
 
+    // if the SQL page is initialized
+    if (pageObject.name === 'sql') {
+
+        // UI inputs
+        let limitSelect = $$('#LIMIT');
+        if (localStorage.getItem('limit') != null) {
+            limitSelect.val(localStorage.getItem('limit'));
+        }
+
+        // UI buttons
+        let btnPageNext = $$('#btnPageNext');
+        let btnPagePrevious = $$('#btnPagePrevious');
+        let btnRunSQL = $$('#btnRunSQL');
+        let btnExportCSV = document.getElementById('btnExportCSV');
+
+        // Load table list
+        loadTableList();
+
+        // Load log list
+        loadLogList();
+
+        // Handle run SQL button
+        btnRunSQL.on('click', function () {
+            let sqlQuery = sqlEditor.getValue();
+            runSQLQuery(sqlQuery, 1);
+        });
+
+        // Handle export CSV button
+        btnExportCSV.addEventListener('click', function () {
+            let sqlQuery = sqlEditor.getValue();
+
+            downloadCurrentTableAsCSV();
+        });
+
+        // Handle pagination button events
+        btnPageNext.on('click', function () {
+            let sqlQuery = sqlEditor.getValue();
+            let pageNext = parseInt(btnPageNext.data('page-next'));
+            runSQLQuery(sqlQuery, pageNext);
+        });
+
+        btnPagePrevious.on('click', function () {
+            let sqlQuery = sqlEditor.getValue();
+            let pagePrevious = parseInt(btnPagePrevious.data('page-previous'));
+            runSQLQuery(sqlQuery, pagePrevious);
+        });
+
+        // Handle pagination limit select
+        limitSelect.on('change', function() {
+            let page = parseInt($$('#PAGE_CURRENT').val());
+            let sqlQuery = sqlEditor.getValue();
+            localStorage.setItem('limit', limitSelect.val());
+            runSQLQuery(sqlQuery, page);
+        });
+
+        // Initalize CodeMirror SQL editor
+        let sqlEditorTheme = '';
+        if (appDarkMode === 'Y') {
+            sqlEditorTheme = 'xq-dark';
+        } else {
+            sqlEditorTheme = 'xq-light';
+        }
+        sqlEditor = CodeMirror.fromTextArea(document.getElementById('SQL_QUERY'), {
+            mode: "text/x-sql",
+            theme: sqlEditorTheme,
+            lineNumbers: true,
+        });
+    }
+
     // If the logs page is initialized
     if (pageObject.name === 'logs') {
 
@@ -1007,7 +1109,6 @@ function loadTableColumnToggles(table) {
 
         loadTableDetails(table);
     });
-
 }
 
 // Load table data
@@ -2011,6 +2112,277 @@ function loadFilesData(page) {
 }
 
 // -------------------------------------------------------------------------
+// SQL:
+// -------------------------------------------------------------------------
+
+// Run SQL query
+function runSQLQuery(sqlQuery, page) {
+
+    if (page === false) {
+        page = 1;
+    } else {
+        page = parseInt(page);
+    }
+
+    limit = parseInt($$('#LIMIT').val());
+    $$('#PAGE_CURRENT').val(page);
+
+    let sqlQueryTextResult = $$('#SQL_QUERY_TEXT_RESULT');
+    let sqlQueryHash = toHash(sqlQuery);
+
+    $$('.tableHeader').empty();
+    $$('.tableBody').empty();
+    $$('#btnExportCSV').addClass('disabled');
+
+    httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/runSQLQuery/',
+        {
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: new Headers(
+                {
+                    'Content-Type': 'application/json'
+                }
+            ),
+            body: {
+                SQL: sqlQuery,
+                PAGE: page,
+                LIMIT: limit,
+            }
+        },
+        async function (response) {
+            const json = await response.json();
+            let resultType = typeof json.data;
+
+            sqlQueryTextResult.removeClass('text-color-red');
+
+            if (resultType === 'string') {
+                sqlQueryTextResult.text(json.data);
+            } else {
+                sqlQueryTextResult.text('Note: Be cautious when executing SQL queries, as they can modify or delete data.');
+                if (typeof json.data.COLUMNS !== 'undefined' &&  typeof json.data.RESULTS !== 'undefined') {
+                    showing = json.pagination?.showing || '';
+                    showing = showing.replaceAll(' ', '');
+                    showing = showing.replace('of', '-of-');
+                    if (showing != '') showing = '-' + showing;
+                    $$('#btnExportCSV').attr('data-filename', `${sqlQueryHash}${showing}.csv`);
+                    $$('#btnExportCSV').removeClass('disabled');
+                    loadSQLQueryDetails(sqlQueryHash ,json.data.COLUMNS, json.data.RESULTS);
+                }
+            }
+
+            // Update the pagination buttons and text
+            if (typeof json.pagination !== 'undefined' && json.pagination !== null) {
+                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
+                if (json.pagination.hasNextPage === true) {
+                    $$('#btnPageNext').removeClass('disabled');
+                    $$('#btnPageNext').attr('data-page-next', (page + 1));
+                } else {
+                    $$('#btnPageNext').addClass('disabled');
+                    $$('#btnPageNext').removeAttr('data-page-next');
+                }
+                if (json.pagination.hasPreviousPage === true) {
+                    $$('#btnPagePrevious').removeClass('disabled');
+                    $$('#btnPagePrevious').attr('data-page-previous', (page - 1));
+                } else {
+                    $$('#btnPagePrevious').addClass('disabled');
+                    $$('#btnPagePrevious').removeAttr('data-page-previous');
+                }
+            } else {
+                $$('#btnPageNext').addClass('disabled');
+                $$('#btnPagePrevious').addClass('disabled');
+                $$('#RECORDS_DISPLAYED').text('...');
+            }
+        },
+        async function (error) {
+            const json = await error.json();
+            console.error(json);
+            // Display error messages in notification
+            notify({
+                icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
+                title: 'ohCRUD!',
+                titleRightText: 'now',
+                text: json.errors.join('<br/>'),
+                closeOnClick: true,
+            });
+            sqlQueryTextResult.addClass('text-color-red');
+            sqlQueryTextResult.text(json.errors.join('\n'));
+        }
+    );
+}
+
+// Load SQL query details
+function loadSQLQueryDetails(hash ,columns, results) {
+    let tableHeader = `
+    <tr>
+        <th class="checkbox-cell">
+            <label class="checkbox">
+                <input type="checkbox" /><i class="icon-checkbox"></i>
+            </label>
+        </th>
+    `;
+
+    columns.forEach(column => {
+        let tableHeaderTHIcon = '';
+        tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
+        let tableHeaderTH = `
+        <th class="label-cell" data-detected-type="${column.DETECTED_TYPE}">
+            ${tableHeaderTHIcon}${column.NAME}
+        </th>
+        `;
+
+        // Check if we should render the column
+        if (isColumnVisible(hash, column.NAME) === true) {
+            tableHeader += tableHeaderTH;
+        }
+
+        // Update global variable with the column details
+        columnDetails[column.NAME] = {...column};
+    });
+
+    tableHeader += `
+    </tr>
+    `;
+
+    $$('.tableHeader').empty();
+    $$('.tableHeader').html(tableHeader);
+
+    loadSQLQueryColumnToggles(hash);
+    loadSQLQueryData(hash, results);
+}
+
+// Load SQL query data
+function loadSQLQueryData(hash, results) {
+
+    let tableBody = '';
+    let tableBodyTD = '';
+    let columnValue = '';
+
+    // Load the table data into the data table
+    results.forEach(row => {
+        tableBody += `
+        <tr>
+            <td class="checkbox-cell">
+                <label class="checkbox">
+                    <input type="checkbox" /><i class="icon-checkbox"></i>
+                </label>
+            </td>
+        `;
+
+        tableBodyTD = '';
+
+        Object.entries(row).forEach(([key, value]) => {
+            columnValue = value;
+
+            // Hash and encrypted chips
+            switch (columnDetails[key].DETECTED_TYPE) {
+                case 'encrypted (bcrypt)':
+                case 'hash (MD5)':
+                case 'hash (SHA1)':
+                case 'hash (SHA256)':
+                case 'hash (unknown)':
+                case 'base64':
+                case 'encrypted (guessed)':
+                    columnValue = `
+                        <div class="chip">
+                           <div class="chip-label">${columnDetails[key].DETECTED_TYPE}</div>
+                        </div>
+                    `
+                    break;
+                case 'boolean':
+                    columnValue = `
+                        <div class="chip ${value === 1 ? 'color-blue' : ''}">
+                            <div class="chip-label">${value === 1 ? 'TRUE' : 'FALSE'}</div>
+                        </div>
+                    `;
+                    break;
+                default:
+                    columnValue = value;
+                    break;
+            }
+
+            // Null chips
+            if (value === null) {
+                columnValue = `
+                    <div class="chip">
+                        <div class="chip-label">NULL</div>
+                    </div>
+                `;
+            }
+
+            // Empty chips
+            if (value === '') {
+                columnValue = `
+                    <div class="chip">
+                        <div class="chip-label">EMPTY</div>
+                    </div>
+                `;
+            }
+
+            // Check if we should render the column
+            if (isColumnVisible(hash, columnDetails[key].NAME) === true) {
+                tableBodyTD += `<td data-detected-type="${(value !== null && value !== '') ? columnDetails[key].DETECTED_TYPE : ''}">${columnValue}</td>`;
+            }
+        });
+
+        tableBody += tableBodyTD;
+        tableBody += `
+        </tr>
+        `;
+    });
+
+    $$('.tableBody').empty();
+    $$('.tableBody').html(tableBody);
+}
+
+// Load SQL query column toggles
+function loadSQLQueryColumnToggles(hash) {
+
+    let listColumnsToggle = $$('#listColumnsToggle');
+    listColumnsToggle.empty();
+
+    Object.entries(columnDetails).forEach(([index, column]) => {
+        // Skip primary key(s)
+        if (column.PRIMARY_KEY === true) return;
+
+        // Check if column is enabled
+        let columnEnabled = isColumnVisible(hash, column.NAME);
+
+        let listColumnsToggleLI = `
+            <li class="item-content">
+                <div class="item-inner">
+                    <div class="item-title">${column.NAME}</div>
+                    <div class="item-after">
+                        <label class="toggle">
+                            <input type="checkbox" data-column-name="${column.NAME}" class="listColumnsToggleItem" ${columnEnabled === true ? 'checked="true"' : ''}>
+                            <span class="toggle-icon"></span>
+                        </label>
+                    </div>
+                </div>
+            </li>
+        `;
+
+        // Create a temporary element to hold the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = listColumnsToggleLI.trim();
+
+        // Append the field to the container
+        listColumnsToggle.append(tempDiv.firstChild);
+    });
+
+    $$('.listColumnsToggleItem').on('click', function() {
+        let columnName = $$(this).data('column-name');
+        let columnEnabled = $$(this).prop('checked');
+        setColumnVisibility(hash, columnName, columnEnabled);
+
+        let page = $$('#PAGE_CURRENT').val();
+        let sqlQuery = sqlEditor.getValue();
+        runSQLQuery(sqlQuery, page);
+    });
+}
+
+// -------------------------------------------------------------------------
 // Logs:
 // -------------------------------------------------------------------------
 
@@ -2583,4 +2955,87 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// This function generates a hash string from the given input string
+function toHash(str) {
+    let hash = 0;
+    const len = str.length;
+
+    for (let i = 0; i < len; i++) {
+        // sdbm algorithm: h = c + (h << 6) + (h << 16) - h
+        hash = str.charCodeAt(i) + (hash << 6) + (hash << 16) - hash | 0;
+    }
+
+    // Convert to a positive hex or base36 string
+    // Use >>> 0 to convert the signed 32-bit int to an unsigned one
+    return (hash >>> 0).toString(36);
+}
+
+// This function generates a CSV string from the current HTML table data
+function downloadCurrentTableAsCSV() {
+
+    const filename = $$('#btnExportCSV').attr('data-filename') || 'export.csv';
+    const thead = document.querySelector('thead.tableHeader');
+    const tbody = document.querySelector('tbody.tableBody');
+
+    if (!thead || !tbody) {
+        throw new Error('Table header or body not found');
+    }
+
+    const csvRows = [];
+
+    const escapeCSV = (value) => {
+        if (value == null) return '';
+        const str = String(value).trim();
+        return /[",\n]/.test(str)
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+    };
+
+    // Header (skip first column)
+    const headerCells = thead.querySelectorAll('tr th');
+    const headerRow = [];
+
+    for (let i = 1; i < headerCells.length; i++) {
+        headerRow.push(escapeCSV(headerCells[i].textContent));
+    }
+
+    if (headerRow.length) {
+        csvRows.push(headerRow.join(','));
+    }
+
+    // Body rows (skip first column)
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach((tr) => {
+        const cells = tr.querySelectorAll('td');
+        const row = [];
+
+        for (let i = 1; i < cells.length; i++) {
+            row.push(escapeCSV(cells[i].textContent));
+        }
+
+        if (row.length) {
+            csvRows.push(row.join(','));
+        }
+    });
+
+    // Create and trigger download
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.visibility = 'hidden';
+    anchor.classList.add('link', 'external');
+    document.body.appendChild(anchor);
+    anchor.click();
+
+    setTimeout(() => {
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+    }, 100);
 }

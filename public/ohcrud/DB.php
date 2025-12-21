@@ -276,7 +276,7 @@ class DB extends \ohCRUD\Core {
 
                             $detectedTypes = [];
                             foreach ($samples as $sampleValue) {
-                                $detectedTypes[] = $this->detectDataType((string)$sampleValue, $field->TYPE);
+                                $detectedTypes[] = $this->detectDataType((string) $sampleValue, $field->TYPE);
                             }
 
                             // Basic majority vote or fallback
@@ -308,94 +308,8 @@ class DB extends \ohCRUD\Core {
         return $schema;
     }
 
-    // Helper method to filter valid fields for database operations
-    private function filter($table, $data) {
-        $fields = array();
-        $filteredData = array();
-
-        if ($this->config['DRIVER'] === 'SQLITE') {
-            // SQLite specific query to get table columns
-            $sql = "PRAGMA table_info('" . $table . "');";
-            $key = "name";
-        } elseif ($this->config['DRIVER'] === 'MYSQL') {
-            // MySQL specific query to get table columns
-            $sql = "DESCRIBE " . $table . ";";
-            $key = "Field";
-        } else {
-            // Generic query for other database types
-            $sql = "SELECT column_name FROM information_schema.columns WHERE table_name = '" . $table . "';";
-            $key = "column_name";
-        }
-
-        try {
-            $statement = $this->db->prepare($sql);
-            $statement->execute();
-            if ($statement !== false) {
-                foreach ($statement as $record) {
-                    $fields[] = $record[$key];
-                }
-                $filteredData = array_values(array_intersect($fields, array_keys($data)));
-            }
-        } catch (\PDOException $e) {
-            // Handle database query exceptions when fetching table columns
-            $this->error($e->getMessage());
-        }
-
-        // If required, create system columns (CDATE, MDATE, CUSER, MUSER) and add them to valid fields
-        if (__OHCRUD_DB_STAMP__ == true && empty($fields) == false) {
-            try {
-                // Loop through system columns and create them if missing in the table
-                if (in_array('CDATE', $fields) == false) {
-                    if ($this->config['DRIVER'] === 'SQLITE') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` TEXT;");
-                    }
-                    if ($this->config['DRIVER'] === 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CDATE` (`CDATE`) USING BTREE;");
-                    }
-                    if ($statement->execute() == true) { $fields[] = 'CDATE'; }
-                }
-
-                if (in_array('MDATE', $fields) == false) {
-                    if ($this->config['DRIVER'] === 'SQLITE') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` TEXT;");
-                    }
-                    if ($this->config['DRIVER'] === 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MDATE` (`MDATE`) USING BTREE;");
-                    }
-                    if ($statement->execute() == true) { $fields[] = 'MDATE'; }
-                }
-
-                if (in_array('CUSER', $fields) == false) {
-                    if ($this->config['DRIVER'] === 'SQLITE') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` INTEGER;");
-                    }
-                    if ($this->config['DRIVER'] === 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CUSER` (`CUSER`) USING BTREE;");
-                    }
-                    if ($statement->execute() == true) { $fields[] = 'CUSER'; }
-                }
-
-                if (in_array('MUSER', $fields) == false) {
-                    if ($this->config['DRIVER'] === 'SQLITE') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` INTEGER;");
-                    }
-                    if ($this->config['DRIVER'] === 'MYSQL') {
-                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MUSER` (`MUSER`) USING BTREE;");
-                    }
-                    if ($statement->execute() == true) { $fields[] = 'MUSER'; }
-                }
-                // Filter data again to include the newly added system columns
-                $filteredData = array_values(array_intersect($fields, array_keys($data)));
-            } catch (\PDOException $e) {
-                // Log a warning if there are issues with adding system columns
-                $this->log('warning', $e->getMessage());
-            }
-        }
-        return $filteredData;
-    }
-
     // Helper method to guess the type of string data based on its value
-    private function detectDataType(string $value, string $type): string {
+    public function detectDataType(string $value, string $type): string {
 
         $value = trim($value);
 
@@ -501,6 +415,92 @@ class DB extends \ohCRUD\Core {
         }
 
         return 'string';
+    }
+
+    // Helper method to filter valid fields for database operations
+    private function filter($table, $data) {
+        $fields = array();
+        $filteredData = array();
+
+        if ($this->config['DRIVER'] === 'SQLITE') {
+            // SQLite specific query to get table columns
+            $sql = "PRAGMA table_info('" . $table . "');";
+            $key = "name";
+        } elseif ($this->config['DRIVER'] === 'MYSQL') {
+            // MySQL specific query to get table columns
+            $sql = "DESCRIBE " . $table . ";";
+            $key = "Field";
+        } else {
+            // Generic query for other database types
+            $sql = "SELECT column_name FROM information_schema.columns WHERE table_name = '" . $table . "';";
+            $key = "column_name";
+        }
+
+        try {
+            $statement = $this->db->prepare($sql);
+            $statement->execute();
+            if ($statement !== false) {
+                foreach ($statement as $record) {
+                    $fields[] = $record[$key];
+                }
+                $filteredData = array_values(array_intersect($fields, array_keys($data)));
+            }
+        } catch (\PDOException $e) {
+            // Handle database query exceptions when fetching table columns
+            $this->error($e->getMessage());
+        }
+
+        // If required, create system columns (CDATE, MDATE, CUSER, MUSER) and add them to valid fields
+        if (__OHCRUD_DB_STAMP__ == true && empty($fields) == false) {
+            try {
+                // Loop through system columns and create them if missing in the table
+                if (in_array('CDATE', $fields) == false) {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` TEXT;");
+                    }
+                    if ($this->config['DRIVER'] === 'MYSQL') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CDATE` (`CDATE`) USING BTREE;");
+                    }
+                    if ($statement->execute() == true) { $fields[] = 'CDATE'; }
+                }
+
+                if (in_array('MDATE', $fields) == false) {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` TEXT;");
+                    }
+                    if ($this->config['DRIVER'] === 'MYSQL') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MDATE` datetime DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MDATE` (`MDATE`) USING BTREE;");
+                    }
+                    if ($statement->execute() == true) { $fields[] = 'MDATE'; }
+                }
+
+                if (in_array('CUSER', $fields) == false) {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` INTEGER;");
+                    }
+                    if ($this->config['DRIVER'] === 'MYSQL') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `CUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_CUSER` (`CUSER`) USING BTREE;");
+                    }
+                    if ($statement->execute() == true) { $fields[] = 'CUSER'; }
+                }
+
+                if (in_array('MUSER', $fields) == false) {
+                    if ($this->config['DRIVER'] === 'SQLITE') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` INTEGER;");
+                    }
+                    if ($this->config['DRIVER'] === 'MYSQL') {
+                        $statement = $this->db->prepare("ALTER TABLE `" . $table . "` ADD `MUSER` int(10) unsigned DEFAULT NULL; ALTER TABLE `" . $table . "` ADD INDEX `ixd_MUSER` (`MUSER`) USING BTREE;");
+                    }
+                    if ($statement->execute() == true) { $fields[] = 'MUSER'; }
+                }
+                // Filter data again to include the newly added system columns
+                $filteredData = array_values(array_intersect($fields, array_keys($data)));
+            } catch (\PDOException $e) {
+                // Log a warning if there are issues with adding system columns
+                $this->log('warning', $e->getMessage());
+            }
+        }
+        return $filteredData;
     }
 
 }

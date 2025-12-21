@@ -1,0 +1,106 @@
+<?php
+$version = $this->db->getAttribute(PDO::ATTR_SERVER_VERSION);
+switch (strtolower($this->config["DRIVER"])) {
+    case "sqlite":
+        $engine = "SQLite";
+        break;
+    case "mysql":
+        $engine = "MySQL";
+        break;
+    default:
+        $engine = "SQL";
+        break;
+}
+?>
+
+<input type="hidden" id="PAGE_CURRENT" name="PAGE_CURRENT" value="1" />
+
+<div class="card data-table data-table-init">
+    <div class="card-header">
+        <div class="data-table-title">Run SQL Query
+             <div class="chip">
+                <div class="chip-label" title="<?php print($version); ?>"><?php print($engine); ?></div>
+            </div>
+        </div>
+        <div class="data-table-actions">
+            <a id="btnRunSQL" class="link icon-only">
+                <i class="icon f7-icons" title="Run SQL">arrowtriangle_right</i>
+            </a>
+        </div>
+    </div>
+    <div class="card-content">
+        <div class="list no-hairlines-md">
+            <ul>
+                <li class="item-content item-input">
+                    <div class="item-inner">
+                        <div class="item-input-wrap">
+                            <textarea id="SQL_QUERY" name="SQL_QUERY" placeholder="" style="min-height: 150px; resize: vertical;" rs>-- Enter your SQL query here, then click the ▶️ button to execute it.
+
+SELECT * FROM `Employees`;
+</textarea>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="card-footer">
+        <span id="SQL_QUERY_TEXT_RESULT">Note: Be cautious when executing SQL queries, as they can modify or delete data.</span>
+    </div>
+</div>
+
+<div class="card data-table data-table-init">
+    <div class="card-header">
+        <div class="data-table-title">Results</div>
+        <div class="data-table-actions">
+            <a id="btnColumnsToggle" class="link icon-only popover-open" data-popover=".columns-toggle-popover">
+                <i class="icon f7-icons">table_badge_more</i>
+            </a>
+            <a id="btnExportCSV" class="link icon-only disabled" data-file-name="export.csv" title="Export as CSV">
+                <i class="icon f7-icons">arrow_down_doc</i>
+            </a>
+        </div>
+    </div>
+
+    <table>
+        <thead class="tableHeader">
+        </thead>
+        <tbody class="tableBody">
+        </tbody>
+    </table>
+
+    <div class="data-table-footer">
+        <div class="data-table-rows-select">Per page:
+            <div class="input input-dropdown">
+                <select id="LIMIT" name="LIMIT">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+        <div class="data-table-pagination">
+            <span id="RECORDS_DISPLAYED" class="data-table-pagination-label">...</span>
+            <div class="pagination-wrapper">
+                <a id="btnPagePrevious" href="#" class="link disabled">
+                    <i class="icon icon-prev color-gray"></i>
+                </a>
+                <a id="btnPageNext" href="#" class="link">
+                    <i class="icon icon-next color-gray"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Columns Toggle Popover -->
+<div class="popover columns-toggle-popover">
+    <div class="popover-angle"></div>
+    <div class="popover-inner list list-strong-ios list-dividers-ios inset-ios">
+        <ul id="listColumnsToggle">
+        </ul>
+    </div>
+</div>

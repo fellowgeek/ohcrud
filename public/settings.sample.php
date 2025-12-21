@@ -27,6 +27,9 @@ define('__OHCRUD_DEBUG_MODE_SHOW_SQL__', false);
 // Specify the initial expanded debug levels for debugging (HTML mode only).
 define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
 
+// Enable raw SQL execution in the admin panel (set to false for production use).
+define('__OHCRUD_ADMIN_ENABLE_SQL_EXECUTION__', true);
+
 // Configure logging settings.
 define('__OHCRUD_LOG_ENABLED__', true);
 define('__OHCRUD_LOG_PATH__', '/logs/');
