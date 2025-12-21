@@ -1150,10 +1150,15 @@ class cAdmin extends \ohCRUD\DB {
         // Cleanup the input data
         $sql = $this->stripSQLComments($request->payload->SQL);
 
+        // Check if SQL is empty after stripping comments
+        if (trim($sql) === '') {
+            $this->error('The SQL query is empty or contains only comments.');
+            $this->output();
+            return $this;
+        }
+
         // Handle pagination for SELECT queries
         if (preg_match("/^SELECT(.*?)/i", $sql) === 1) {
-            // Remove trailing semicolon if present
-            $sql = rtrim($sql, " \t\n\r\0\x0B;");
 
             // Default values for optional parameters.
             if (isset($request->payload->PAGE) == false) $request->payload->PAGE = 1;
@@ -1448,6 +1453,8 @@ class cAdmin extends \ohCRUD\DB {
         $sql = preg_replace('/(--|#).*$/m', '', $sql);
         // Cleanup extra whitespace and empty lines left behind
         $sql = preg_replace('/^\s*$/m', '', $sql);
+        // Remove trailing semicolon if present
+        $sql = rtrim($sql, " \t\n\r\0\x0B;");
         return trim($sql);
     }
 
