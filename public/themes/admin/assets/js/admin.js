@@ -11,6 +11,7 @@ let sqlEditor = null;
 let columnDetails = {};
 const __CURRENT_THEME__ = $$('#currentTHEME').val();
 const __CURRENT_LAYOUT__ = $$('#currentLAYOUT').val();
+const __CURRENT_STATUS__ = $$('#currentSTATUS').val();
 let file = document.getElementById('FILE');
 
 // Execute the following code when the DOM is fully loaded
@@ -234,6 +235,7 @@ $$(document).on('page:init', function (e, pageObject) {
         // UI inputs
         let themeSelect = $$('#THEME');
         let layoutSelect = $$('#LAYOUT');
+        let statusSelect = $$('#STATUS');
         let fileToUploadMode = '';
 
         // UI buttons
@@ -244,6 +246,9 @@ $$(document).on('page:init', function (e, pageObject) {
 
         // Load themes and layouts
         loadThemes();
+
+        // Load current status
+        loadStatus();
 
         // Load table list
         loadTableList();
@@ -313,6 +318,7 @@ $$(document).on('page:init', function (e, pageObject) {
                 URL: __PATH__,
                 THEME: themeSelect.val(),
                 LAYOUT: layoutSelect.val(),
+                STATUS: statusSelect.val(),
                 TITLE: $$('#TITLE').val(),
                 TEXT: ohCrudEditor.value(),
             }
@@ -920,6 +926,12 @@ function loadLayouts(theme) {
         option.textContent = layout;
         layoutSelect.append(option);
     }
+}
+
+// Load the current status and update the dropdown menu
+function loadStatus() {
+    let statusSelect = $$('#STATUS');
+    statusSelect.val(__CURRENT_STATUS__);
 }
 
 // Utility function to insert a text snippet in the content editor
@@ -2194,6 +2206,10 @@ function runSQLQuery(sqlQuery, page) {
                 $$('#btnPagePrevious').addClass('disabled');
                 $$('#RECORDS_DISPLAYED').text('...');
             }
+            // Load table list
+            setTimeout(() => {
+                loadTableList();
+            }, 1000);
         },
         async function (error) {
             const json = await error.json();

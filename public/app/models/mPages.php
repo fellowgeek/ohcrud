@@ -7,8 +7,13 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Model mPages - Represents a pages model extending the \ohCRUD\DB class.
 class mPages extends \ohCRUD\DB {
 
+    const DELETED = 0;
+    const PUBLISHED = 1;
+    const DRAFT = 2;
+
     function __construct() {
         parent::__construct();
+
 
         if (__OHCRUD_DEBUG_MODE__ == true) {
 

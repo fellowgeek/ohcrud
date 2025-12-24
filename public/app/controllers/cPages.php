@@ -56,6 +56,13 @@ class cPages extends \app\models\mPages {
             $request->payload->LAYOUT = __OHCRUD_CMS_DEFAULT_LAYOUT__;
         }
 
+        // Set default value for STATUS if missing or invalid in the payload.
+        if (in_array((int) $request->payload->STATUS, [$this::PUBLISHED, $this::DELETED, $this::DRAFT]) == true) {
+            $request->payload->STATUS = (int) $request->payload->STATUS;
+        } else {
+            $request->payload->STATUS = $this::DRAFT;
+        }
+
         // Check if the page exists in the database.
         $PageExists = $this->run(
             "SELECT
@@ -78,7 +85,7 @@ class cPages extends \app\models\mPages {
                 'TEXT' => $request->payload->TEXT,
                 'THEME' => $request->payload->THEME,
                 'LAYOUT' => $request->payload->LAYOUT,
-                'STATUS' => $this::ACTIVE
+                'STATUS' => $request->payload->STATUS,
                 ]
             );
         } else {
@@ -89,7 +96,7 @@ class cPages extends \app\models\mPages {
                     'TEXT' => $request->payload->TEXT,
                     'THEME' => $request->payload->THEME,
                     'LAYOUT' => $request->payload->LAYOUT,
-                    'STATUS' => $this::ACTIVE
+                    'STATUS' => $request->payload->STATUS
                 ],
                 'URL = :URL',
                 [
@@ -142,10 +149,10 @@ class cPages extends \app\models\mPages {
         )->first();
 
         if ($page !== false) {
-            // Update the record: toggle the STATUS between ACTIVE and INACTIVE.
+            // Update the record: toggle the STATUS between PUBLISHED and DELETED.
             $this->update('Pages',
                 [
-                    'STATUS' => ((int) $page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
+                    'STATUS' => ((int) $page->STATUS == $this::PUBLISHED) ? $this::DELETED : $this::PUBLISHED
                 ],
                 'URL = :URL',
                 [
