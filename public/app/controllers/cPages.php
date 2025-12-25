@@ -13,7 +13,7 @@ class cPages extends \app\models\mPages {
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
         'save' => 1,
-        'restoreDeletePage' => 1
+        'restoreDeletePage' => 1,
     ];
 
     // Method to save or edit a page.

@@ -12,7 +12,7 @@ class cUsers extends \ohCRUD\DB {
         'object' => __OHCRUD_PERMISSION_ALL__,
         'login' => __OHCRUD_PERMISSION_ALL__,
         'verify' => __OHCRUD_PERMISSION_ALL__,
-        'logout' => __OHCRUD_PERMISSION_ALL__
+        'logout' => __OHCRUD_PERMISSION_ALL__,
     ];
 
     // This method, handles user login functionality

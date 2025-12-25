@@ -50,10 +50,19 @@ class Router extends \ohCRUD\Core {
             }
         }
 
-        // Handle CORS globally for all routes
-        if ($this->handleCORS() == false) {
-            $this->forbidden();
-            return $this;
+        // Skip CSRF and Access Policy checks for CLI requests
+        if (PHP_SAPI !== 'cli') {
+            // CSRF Protection using Fetch Metadata
+            if ($this->isRequestAllowedByFetchMetadata() == false) {
+                $this->forbidden();
+                return $this;
+            }
+
+            // Access Policy Check
+            if ($this->isRequestAllowedByAccessPolicy() == false) {
+                $this->forbidden();
+                return $this;
+            }
         }
 
         // Strategy A: exact path match
@@ -116,14 +125,11 @@ class Router extends \ohCRUD\Core {
         $this->output();
     }
 
-    // Handle Cross-Origin Resource Sharing (CORS) to allow or deny access from different origins.
-    private function handleCORS() {
+    // Handle CORS (Cross-Origin Resource Sharing) and access policies for incoming requests.
+    private function isRequestAllowedByAccessPolicy() {
 
         // Set up CSRF (Cross-Site Request Forgery) token.
         $this->CSRF();
-
-        // Skip CORS check if we are in CLI mode.
-        if (PHP_SAPI === 'cli') return true;
 
         // Check if remote IP filtering is enabled and handle allowed IPs.
         if (__OHCRUD_ALLOWED_IPS_ENABLED__ == true) {
@@ -143,11 +149,12 @@ class Router extends \ohCRUD\Core {
         if ($origin === ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
         if ($origin === '') return true;
 
-        // Handle cross-origin requests and set appropriate CORS headers.
+        // Handle cross-origin requests and set appropriate CORS headers for allowed origins.
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || __OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
             header('Access-Control-Allow-Origin: ' . $origin);
             header('Access-Control-Allow-Credentials: true');
             header('Access-Control-Max-Age: 86400');
+            // Preflight request handling
             if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
                 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS");
                 header("Access-Control-Allow-Headers: token, Content-Type, Accept, Origin");
@@ -157,6 +164,26 @@ class Router extends \ohCRUD\Core {
         } else {
             return false;
         }
+    }
+
+    // Check Fetch Metadata headers to prevent CSRF attacks.
+    private function isRequestAllowedByFetchMetadata() {
+        // If no cookies are sent, CSRF is not applicable (API / non-browser client)
+        if (empty($_COOKIE) == true) {
+            return true;
+        }
+
+        // Missing header = unknown (Safari, older browsers), allow
+        if (empty($_SERVER['HTTP_SEC_FETCH_SITE']) == true) {
+            return true;
+        }
+
+        // Cookie-authenticated + cross-site = almost certainly CSRF
+        if ($_SERVER['HTTP_SEC_FETCH_SITE'] === 'cross-site') {
+            return false;
+        }
+
+        return true;
     }
 
     // Check if the user has the necessary permissions for an operation.
