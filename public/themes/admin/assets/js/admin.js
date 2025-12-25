@@ -304,9 +304,13 @@ $$(document).on('page:init', function (e, pageObject) {
                 },
                 '|',
                 'preview',
-                'side-by-side',
-                'fullscreen',
-                'guide'
+                {
+                    name: 'guide',
+                    className: 'fa fa-question-circle',
+                    action: function customFunction(editor) {
+                        window.open('https://www.markdownguide.org/basic-syntax/', '_blank');
+                    }
+                }
             ],
         });
 

@@ -42,7 +42,7 @@
     opacity: 1;
 }
 
-.editor-toolbar a:hover {
+.editor-toolbar a:hover, .editor-toolbar a.active {
     border: 1px solid transparent !important;
     background-color: var(--f7-page-bg-color) !important;
 }
@@ -277,6 +277,11 @@ Dark Mode
     color: var(--f7-table-head-text-color) !important;
 }
 
+.dark .editor-toolbar a.active {
+    border: 1px solid transparent !important;
+    background-color: var(--f7-page-bg-color) !important;
+}
+
 .dark .editor-toolbar i.separator {
     border-left: 1px solid var(--f7-table-head-text-color);
     border-right: 1px solid #333;
@@ -290,7 +295,7 @@ Dark Mode
 .editor-toolbar.disabled-for-preview a:hover,
 .editor-toolbar.disabled-for-preview a.active {
     border: 1px solid transparent !important;
-    background-color: var(--f7-page-bg-color) !important
+    background-color: var(--f7-page-bg-color) !important;
 }
 
 .dark .editor-toolbar.disabled-for-preview {
