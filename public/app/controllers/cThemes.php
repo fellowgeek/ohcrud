@@ -55,7 +55,6 @@ class cThemes extends \ohCRUD\DB {
         // Set the data to the themes and layouts array
         $this->data = $themes;
         $this->output();
-
     }
 
 }

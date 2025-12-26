@@ -40,7 +40,7 @@ class DB extends \ohCRUD\Core {
                     $connection = "mysql:host=" . $this->config["MYSQL_HOST"] . ";dbname=" . $this->config["MYSQL_DB"];
                     break;
                 default:
-                    $this->error('Unsuportted DB Driver! Check the configuration.');
+                    $this->error('Unsuportted DB Driver! Check the configuration.', 500);
                     $this->output();
             }
             if (isset($connection) == true) {
@@ -49,7 +49,7 @@ class DB extends \ohCRUD\Core {
             }
         } catch(\PDOException $e) {
             // Handle exceptions if the connection fails
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 500);
             $this->output();
         }
 
@@ -104,7 +104,7 @@ class DB extends \ohCRUD\Core {
         } catch (\PDOException $e) {
             // Handle database query execution exceptions
             $this->data = false;
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 500);
             return $this->output();
         }
     }
@@ -182,7 +182,7 @@ class DB extends \ohCRUD\Core {
     // Return the primary key column name for a given table
     public function getPrimaryKeyColumn($table) {
         if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
-            $this->error('Invalid table name.');
+            $this->error('Invalid table name.', 500);
             return null;
         }
 
@@ -210,7 +210,7 @@ class DB extends \ohCRUD\Core {
                 }
             }
         } catch (\Exception $e) {
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 500);
         }
 
         // No primary key found or error occurred
@@ -223,7 +223,7 @@ class DB extends \ohCRUD\Core {
         $schema = new \stdClass();
 
         if ($table != '' && preg_match('/^[a-zA-Z0-9_]+$/', $table) == false) {
-            $this->error('Invalid table name.');
+            $this->error('Invalid table name.', 500);
             return;
         }
 
@@ -301,7 +301,7 @@ class DB extends \ohCRUD\Core {
             }
 
         } catch (\Exception $e) {
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 500);
             return $this->output();
         }
 
@@ -447,7 +447,7 @@ class DB extends \ohCRUD\Core {
             }
         } catch (\PDOException $e) {
             // Handle database query exceptions when fetching table columns
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 500);
         }
 
         // If required, create system columns (CDATE, MDATE, CUSER, MUSER) and add them to valid fields

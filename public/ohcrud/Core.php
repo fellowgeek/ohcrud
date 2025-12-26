@@ -39,7 +39,7 @@ class Core {
         if (is_array($outputHeaders) == true) {
             $this->outputHeaders = $outputHeaders;
         } else {
-            $this->error('outputHeaders, must be an array.');
+            $this->error('outputHeaders, must be an array.', 500);
         }
         return $this;
     }
@@ -290,7 +290,7 @@ class Core {
     }
 
     // Handle errors by logging and setting the HTTP status code.
-    public function error($message, $outputStatusCode = 500) {
+    public function error($message, $outputStatusCode = 400) {
         $debug = [];
 
         $this->outputStatusCode = $outputStatusCode;
@@ -301,7 +301,8 @@ class Core {
             $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         }
 
-        if ($outputStatusCode != 404) {
+        // Avoid logging 403 and 404 errors to reduce log noise
+        if ($outputStatusCode != 403 || $outputStatusCode != 404) {
             $this->log('error', $message, $debug);
         }
 
@@ -341,13 +342,13 @@ class Core {
     }
 
     // Run a CLI route in the background
-    public function background($command, $wait = 0) {
+    public function background($route, $wait = 0) {
         if ($wait > 0) {
             pclose(
-                popen('sleep ' . $wait . ' && php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &', 'r')
+                popen('sleep ' . $wait . ' && php ' . __SELF__ . 'index.php ' . $route . ' > /dev/null 2>&1 &', 'r')
             );
         } else {
-            exec('php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &');
+            exec('php ' . __SELF__ . 'index.php ' . $route . ' > /dev/null 2>&1 &');
         }
     }
 

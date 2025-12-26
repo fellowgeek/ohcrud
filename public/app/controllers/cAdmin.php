@@ -710,7 +710,7 @@ class cAdmin extends \ohCRUD\DB {
 
                 // Check if this is the last super admin
                 if ((int) $superAdmins->COUNT === 1) {
-                    $this->error('You can\'t delete the only existing superuser.');
+                    $this->error('You can\'t delete the only existing superuser.' , 403);
                     $this->data = new \stdClass();
                     $this->output();
                     return $this;
@@ -795,7 +795,7 @@ class cAdmin extends \ohCRUD\DB {
         )->first();
 
         if ($user == false) {
-            $this->error('User not found.');
+            $this->error('User not found.', 404);
             $this->output();
             return $this;
         }
@@ -870,7 +870,7 @@ class cAdmin extends \ohCRUD\DB {
         )->first();
 
         if ($userExists === false) {
-            $this->error('User not found.');
+            $this->error('User not found.', 404);
             $this->output();
             return $this;
         }
@@ -961,7 +961,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Ensure the resolved path is inside the log directory
         if (strpos($filepath, realpath(__OHCRUD_LOG_PATH__)) !== 0 || !file_exists($filepath)) {
-            $this->error('Log file not found or invalid path.');
+            $this->error('Log file not found or invalid path.', 404);
             $this->output();
             return $this;
         }
@@ -973,7 +973,7 @@ class cAdmin extends \ohCRUD\DB {
         // Get total records
         $totalRecords = $this->countLogRecords($filename);
         if ($totalRecords === false) {
-            $this->error('Log file not found.');
+            $this->error('Log file not found.', 404);
             $this->output();
             return $this;
         }
@@ -991,7 +991,7 @@ class cAdmin extends \ohCRUD\DB {
         // Open log file
         $fp = fopen($filepath, 'r');
         if (!$fp) {
-            $this->error('Unable to open log file: ' . $filename);
+            $this->error('Unable to open log file: ' . $filename, 500);
             $this->output();
             return $this;
         }
@@ -1106,7 +1106,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Ensure the resolved path is inside the log directory
         if (strpos($filepath, realpath(__OHCRUD_LOG_PATH__)) !== 0 || !file_exists($filepath)) {
-            $this->error('Log file not found or invalid path.');
+            $this->error('Log file not found or invalid path.', 404);
             $this->output();
             return $this;
         }
@@ -1124,7 +1124,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
         if(__OHCRUD_ADMIN_ENABLE_SQL_EXECUTION__ === false) {
-            $this->error('SQL execution is disabled.');
+            $this->error('SQL execution is disabled.', 403);
             $this->output();
             return $this;
         }
@@ -1221,7 +1221,7 @@ class cAdmin extends \ohCRUD\DB {
             if ($this->success === false) {
                 $errorInfo = $result->errorInfo();
                 $errorMessage = "DB Error: " . (isset($errorInfo[2]) ? $errorInfo[2] : "Unknown error.");
-                $this->error($errorMessage);
+                $this->error($errorMessage, 500);
                 return $this->output();
             }
 
@@ -1295,7 +1295,7 @@ class cAdmin extends \ohCRUD\DB {
             }
         } catch (\PDOException $e) {
             $this->data = false;
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 500);
             $this->output();
             return $this;
         }

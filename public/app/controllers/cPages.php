@@ -33,7 +33,7 @@ class cPages extends \app\models\mPages {
 
         // Check if the page is hard-coded as a file.
         if ($this->isHardCoded($request->payload->URL) == true)
-            $this->error('You can\'t edit a hard coded page.');
+            $this->error('You can\'t edit a hard coded page.', 403);
 
         if ($this->success === false) {
             $this->output();
@@ -127,7 +127,7 @@ class cPages extends \app\models\mPages {
 
         // Check if the page is hard-coded as a file.
         if ($this->isHardCoded($request->payload->URL) == true)
-            $this->error('You can\'t delete a hard coded page.');
+            $this->error('You can\'t delete a hard coded page.', 403);
 
         if ($this->success === false) {
             $this->output();
