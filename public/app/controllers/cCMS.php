@@ -31,6 +31,8 @@ class cCMS extends \app\models\mPages {
     public $useCache = true;
     // Flag indicating whether the user is logged in.
     public $loggedIn = false;
+    // Flag indicating whether the user is an admin.
+    public $isAdmin = false;
     // Request data.
     public object $request;
     // Instance for managing pages.
@@ -47,7 +49,7 @@ class cCMS extends \app\models\mPages {
     // Max recursive content
     public $maxRecursiveContent = 7;
     // Allowed CMS actions
-    public $allowedActions = ['edit', 'users', 'tables', 'files', 'sql', 'logs'];
+    public $allowedActions = ['edit', 'users', 'tables', 'files', 'sql', 'server', 'logs'];
     // Allowed components for instantiation
     public $allowedComponents = [];
 
@@ -64,7 +66,10 @@ class cCMS extends \app\models\mPages {
         // Capture and validate action
         $action = $this->request->action ?? '';
 
-        if (in_array($action, $this->allowedActions) == true) {
+        // Check if action is in allowed list AND user has admin permissions
+        $this->isAdmin = $this->loggedIn && $_SESSION['User']->PERMISSIONS === 1;
+
+        if (in_array($action, $this->allowedActions) && $this->isAdmin) {
             $this->actionMode = $action;
         } else {
             $this->actionMode = false;
@@ -72,12 +77,12 @@ class cCMS extends \app\models\mPages {
 
         // Handle logic for active action modes
         if ($this->actionMode !== false) {
-            if ($this->loggedIn == true) {
-                // Disable cache for logged in users
+            // We already know they are logged in and an admin if actionMode is not false,
+            // but we check loggedIn here for clarity or future-proofing.
+            if ($this->loggedIn) {
                 $this->useCache = false;
-            } else if ($this->loggedIn == false) {
-                // Redirect if not logged in
-                $loginUrl = '/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->actionMode;
+            } else {
+                $loginUrl = '/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $action;
                 $this->redirect($loginUrl);
                 return;
             }
@@ -558,7 +563,7 @@ class cCMS extends \app\models\mPages {
         $output = '';
         $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->path);
 
-        if ($this->loggedIn == true) {
+        if ($this->isAdmin == true) {
             $output.= '<div id="btnCMSEdit" data-url="' . $path . '?action=edit"></div>';
         }
 
@@ -651,7 +656,7 @@ class cCMS extends \app\models\mPages {
         }
 
         // Handle admin themes and layouts
-        if ($this->loggedIn == true && $this->actionMode !== false) {
+        if ($this->isAdmin == true && $this->actionMode !== false) {
             switch ($this->actionMode) {
                 case 'edit':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
@@ -665,6 +670,10 @@ class cCMS extends \app\models\mPages {
                 case 'sql':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'sql';
+                    break;
+                case 'sql':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'server';
                     break;
                 case 'logs':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;

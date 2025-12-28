@@ -1,16 +1,25 @@
 <?php
-$version = $this->db->getAttribute(PDO::ATTR_SERVER_VERSION);
-switch (strtolower($this->config["DRIVER"])) {
-    case "sqlite":
-        $engine = "SQLite";
-        break;
-    case "mysql":
-        $engine = "MySQL";
-        break;
-    default:
-        $engine = "SQL";
-        break;
-}
+    // Prevent direct access to this class.
+    if (isset($GLOBALS['OHCRUD']) == false) { die(); }
+
+    // Check if user is logged in and has admin permissions
+    if(isset($_SESSION['User']) == false || $_SESSION['User']->PERMISSIONS !== 1) {
+        $this->redirect('/?action=login&redirect=/?action=sql');
+        exit();
+    }
+
+    $version = $this->db->getAttribute(PDO::ATTR_SERVER_VERSION);
+    switch (strtolower($this->config["DRIVER"])) {
+        case "sqlite":
+            $engine = "SQLite";
+            break;
+        case "mysql":
+            $engine = "MySQL";
+            break;
+        default:
+            $engine = "SQL";
+            break;
+    }
 ?>
 
 <input type="hidden" id="PAGE_CURRENT" name="PAGE_CURRENT" value="1" />
@@ -35,7 +44,6 @@ switch (strtolower($this->config["DRIVER"])) {
                     <div class="item-inner">
                         <div class="item-input-wrap">
                             <textarea id="SQL_QUERY" name="SQL_QUERY" placeholder="" style="min-height: 150px; resize: vertical;" rs>-- Enter your SQL query here, then click the ▶️ button to execute it.
-
 
 </textarea>
                         </div>
