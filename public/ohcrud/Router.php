@@ -8,6 +8,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 class Router extends \ohCRUD\Core {
 
     private $request;
+    private $requestMethod;
 
     // Constructor for the Router class. It sets up routing based on the provided URL path.
     public function __construct($rawPath = null) {
@@ -38,8 +39,10 @@ class Router extends \ohCRUD\Core {
             // Use parse_url to safely extract query string
             parse_str(parse_url($rawPath, PHP_URL_QUERY) ?? '', $parameters);
             $this->request = (object) $parameters;
+            $this->requestMethod = 'CLI';
         } else {
             $this->request = (object) $_REQUEST;
+            $this->requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
             // Check if content type contains 'json'
             $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
             if (stripos($contentType, 'json') !== false) {
@@ -58,9 +61,9 @@ class Router extends \ohCRUD\Core {
                 return $this;
             }
 
-            // Access Policy Check
+            // Access Policy check
             if ($this->isRequestAllowedByAccessPolicy() == false) {
-                $this->forbidden();
+                die(__LINE__);
                 return $this;
             }
         }
@@ -96,7 +99,7 @@ class Router extends \ohCRUD\Core {
                 if (is_callable([$object, $matchedMethod]) == true) {
                     // Check method-level Permissions
                     if ($this->checkPermissions($object->permissions, $matchedMethod)) {
-                        $object->$matchedMethod($this->request);
+                        $object->$matchedMethod($this->request, $this->requestMethod);
                         return $this;
                     } else {
                         $this->handleAuthFailure();
