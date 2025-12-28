@@ -61,16 +61,26 @@ class cCMS extends \app\models\mPages {
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
 
-        // Set action mode
-        if ($this->loggedIn == true && in_array($this->request->action ?? '', $this->allowedActions) == true) {
-            $this->actionMode = $this->request->action;
-            $this->useCache = false;
+        // Capture and validate action
+        $action = $this->request->action ?? '';
+
+        if (in_array($action, $this->allowedActions) == true) {
+            $this->actionMode = $action;
+        } else {
+            $this->actionMode = false;
         }
 
-        // Redirect to login page if not logged in
-        if ($this->loggedIn == false && in_array($this->actionMode ?? '', $this->allowedActions) == true) {
-            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->actionMode);
-            return;
+        // Handle logic for active action modes
+        if ($this->actionMode !== false) {
+            if ($this->loggedIn == true) {
+                // Disable cache for logged in users
+                $this->useCache = false;
+            } else if ($this->loggedIn == false) {
+                // Redirect if not logged in
+                $loginUrl = '/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->actionMode;
+                $this->redirect($loginUrl);
+                return;
+            }
         }
 
         // Disable cache for login pages
