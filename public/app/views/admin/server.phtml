@@ -1,0 +1,30 @@
+<?php
+    // Prevent direct access to this class.
+    if (isset($GLOBALS['OHCRUD']) == false) { die(); }
+
+    // Check if user is logged in and has admin permissions
+    if(isset($_SESSION['User']) == false || $_SESSION['User']->PERMISSIONS !== 1) {
+        $this->redirect('/?action=login&redirect=/?action=server');
+        exit();
+    }
+?>
+
+<div class="card data-table data-table-init">
+    <div class="card-header">
+        <div class="data-table-title">Server Details</div>
+        <div class="data-table-actions">
+        </div>
+    </div>
+
+    <div class="card-content card-content-padding">
+        <?php $this->debug($_COOKIE, '$_COOKIE (HTTP Cookies)', false); ?>
+        <br/>
+        <?php $this->debug($_SESSION, '$_SESSION (Session variables)', false); ?>
+        <br/>
+        <?php $this->debug(getallheaders(), 'getallheaders (Fetch all HTTP request headers)', false); ?>
+        <br/>
+        <?php $this->debug($_SERVER, '$_SERVER (Server and execution environment information)', false); ?>
+        <br/>
+    </div>
+
+</div>
