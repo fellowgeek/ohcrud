@@ -26,7 +26,7 @@ class Core {
     public $outputHeadersSent = false;
     public $outputStatusCode = 200;
     public $runtime;
-    public $version = '2.5';
+    public $version = '2.6';
 
     // Set the output type for the response.
     public function setOutputType($outputType) {
@@ -81,8 +81,11 @@ class Core {
 
     // Regenerate session id
     public function regenerateSession() {
-        session_start();
-        session_regenerate_id();
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        session_regenerate_id(true);
+        session_write_close();
         return $this;
     }
 
@@ -125,17 +128,28 @@ class Core {
                     array_push($this->outputHeaders, 'Content-Type: application/json');
                 }
                 if (headers_sent() == false && $this->outputHeadersSent == false) {
-                    $json = clone $this;
-                    unset($json->config);
-                    unset($json->outputType);
-                    unset($json->outputHeaders);
-                    unset($json->outputHeadersSent);
-                    unset($json->permissions);
-                    unset($json->db);
+                    $payload = (function($obj) {
+                        return get_object_vars($obj);
+                    }) ($this);
+
+                    unset(
+                        $payload['config'],
+                        $payload['outputType'],
+                        $payload['outputHeaders'],
+                        $payload['outputHeadersSent'],
+                        $payload['permissions'],
+                        $payload['db']
+                    );
+
                     if (__OHCRUD_DEBUG_MODE__ == true) {
-                        $json->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+                        $payload['runtime'] = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
                     }
-                    $output = json_encode($json, JSON_PRETTY_PRINT | JSON_NUMERIC_CHECK);
+
+                    $flags = 0;
+                    if (__OHCRUD_DEBUG_MODE__ === true) {
+                        $flags |= JSON_PRETTY_PRINT;
+                    }
+                    $output = json_encode($payload, $flags);
                 }
                 break;
         }
@@ -212,7 +226,11 @@ class Core {
             return false;
         }
 
-        $data = @unserialize(file_get_contents($path), ['allowed_classes' => ['stdClass']]);
+        try {
+            $data = json_decode(file_get_contents($path));
+        } catch (\Exception $e) {
+            return false;
+        }
         return $data;
     }
 
@@ -226,8 +244,15 @@ class Core {
         $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
-        $serialized = serialize($data);
-        return file_put_contents($path, $serialized, LOCK_EX);
+        try {
+            if (is_dir(__OHCRUD_CACHE_PATH__) == false) {
+                mkdir(__OHCRUD_CACHE_PATH__, 0755, true);
+            }
+            $data = json_encode($data);
+            return file_put_contents($path, $data, LOCK_EX);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     // Remove data from cache.
@@ -247,7 +272,7 @@ class Core {
     public function encryptText($text, $password = '') {
         $method = 'aes-256-cbc';
         $key = hash('sha256', $password . __OHCRUD_SECRET__, true);
-        $iv = openssl_random_pseudo_bytes(16);
+        $iv = random_bytes(16);
 
         $encrypted = openssl_encrypt($text, $method, $key, 0, $iv);
         return base64_encode($iv . $encrypted);
@@ -343,12 +368,17 @@ class Core {
 
     // Run a CLI route in the background
     public function background($route, $wait = 0) {
+        // Ensure the path to index.php is safe
+        $indexPath = escapeshellarg(__SELF__ . 'index.php');
+        $safeRoute = escapeshellarg($route);
+
         if ($wait > 0) {
+            $wait = (int) $wait;
             pclose(
-                popen('sleep ' . $wait . ' && php ' . __SELF__ . 'index.php ' . $route . ' > /dev/null 2>&1 &', 'r')
+                popen("sleep $wait && php $indexPath $safeRoute > /dev/null 2>&1 &", 'r')
             );
         } else {
-            exec('php ' . __SELF__ . 'index.php ' . $route . ' > /dev/null 2>&1 &');
+            exec("php $indexPath $safeRoute > /dev/null 2>&1 &");
         }
     }
 
