@@ -246,6 +246,38 @@ input[readonly] {
     background-color: var(--f7-page-bg-color) !important;
 }
 
+.clean-php-info table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-family: sans-serif;
+}
+
+.clean-php-info td, .clean-php-info th {
+    border: 1px solid #ddd;
+    padding: 8px;
+    word-break: break-all;
+}
+
+.clean-php-info th {
+    background-color: #f4f4f4;
+    text-align: left;
+}
+
+.clean-php-info td.e {
+    width: 20%;
+}
+
+.clean-php-info h2 {
+    margin-top: 30px;
+    border-bottom: none;
+}
+
+.clean-php-info h2 a {
+    text-decoration: none;
+    color: inherit;
+}
+
 /*
 Dark Mode
 */
@@ -318,6 +350,11 @@ Dark Mode
 
 .dark .totp-qr-code {
     opacity: 0.8;
+}
+
+.dark .clean-php-info th {
+    background-color: #666;
+    text-align: left;
 }
 
 /*

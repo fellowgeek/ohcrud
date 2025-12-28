@@ -7,6 +7,37 @@
         $this->redirect('/?action=login&redirect=/?action=server');
         exit();
     }
+
+    // Function to get cleaned phpinfo output
+    function get_clean_phpinfo() {
+        ob_start();
+        phpinfo(INFO_GENERAL | INFO_CONFIGURATION | INFO_MODULES);
+        $html = ob_get_clean();
+
+        // Remove the entire <head> section (and its internal CSS)
+        $html = preg_replace('/<head>.*?<\/head>/s', '', $html);
+
+        // Remove all <img> tags (logos/images)
+        $html = preg_replace('/<img[^>]+>/i', '', $html);
+        $html = preg_replace('/<svg[^>]+>/i', '', $html);
+
+        // Remove Credits and License sections
+        // These are typically identified by specific headers in phpinfo
+        $html = preg_replace('/<h1>PHP Credits<\/h1>.*?<hr \/>/s', '', $html);
+        $html = preg_replace('/<h1>Configuration<\/h1>.*?<hr \/>/s', '', $html); // Optional: keep if you want config
+        $html = preg_replace('/<h1>PHP License<\/h1>.*?<\/table>/s', '', $html);
+
+        // Remove any remaining <a> links that point to the PHP logo or credits
+        $html = preg_replace('/<a href="[^"]*php\.net[^"]*">.*?<\/a>/i', '', $html);
+
+        // Clean up the body tags and common phpinfo wrappers
+        $html = preg_replace('/<\/?(html|body)>/i', '', $html);
+
+        // Strip out the inline "center" styling
+        $html = str_replace('class="center"', '', $html);
+
+        return "<div class='clean-php-info'>" . trim($html) . "</div>";
+    }
 ?>
 
 <div class="card data-table data-table-init">
@@ -25,6 +56,7 @@
         <br/>
         <?php $this->debug($_SERVER, '$_SERVER (Server and execution environment information)', false); ?>
         <br/>
+        <?php print(get_clean_phpinfo()); ?>
     </div>
 
 </div>
