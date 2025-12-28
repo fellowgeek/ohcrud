@@ -19,11 +19,14 @@ class DB extends \ohCRUD\Core {
     // Stores the last SQL query executed
     public $SQL = '';
 
+    // Cache for table schema details
+    private static $schemaCache = [];
+
     // Constructor for the DB class.
     public function __construct() {
 
         // Deserialize the database configuration
-        $this->config = unserialize(__OHCRUD_DB_CONFIG__);
+        $this->config = __OHCRUD_DB_CONFIG__;
         // Define PDO options for database connection
         $options = array(
             \PDO::ATTR_PERSISTENT => $this->config['PERSISTENT_CONNECTION'],
@@ -74,8 +77,9 @@ class DB extends \ohCRUD\Core {
             return $this->output();
         }
 
-        if (__OHCRUD_DEBUG_MODE__ == true && __OHCRUD_DEBUG_MODE_SHOW_SQL__ == true) {
-            // Store the SQL query for debugging
+        // Handle Debug Logging
+        if (defined('__OHCRUD_DEBUG_MODE__') && __OHCRUD_DEBUG_MODE__ == true &&
+            defined('__OHCRUD_DEBUG_MODE_SHOW_SQL__') && __OHCRUD_DEBUG_MODE_SHOW_SQL__ == true) {
             $this->SQL = $sql;
         } else {
             $this->SQL = 'Redacted from debug.';
@@ -83,22 +87,29 @@ class DB extends \ohCRUD\Core {
 
         try {
             // Prepare and execute the query
-            $result = $this->db->prepare($sql);
-            if ($updateSuccess == true) $this->success = $result->execute($bind); else $result->execute($bind);
+            $statement = $this->db->prepare($sql);
 
-            if (preg_match("/^SELECT(.*?)/i", $sql) === 1) {
-                // If it's a SELECT query, fetch and store the results
-                $result->setFetchMode(\PDO::FETCH_ASSOC);
-                $rows = array();
-                while($row = $result->fetch()) {
-                    $rows[] = (object) $row;
-                }
-                $this->data = $rows;
+            // Execute with bindings
+            $executionResult = $statement->execute($bind);
+
+            // Update global success state if requested
+            if ($updateSuccess == true) {
+                $this->success = $executionResult;
+            }
+
+            // Check if the query returned any columns (SELECT, SHOW, DESCRIBE, etc.)
+            // This is much more robust than checking if the string starts with "SELECT"
+            if ($statement->columnCount() > 0) {
+                // Fetch all results as objects directly
+                $this->data = $statement->fetchAll(\PDO::FETCH_OBJ);
                 return $this;
             } else {
-                // For non-SELECT queries, store the result
-                $this->data = $result;
+                // It is a modification query (INSERT, UPDATE, DELETE)
+                $this->data = $statement;
+
+                // specific check for INSERT to capture the ID
                 $this->lastInsertId = $this->db->lastInsertId();
+
                 return $this;
             }
         } catch (\PDOException $e) {
@@ -111,6 +122,12 @@ class DB extends \ohCRUD\Core {
 
     // Execute an INSERT SQL query
     public function create($table, $data=array()) {
+
+        if ($this->isTableNameValid($table) == false) {
+            $this->error('Invalid table name.', 500);
+            return $this->output();
+        }
+
         if (__OHCRUD_DB_STAMP__ == true) {
             $data['CDATE'] = date('Y-m-d H:i:s');
             $data['CUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : NULL;
@@ -133,6 +150,11 @@ class DB extends \ohCRUD\Core {
     // Execute a SELECT SQL query with optional parameter binding.
     public function read($table, $where="", $bind=array(), $fields="*") {
 
+        if ($this->isTableNameValid($table) == false) {
+            $this->error('Invalid table name.', 500);
+            return $this->output();
+        }
+
         $sql = "SELECT " . $fields . " FROM " . $table;
         if (!empty($where))
             $sql .= " WHERE " . $where;
@@ -143,6 +165,12 @@ class DB extends \ohCRUD\Core {
 
     // Execute an UPDATE SQL query with optional parameter binding.
     public function update($table, $data, $where, $bind=array()) {
+
+        if ($this->isTableNameValid($table) == false) {
+            $this->error('Invalid table name.', 500);
+            return $this->output();
+        }
+
         if (__OHCRUD_DB_STAMP__ == true) {
             $data['MDATE'] = date('Y-m-d H:i:s');
             $data['MUSER'] = isset($_SESSION['User']->ID) == true ? $_SESSION['User']->ID : NULL;
@@ -166,6 +194,12 @@ class DB extends \ohCRUD\Core {
 
     // Execute a DELETE SQL query with optional parameter binding.
     public function delete($table, $where, $bind=array()) {
+
+        if ($this->isTableNameValid($table) == false) {
+            $this->error('Invalid table name.', 500);
+            return $this->output();
+        }
+
         $sql = "DELETE FROM " . $table . " WHERE " . $where . ";";
         return $this->run($sql, $bind);
     }
@@ -181,9 +215,10 @@ class DB extends \ohCRUD\Core {
 
     // Return the primary key column name for a given table
     public function getPrimaryKeyColumn($table) {
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+
+        if ($this->isTableNameValid($table) == false) {
             $this->error('Invalid table name.', 500);
-            return null;
+            return false;
         }
 
         try {
@@ -222,9 +257,9 @@ class DB extends \ohCRUD\Core {
 
         $schema = new \stdClass();
 
-        if ($table != '' && preg_match('/^[a-zA-Z0-9_]+$/', $table) == false) {
+        if ($this->isTableNameValid($table) == false) {
             $this->error('Invalid table name.', 500);
-            return;
+            return false;
         }
 
         try {
@@ -419,35 +454,11 @@ class DB extends \ohCRUD\Core {
 
     // Helper method to filter valid fields for database operations
     private function filter($table, $data) {
-        $fields = array();
-        $filteredData = array();
+        $fields = $this->getTableColumns($table);
+        $filteredData = [];
 
-        if ($this->config['DRIVER'] === 'SQLITE') {
-            // SQLite specific query to get table columns
-            $sql = "PRAGMA table_info('" . $table . "');";
-            $key = "name";
-        } elseif ($this->config['DRIVER'] === 'MYSQL') {
-            // MySQL specific query to get table columns
-            $sql = "DESCRIBE " . $table . ";";
-            $key = "Field";
-        } else {
-            // Generic query for other database types
-            $sql = "SELECT column_name FROM information_schema.columns WHERE table_name = '" . $table . "';";
-            $key = "column_name";
-        }
-
-        try {
-            $statement = $this->db->prepare($sql);
-            $statement->execute();
-            if ($statement !== false) {
-                foreach ($statement as $record) {
-                    $fields[] = $record[$key];
-                }
-                $filteredData = array_values(array_intersect($fields, array_keys($data)));
-            }
-        } catch (\PDOException $e) {
-            // Handle database query exceptions when fetching table columns
-            $this->error($e->getMessage(), 500);
+        if ($fields != []) {
+            $filteredData = array_values(array_intersect($fields, array_keys($data)));
         }
 
         // If required, create system columns (CDATE, MDATE, CUSER, MUSER) and add them to valid fields
@@ -501,6 +512,47 @@ class DB extends \ohCRUD\Core {
             }
         }
         return $filteredData;
+    }
+
+    // Get the columns of a specific table with caching
+    private function getTableColumns($table) {
+
+        // Check Cache
+        if (isset(self::$schemaCache[$table])) {
+            return self::$schemaCache[$table];
+        }
+
+        // Fetch table schema
+        $fields = [];
+        try {
+            if ($this->config['DRIVER'] === 'SQLITE') {
+                // SQLite
+                $stmt = $this->db->prepare("PRAGMA table_info(`$table`)");
+                $stmt->execute();
+                foreach ($stmt as $row) $fields[] = $row['name'];
+            } elseif ($this->config['DRIVER'] === 'MYSQL') {
+                // MySQL
+                $stmt = $this->db->prepare("DESCRIBE `$table`");
+                $stmt->execute();
+                foreach ($stmt as $row) $fields[] = $row['Field'];
+            }
+        } catch (\PDOException $e) {
+            $this->error($e->getMessage(), 500);
+            return [];
+        }
+
+        // Store in cache
+        self::$schemaCache[$table] = $fields;
+        return $fields;
+    }
+
+    // Validate table name to prevent SQL injection
+    private function isTableNameValid($table) {
+        if ($table != '' && preg_match('/^[a-zA-Z0-9_]+$/', $table) != true) {
+            $this->log('warning', "Invalid table name: " . $table);
+            return false;
+        }
+        return true;
     }
 
 }

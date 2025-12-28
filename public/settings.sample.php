@@ -61,7 +61,7 @@ define('__OHCRUD_DB_STAMP__', true);
 
     If you are using local docker development, you can use the following settings:
 
-    define('__OHCRUD_DB_CONFIG__', serialize([
+    define('__OHCRUD_DB_CONFIG__', [
             'DRIVER' => 'MYSQL', // 'MYSQL' or 'SQLITE'
             'PERSISTENT_CONNECTION' => false,
             'SQLITE_DB' 	=> '/data/data.db',
@@ -69,13 +69,12 @@ define('__OHCRUD_DB_STAMP__', true);
             'MYSQL_DB' 	=> 'ohcrud',
             'USERNAME' 	=> 'ohcrud',
             'PASSWORD' 	=> 'secret'
-            ]
-        )
+        ]
     );
 
 */
 
-define('__OHCRUD_DB_CONFIG__', serialize([
+define('__OHCRUD_DB_CONFIG__', [
         'DRIVER' => 'MYSQL', // 'MYSQL' or 'SQLITE'
         'PERSISTENT_CONNECTION' => false,
         'SQLITE_DB' 	=> 'database_filename.db',
@@ -83,8 +82,7 @@ define('__OHCRUD_DB_CONFIG__', serialize([
         'MYSQL_DB' 	=> 'database',
         'USERNAME' 	=> 'username',
         'PASSWORD' 	=> 'password'
-        ]
-    )
+    ]
 );
 
 // IMPORTANT
