@@ -1,4 +1,9 @@
 <?php
+// Prevent direct access to this class.
+if (isset($GLOBALS['OHCRUD']) == false) {
+    http_response_code(404);
+    die();
+}
 
 // Define the base path for the application, normalized for both Nginx and Apache.
 define('__SELF__', __DIR__ . '/');

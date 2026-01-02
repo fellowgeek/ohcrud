@@ -1,4 +1,9 @@
 <?php
+// Prevent direct access to this class.
+if (isset($GLOBALS['OHCRUD']) == false) {
+    http_response_code(404);
+    die();
+}
 
 // Enable or disable IP filtering for allowed remote IPs.
 define('__OHCRUD_ALLOWED_IPS_ENABLED__', false);
