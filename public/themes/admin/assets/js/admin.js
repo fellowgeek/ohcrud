@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     panel = app.panel.get('.panel-left');
+    if (typeof panel === 'undefined' || panel === null) {
+        return;
+    }
     if (panel.opened === true) {
         $$('.panel-left-fab-icon').text('chevron_left');}
     else {
