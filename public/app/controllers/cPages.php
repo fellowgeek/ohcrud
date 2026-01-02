@@ -28,7 +28,8 @@ class cPages extends \app\models\mPages {
         if (isset($request->payload) == false ||
             empty($request->payload->URL) == true ||
             empty($request->payload->TITLE) == true ||
-            empty($request->payload->TEXT) == true)
+            empty($request->payload->TEXT) == true ||
+            empty($request->payload->STATUS) == true)
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.

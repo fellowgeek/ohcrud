@@ -63,7 +63,7 @@ class Router extends \ohCRUD\Core {
 
             // Access Policy check
             if ($this->isRequestAllowedByAccessPolicy() == false) {
-                die(__LINE__);
+                $this->forbidden();
                 return $this;
             }
         }
@@ -95,6 +95,7 @@ class Router extends \ohCRUD\Core {
 
             // If a method was targeted (Strategy B)
             if ($matchedMethod) {
+
                 // Check if method exists and it is public and executable
                 if (is_callable([$object, $matchedMethod]) == true) {
                     // Check method-level Permissions
@@ -154,9 +155,11 @@ class Router extends \ohCRUD\Core {
 
         // Handle cross-origin requests and set appropriate CORS headers for allowed origins.
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || __OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
-            header('Access-Control-Allow-Origin: ' . $origin);
-            header('Access-Control-Allow-Credentials: true');
-            header('Access-Control-Max-Age: 86400');
+            // Set CORS headers
+            $this->includeOutputHeader('Access-Control-Allow-Origin: ' . $origin);
+            $this->includeOutputHeader('Access-Control-Allow-Credentials: true');
+            $this->includeOutputHeader('Access-Control-Max-Age: 86400');
+
             // Preflight request handling
             if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
                 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS");
@@ -244,19 +247,16 @@ class Router extends \ohCRUD\Core {
         if (isset($_SERVER['PHP_AUTH_USER']) == true || isset($_SERVER['PHP_AUTH_PW']) == true || isset($httpHeaders['Token']) == true) {
             $userHasLoggedIn = $users->login($_SERVER['PHP_AUTH_USER'] ?? null, $_SERVER['PHP_AUTH_PW'] ?? null, $httpHeaders['Token'] ?? null);
         }
-
         if ($userHasLoggedIn == true) {
             $this->route();
         } else {
             if (isset($httpHeaders['Token']) == true) {
                 $this->forbidden();
             } else {
-                if(headers_sent() == false) {
-                    // Unauthorized access - Send HTTP headers for basic authentication.
-                    header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
-                    header('HTTP/1.0 401 Unauthorized');
-                }
-                die();
+                // Unauthorized access - Send HTTP headers for basic authentication.
+                $this->includeOutputHeader('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
+                $this->includeOutputHeader('HTTP/1.0 401 Unauthorized');
+                $this->output();
             }
         }
     }

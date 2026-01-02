@@ -105,7 +105,7 @@ class DB extends \ohCRUD\Core {
                 return $this;
             } else {
                 // It is a modification query (INSERT, UPDATE, DELETE)
-                $this->data = $statement;
+                $this->data = new \stdClass();
 
                 // specific check for INSERT to capture the ID
                 $this->lastInsertId = $this->db->lastInsertId();
@@ -116,7 +116,7 @@ class DB extends \ohCRUD\Core {
             // Handle database query execution exceptions
             $this->data = false;
             $this->error($e->getMessage(), 500);
-            return $this->output();
+            return $this;
         }
     }
 

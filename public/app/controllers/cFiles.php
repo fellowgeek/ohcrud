@@ -115,6 +115,13 @@ class cFiles extends \app\models\mFiles {
 
         // Create a new file entry in the database using the 'create' method.
         $filesOutput = $this->create('Files', $filesParameters);
+        if ($this->success == false) {
+            // If the creation fails, generate an error message.
+            $this->errors = [];
+            $this->error('Another file with the same name already exists.', 409);
+            $this->output();
+            return $this;
+        }
 
         // Check if the file creation was successful and retrieve the last inserted ID.
         if (isset($filesOutput->lastInsertId) == true) {
@@ -286,6 +293,11 @@ class cFiles extends \app\models\mFiles {
         } else {
             header("Cache-Control: public, max-age=2592000"); // Cache for 30 days
             header("Expires: " . gmdate("D, d M Y H:i:s", time() + 2592000) . " GMT");
+        }
+        // Remove X-Powered-By header for security reasons
+        if (ini_get('expose_php') == true) {
+            ini_set('expose_php', 'Off');
+            header_remove("X-Powered-By");
         }
         readfile($filePath);
         die();

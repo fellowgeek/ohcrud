@@ -21,12 +21,58 @@ class Core {
     public $data;
     public $errors = [];
     public $success = true;
-    public $outputType = null;
+    public $outputType = 'HTML';
     public $outputHeaders = [];
     public $outputHeadersSent = false;
     public $outputStatusCode = 200;
     public $runtime;
     public $version = '2.6';
+
+    public function includeOutputHeader($header) {
+        if (in_array($header, $this->outputHeaders) == true) {
+            return $this;
+        }
+
+        array_push($this->outputHeaders, $header);
+        return $this;
+    }
+
+    // Send HTTP headers for the response.
+    public function headers() {
+        if ($this->outputType == null) {
+            return $this;
+        }
+        if (headers_sent() == false && $this->outputHeadersSent == false) {
+            $this->outputHeadersSent = true;
+            http_response_code($this->outputStatusCode);
+            // Disable broswer side caching
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Cache-Control: post-check=0, pre-check=0', false);
+            header('Pragma: no-cache');
+            // Set X-Frame-Options to prevent clickjacking
+            header('X-Frame-Options: ' . __X_FRAME_OPTIONS__ ?? 'SAMEORIGIN');
+            // Set X-Content-Type-Options to prevent MIME type sniffing
+            header('X-Content-Type-Options: ' . __X_CONTENT_TYPE_OPTIONS__ ?? 'nosniff');
+            foreach ($this->outputHeaders as $outputHeader) {
+                header($outputHeader);
+            }
+            // Remove X-Powered-By header for security reasons
+            if (ini_get('expose_php') == true) {
+                ini_set('expose_php', 'Off');
+                header_remove("X-Powered-By");
+            }
+        }
+        return $this;
+    }
+
+    // Perform an HTTP redirect.
+    public function redirect($url) {
+        if (headers_sent() == false) {
+            header('Location: ' . $url);
+            die();
+        }
+        return false;
+    }
 
     // Set the output type for the response.
     public function setOutputType($outputType) {
@@ -34,19 +80,61 @@ class Core {
         return $this;
     }
 
-    // Set custom output headers for the response.
-    public function setOutputHeaders($outputHeaders = array()) {
-        if (is_array($outputHeaders) == true) {
-            $this->outputHeaders = $outputHeaders;
-        } else {
-            $this->error('outputHeaders, must be an array.', 500);
-        }
-        return $this;
-    }
+    // Generate and send the response based on the output type.
+    public function output() {
 
-    // Set the HTTP status code for the response.
-    public function setOutputStatusCode($outputStatusCode) {
-        $this->outputStatusCode = $outputStatusCode;
+        $output = '';
+
+        switch ($this->outputType) {
+            case 'HTML':
+                if (is_string($this->data) == true) {
+                    $output = $this->data;
+                }
+                break;
+            case 'JSON':
+                if (in_array('Content-Type: application/json', $this->outputHeaders) == false) {
+                    array_push($this->outputHeaders, 'Content-Type: application/json');
+                }
+                if (headers_sent() == false && $this->outputHeadersSent == false) {
+                    $payload = (function($obj) {
+                        return get_object_vars($obj);
+                    }) ($this);
+
+                    unset(
+                        $payload['config'],
+                        $payload['outputType'],
+                        $payload['outputHeaders'],
+                        $payload['outputHeadersSent'],
+                        $payload['permissions'],
+                        $payload['db']
+                    );
+
+                    if (__OHCRUD_DEBUG_MODE__ == true) {
+                        $payload['runtime'] = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+                    }
+
+                    $flags = 0;
+                    if (__OHCRUD_DEBUG_MODE__ === true) {
+                        $flags |= JSON_PRETTY_PRINT;
+                    }
+                    $output = json_encode($payload, $flags);
+                }
+                break;
+        }
+
+        if (__OHCRUD_DEBUG_MODE__ == true) {
+            $this->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+        }
+
+        $this->headers();
+        if (empty($output) == false) {
+            print($output);
+        }
+
+        if (PHP_SAPI === 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
+            $this->debug();
+        }
+
         return $this;
     }
 
@@ -110,101 +198,6 @@ class Core {
         // Disable CSRF check for debug mode
         if (__OHCRUD_DEBUG_MODE__ == true) return true;
         return hash_equals($_SESSION['CSRF'] ?? '', $token);
-    }
-
-    // Generate and send the response based on the output type.
-    public function output() {
-
-        $output = '';
-
-        switch ($this->outputType) {
-            case 'HTML':
-                if (is_string($this->data) == true) {
-                    $output = $this->data;
-                }
-                break;
-            case 'JSON':
-                if (in_array('Content-Type: application/json', $this->outputHeaders) == false) {
-                    array_push($this->outputHeaders, 'Content-Type: application/json');
-                }
-                if (headers_sent() == false && $this->outputHeadersSent == false) {
-                    $payload = (function($obj) {
-                        return get_object_vars($obj);
-                    }) ($this);
-
-                    unset(
-                        $payload['config'],
-                        $payload['outputType'],
-                        $payload['outputHeaders'],
-                        $payload['outputHeadersSent'],
-                        $payload['permissions'],
-                        $payload['db']
-                    );
-
-                    if (__OHCRUD_DEBUG_MODE__ == true) {
-                        $payload['runtime'] = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
-                    }
-
-                    $flags = 0;
-                    if (__OHCRUD_DEBUG_MODE__ === true) {
-                        $flags |= JSON_PRETTY_PRINT;
-                    }
-                    $output = json_encode($payload, $flags);
-                }
-                break;
-        }
-
-        if (__OHCRUD_DEBUG_MODE__ == true) {
-            $this->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
-        }
-
-        $this->headers();
-        if (empty($output) == false) {
-            print($output);
-        }
-
-        if (PHP_SAPI === 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
-            $this->debug();
-        }
-
-        return $this;
-    }
-
-    // Send HTTP headers for the response.
-    public function headers() {
-        if ($this->outputType == null) {
-            return $this;
-        }
-        if (headers_sent() == false && $this->outputHeadersSent == false) {
-            $this->outputHeadersSent = true;
-            http_response_code($this->outputStatusCode);
-            // Disable broswer side caching
-            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-            header('Cache-Control: post-check=0, pre-check=0', false);
-            header('Pragma: no-cache');
-            // Set X-Frame-Options to prevent clickjacking
-            header('X-Frame-Options: ' . __X_FRAME_OPTIONS__ ?? 'SAMEORIGIN');
-            // Set X-Content-Type-Options to prevent MIME type sniffing
-            header('X-Content-Type-Options: ' . __X_CONTENT_TYPE_OPTIONS__ ?? 'nosniff');
-            foreach ($this->outputHeaders as $outputHeader) {
-                header($outputHeader);
-            }
-            // Remove X-Powered-By header for security reasons
-            if (ini_get('expose_php') == true) {
-                ini_set('expose_php', 'Off');
-                header_remove("X-Powered-By");
-            }
-        }
-        return $this;
-    }
-
-    // Perform an HTTP redirect.
-    public function redirect($url) {
-        if (headers_sent() == false) {
-            header('Location: ' . $url);
-            die();
-        }
-        return false;
     }
 
     // Retrieve data from cache if available and not expired.
