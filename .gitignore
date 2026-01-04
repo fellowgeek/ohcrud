@@ -14,9 +14,6 @@ settings.php
 logs/
 logs/app.log
 
-# Databases
-data.db
-
 # SSL keys and certificates
 private/cert.pem
 private/key.pem
