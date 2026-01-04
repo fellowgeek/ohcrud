@@ -74,7 +74,7 @@ $$(document).on('page:init', function (e, pageObject) {
     });
 
     $$('#appDarkMode').on('change', function() {
-        appDarkModeToggle = $$(this).prop('checked');
+        let appDarkModeToggle = $$(this).prop('checked');
         setDarkMode(appDarkModeToggle === true ? 'Y' : 'N');
         if (sqlEditor !== null) {
             let sqlEditorTheme = '';
@@ -740,8 +740,6 @@ $$(document).on('page:init', function (e, pageObject) {
 
         // Handle export CSV button
         btnExportCSV.addEventListener('click', function () {
-            let sqlQuery = sqlEditor.getValue();
-
             downloadCurrentTableAsCSV();
         });
 
@@ -1139,7 +1137,7 @@ function loadTableData(table, page) {
         page = parseInt(page);
     }
 
-    limit = parseInt($$('#LIMIT').val());
+    let limit = parseInt($$('#LIMIT').val());
     $$('#btnFileView').data('link', '/?action=files&page=' + page);
     $$('#PAGE_CURRENT').val(page);
 
@@ -2006,7 +2004,7 @@ function loadFilesData(page) {
     }
 
     let fileIcons = {'CSV': 'table', 'TXT': 'doc_text', 'PDF': 'doc_richtext', 'XML': 'doc_text', 'XLXS': 'doc_chart', 'JSON': 'doc', 'ZIP': 'archivebox', 'MP3': 'music_note_2'};
-    limit = parseInt($$('#LIMIT').val());
+    let limit = parseInt($$('#LIMIT').val());
     $$('#btnTableView').data('link', '/?action=tables&table=Files&page=' + page);
     $$('#PAGE_CURRENT').val(page);
 
@@ -2143,7 +2141,7 @@ function runSQLQuery(sqlQuery, page) {
         page = parseInt(page);
     }
 
-    limit = parseInt($$('#LIMIT').val());
+    let limit = parseInt($$('#LIMIT').val());
     $$('#PAGE_CURRENT').val(page);
 
     let sqlQueryTextResult = $$('#SQL_QUERY_TEXT_RESULT');
@@ -2180,7 +2178,7 @@ function runSQLQuery(sqlQuery, page) {
             } else {
                 sqlQueryTextResult.text('Note: Be cautious when executing SQL queries, as they can modify or delete data.');
                 if (typeof json.data.COLUMNS !== 'undefined' &&  typeof json.data.RESULTS !== 'undefined') {
-                    showing = json.pagination?.showing || '';
+                    let showing = json.pagination?.showing || '';
                     showing = showing.replaceAll(' ', '');
                     showing = showing.replace('of', '-of-');
                     if (showing != '') showing = '-' + showing;
@@ -2464,7 +2462,7 @@ function loadLogData(log, page) {
         page = parseInt(page);
     }
 
-    limit = parseInt($$('#LIMIT').val());
+    let limit = parseInt($$('#LIMIT').val());
     $$('#PAGE_CURRENT').val(page);
 
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getLogData/',
