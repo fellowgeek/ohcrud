@@ -1,29 +1,31 @@
-<h1>Understanding Hard-Coded Web Pages</h1>
+<h2>Hard-Coded Test Page</h2>
+<p>This page is a <strong>static example</strong> created specifically for testing and demonstration purposes within the CMS environment.</p>
 
-<p>In the ever-evolving landscape of web development, creating dynamic and interactive web pages has become the norm. However, not all web pages are created equal. Some websites still rely on a more traditional approach, where content is hard-coded directly into the page. In this article, we'll explore what it means for a web page to be hard-coded.</p>
+<h3>What Does &quot;Hard-Coded&quot; Mean Here?</h3>
+<p>
+    The content you see on this page including the title, headings, paragraphs, and any images, is <strong>not stored in the CMS database</strong>.
+</p>
+<p>It is written directly into the PHP file for this template <code>test.phtml</code> using standard HTML and PHP.</p>
 
-<h2>What is a Hard-Coded Web Page?</h2>
+<ul>
+    <li><strong>No Database Queries:</strong> Viewing this page does not execute any complex database queries typically used to retrieve page content, metadata, or widgets.</li>
+    <li><strong>No CMS Editing:</strong> You <strong>cannot</strong> edit this content through the administrative backend of the CMS. Any changes must be made directly to the source PHP file.</li>
+</ul>
 
-<p>A hard-coded web page is essentially a static web page that has its content manually written into the HTML markup. Unlike dynamic websites that rely on databases, server-side scripting languages, and content management systems (CMS), hard-coded pages do not fetch or generate content on the fly. Instead, all text, images, links, and other elements are embedded directly into the HTML source code.</p>
-
-<h2>Advantages of Hard-Coded Web Pages:</h2>
-
+<h3>Purpose of This Page</h3>
 <ol>
-    <li><strong>Simplicity:</strong> Hard-coded pages are straightforward to create and maintain. There's no need for a backend server or database to manage content.</li>
-    <li><strong>Speed:</strong> Since content is embedded directly into the HTML, these pages load quickly as there's no need for database queries or server-side processing.</li>
-    <li><strong>Security:</strong> With fewer components and server interactions, the attack surface is reduced, making it harder for malicious actors to exploit vulnerabilities.</li>
+    <li><strong>Demonstrate Hard-Coding Capability:</strong> Show a clear example of how to manually bypass the CMS&#39;s dynamic content generation to insert static HTML/text directly into a page template file. This confirms the page rendering pipeline (PHP execution and HTML output) is working.</li>
+    <li><strong>Provide a Baseline:</strong> Offer a known, stable example against which the functionality of <strong>dynamic content pages</strong> can be compared.</li>
+    <li><strong>Illustrate the Exception (Not the Rule):</strong> While this method is <strong>possible</strong> for certain highly specialized or legacy pages that never change, it is <strong>not encouraged</strong> for standard content. The core benefit of a CMS is centralizing content management, and hard-coding defeats this purpose. <strong>Best practice</strong> is to manage all content through the administrative interface and database.</li>
 </ol>
 
-<h2>Below you can view the contents of the user's PHP session:</h2>
+<h3>Example Hard-Coded Content Block</h3>
+<p>This section below is a simple HTML paragraph embedded directly in the PHP file:</p>
+<blockquote>
+    <p><strong>Lorem ipsum dolor sit amet</strong>, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. <strong>Excepteur sint occaecat cupidatat non proident</strong>, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+</blockquote>
 
-<pre>
-    <code>
-    // Display user session information using $this->debug($_SESSION);
-    $this->debug($_SESSION);
-    </code>
-</pre>
+<h3>Dynamic Element</h3>
+<p>Although the main content above is hard-coded, the time stamp below is generated dynamically by PHP's built-in functions upon page load.</p>
 
-
-<?php
-    $this->debug($_SESSION);
-?>
+<div class="notice info"><?php echo date('F j, Y, g:i:s a T'); ?></div>

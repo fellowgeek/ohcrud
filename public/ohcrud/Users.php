@@ -81,6 +81,7 @@ class Users extends \ohCRUD\DB {
                     'TOTP' => $this::INACTIVE
                     ]
                 );
+                $this->log('info', 'Default admin user created with username "admin" and password "admin". Please change the password after first login.');
             }
         }
     }
@@ -223,11 +224,9 @@ class Users extends \ohCRUD\DB {
             // Decrypt and compare user token
             if ($this->decryptText($user->TOKEN) === $APIToken) {
                 $user->loggedIn = true;
+
                 // Remove sensitive information
-                unset($user->PASSWORD);
-                unset($user->HASH);
-                unset($user->TOKEN);
-                unset($user->TOTP_SECRET);
+                $this->sanitizeUser($user);
 
                 // Create a user session and log in the user
                 $this->setSession('User', $user);
@@ -265,10 +264,7 @@ class Users extends \ohCRUD\DB {
             }
 
             // Remove sensitive information
-            unset($user->PASSWORD);
-            unset($user->HASH);
-            unset($user->TOKEN);
-            unset($user->TOTP_SECRET);
+            $this->sanitizeUser($user);
 
             // Check if the user has TOTP enabled
             if ((int) $user->TOTP == $this::ACTIVE) {
@@ -317,16 +313,21 @@ class Users extends \ohCRUD\DB {
         }
 
         // Remove sensitive information
-        unset($user->PASSWORD);
-        unset($user->HASH);
-        unset($user->TOKEN);
-        unset($user->TOTP_SECRET);
+        $this->sanitizeUser($user);
 
         // Create the user session and log in the user
         $this->setSession('User', $user);
         $this->unsetSession('tempUser');
 
         return $user;
+    }
+
+    // Helper to clean user object
+    private function sanitizeUser(&$user) {
+        unset($user->PASSWORD);
+        unset($user->HASH);
+        unset($user->TOKEN);
+        unset($user->TOTP_SECRET);
     }
 
     // Generate a randomized API token based on the username

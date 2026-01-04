@@ -8,6 +8,7 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 class Router extends \ohCRUD\Core {
 
     private $request;
+    private $requestMethod;
 
     // Constructor for the Router class. It sets up routing based on the provided URL path.
     public function __construct($rawPath = null) {
@@ -29,142 +30,110 @@ class Router extends \ohCRUD\Core {
         // Variables
         $path = $GLOBALS['PATH'];
         $pathArray = $GLOBALS['PATH_ARRAY'];
-        $method = '';
+        $matchedObject = null;
+        $matchedMethod = null;
 
-        // Process command-line parameters if the script is run in CLI mode.
+        // Input processing
         if (PHP_SAPI === 'cli') {
             $parameters = [];
+            // Use parse_url to safely extract query string
             parse_str(parse_url($rawPath, PHP_URL_QUERY) ?? '', $parameters);
             $this->request = (object) $parameters;
+            $this->requestMethod = 'CLI';
         } else {
-            // Process API parameters if not in CLI mode.
-            $this->request = (object) \array_merge($_REQUEST, $_GET, $_POST);
-            $payload = file_get_contents('php://input');
-            if (empty($payload) == false) {
-                // Decode JSON payload if the content type is 'application/json'.
-                if ($_SERVER['CONTENT_TYPE'] === 'application/json') $this->request->payload = \json_decode($payload); else $this->request->payload = $payload;
+            $this->request = (object) $_REQUEST;
+            $this->requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+            // Check if content type contains 'json'
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+            if (stripos($contentType, 'json') !== false) {
+                $payload = file_get_contents('php://input');
+                $this->request->payload = json_decode($payload);
+            } else {
+                $this->request->payload = file_get_contents('php://input');
             }
         }
 
-        // Try to create the object based on the path.
-        if (array_key_exists($path, __OHCRUD_ENDPOINTS__) == true) {
-            $objectName = __OHCRUD_ENDPOINTS__[$path];
-            $object = new $objectName;
-
-            // Check if the object has permissions, and if not, handle authorization or forbidden access.
-            if (isset($object->permissions) == true && $this->checkPermissions($object->permissions) == false) {
-                if (isset($_SESSION['User']) == false) $this->authorize(); else $this->forbidden();
-            }
-
-            return $this;
-        }
-
-        // If the object is not found, try to create it from the base path and call the object's method from the ending path.
-        $method = array_pop($pathArray);
-        $path = '/' . implode('/', $pathArray) . '/';
-
-        if (array_key_exists($path, __OHCRUD_ENDPOINTS__) == true) {
-
-            // Handle CORS (Cross-Origin Resource Sharing).
-            if ($this->handleCORS() == false) {
+        // Skip CSRF and Access Policy checks for CLI requests
+        if (PHP_SAPI !== 'cli') {
+            // CSRF Protection using Fetch Metadata
+            if ($this->isRequestAllowedByFetchMetadata() == false) {
                 $this->forbidden();
                 return $this;
             }
 
-            $objectName = __OHCRUD_ENDPOINTS__[$path];
-            $object = new $objectName;
-
-            // Check if the object has permissions for the specific method and call the method.
-            if (isset($object->permissions) == true && method_exists($object, $method) == true && $this->checkPermissions($object->permissions, $method) == true) {
-                $object->$method($this->request);
-            } else {
-                if (isset($_SESSION['User']) == false) $this->authorize(); else $this->forbidden();
+            // Access Policy check
+            if ($this->isRequestAllowedByAccessPolicy() == false) {
+                $this->forbidden();
+                return $this;
             }
-            return $this;
         }
 
-        // Redirect to the default path handler if available, otherwise return a 404 error.
-        if (__OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
-            $objectName = __OHCRUD_DEFAULT_PATH_HANDLER__;
-            $object = new $objectName($this->request);
-            if (method_exists($object, 'defaultPathHandler') == true) {
+        // Strategy A: exact path match
+        if (isset(__OHCRUD_ENDPOINTS__[$path])) {
+            $matchedObject = __OHCRUD_ENDPOINTS__[$path];
+        }
+        // Strategy B: base path + method match
+        else {
+            $methodCandidate = array_pop($pathArray);
+            $basePath = '/' . implode('/', $pathArray) . '/';
+
+            if (isset(__OHCRUD_ENDPOINTS__[$basePath])) {
+                $matchedObject = __OHCRUD_ENDPOINTS__[$basePath];
+                $matchedMethod = $methodCandidate;
+            }
+        }
+
+        // Execution
+        if ($matchedObject) {
+            $object = new $matchedObject;
+
+            // Check Class-level Permissions
+            if (isset($object->permissions) == false || $this->checkPermissions($object->permissions) == false) {
+                $this->handleAuthFailure();
+                return $this;
+            }
+
+            // If a method was targeted (Strategy B)
+            if ($matchedMethod) {
+
+                // Check if method exists and it is public and executable
+                if (is_callable([$object, $matchedMethod]) == true) {
+                    // Check method-level Permissions
+                    if ($this->checkPermissions($object->permissions, $matchedMethod)) {
+                        $object->$matchedMethod($this->request, $this->requestMethod);
+                        return $this;
+                    } else {
+                        $this->handleAuthFailure();
+                        return $this;
+                    }
+                }
+            } else {
+                // Strategy A: return the object context
+                return $this;
+            }
+        }
+
+        // Default path handler (CMS)
+        if (defined('__OHCRUD_DEFAULT_PATH_HANDLER__') && __OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
+            $class = __OHCRUD_DEFAULT_PATH_HANDLER__;
+            $object = new $class($this->request);
+            if (method_exists($object, 'defaultPathHandler')) {
                 $object->defaultPathHandler($GLOBALS['PATH']);
                 return $this;
             }
         }
 
-        // Set the output type to JSON and return a 404 error response.
+        // 404 Not Found if all else fails
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
         $this->error('ohCRUD! You just got 404\'d.', 404);
         $this->output();
-
     }
 
-    // Check if the user has the necessary permissions for an operation.
-    private function checkPermissions($expression, $method = null) {
-
-        // Grant permission if the script is called from the command-line interface.
-        if (PHP_SAPI === 'cli') return true;
-
-        // Variables
-        $objectHasPermission = false;
-        $methodHasPermission = false;
-        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
-
-        // Check object permission
-        if (isset($expression['object']) == true) {
-            if ((int) $expression['object'] == __OHCRUD_PERMISSION_ALL__ || ((int) $expression['object'] >= $userPermissions && $userPermissions !== false))
-                $objectHasPermission = true;
-        }
-
-        // Check method permission
-        if (isset($method) == true && isset($expression[$method]) == true) {
-            if ((int) $expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions !== false))
-                $methodHasPermission = true;
-        } else {
-            $methodHasPermission = false;
-        }
-
-        return ($objectHasPermission && $methodHasPermission);
-    }
-
-    // Handle user authorization.
-    private function authorize() {
-
-        // Variables
-        $users = new \ohCRUD\Users;
-        $httpHeaders = getallheaders();
-        $userHasLoggedIn = false;
-
-        // Authenticate the user using basic authentication or a token.
-        if (isset($_SERVER['PHP_AUTH_USER']) == true || isset($_SERVER['PHP_AUTH_PW']) == true || isset($httpHeaders['Token']) == true) {
-            $userHasLoggedIn = $users->login($_SERVER['PHP_AUTH_USER'] ?? null, $_SERVER['PHP_AUTH_PW'] ?? null, $httpHeaders['Token'] ?? null);
-        }
-
-        if ($userHasLoggedIn == true) {
-            $this->route();
-        } else {
-            if (isset($httpHeaders['Token']) == true) {
-                $this->forbidden();
-            } else {
-                if(headers_sent() == false) {
-                    // Unauthorized access - Send HTTP headers for basic authentication.
-                    header('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
-                    header('HTTP/1.0 401 Unauthorized');
-                }
-                die();
-            }
-        }
-    }
-
-    // Handle Cross-Origin Resource Sharing (CORS) to allow or deny access from different origins.
-    private function handleCORS() {
+    // Handle CORS (Cross-Origin Resource Sharing) and access policies for incoming requests.
+    private function isRequestAllowedByAccessPolicy() {
 
         // Set up CSRF (Cross-Site Request Forgery) token.
         $this->CSRF();
-
-        // Skip CORS check if we are in CLI mode.
-        if (PHP_SAPI === 'cli') return true;
 
         // Check if remote IP filtering is enabled and handle allowed IPs.
         if (__OHCRUD_ALLOWED_IPS_ENABLED__ == true) {
@@ -184,11 +153,14 @@ class Router extends \ohCRUD\Core {
         if ($origin === ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
         if ($origin === '') return true;
 
-        // Handle cross-origin requests and set appropriate CORS headers.
-        if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || ___OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
-            header('Access-Control-Allow-Origin: ' . $origin);
-            header('Access-Control-Allow-Credentials: true');
-            header('Access-Control-Max-Age: 86400');
+        // Handle cross-origin requests and set appropriate CORS headers for allowed origins.
+        if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || __OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
+            // Set CORS headers
+            $this->includeOutputHeader('Access-Control-Allow-Origin: ' . $origin);
+            $this->includeOutputHeader('Access-Control-Allow-Credentials: true');
+            $this->includeOutputHeader('Access-Control-Max-Age: 86400');
+
+            // Preflight request handling
             if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
                 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS");
                 header("Access-Control-Allow-Headers: token, Content-Type, Accept, Origin");
@@ -197,6 +169,95 @@ class Router extends \ohCRUD\Core {
             return true;
         } else {
             return false;
+        }
+    }
+
+    // Check Fetch Metadata headers to prevent CSRF attacks.
+    private function isRequestAllowedByFetchMetadata() {
+        // If no cookies are sent, CSRF is not applicable (API / non-browser client)
+        if (empty($_COOKIE) == true) {
+            return true;
+        }
+
+        // Missing header = unknown (Safari, older browsers), allow
+        if (empty($_SERVER['HTTP_SEC_FETCH_SITE']) == true) {
+            return true;
+        }
+
+        // Cookie-authenticated + cross-site = almost certainly CSRF
+        if ($_SERVER['HTTP_SEC_FETCH_SITE'] === 'cross-site') {
+            return false;
+        }
+
+        return true;
+    }
+
+    // Check if the user has the necessary permissions for an operation.
+    private function checkPermissions($expression, $method = null) {
+
+        // Grant permission if the script is called from the command-line interface.
+        if (PHP_SAPI === 'cli') return true;
+
+        // Variables
+        $objectHasPermission = false;
+        $methodHasPermission = false;
+        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
+
+        // Check object permission
+        if (isset($expression['object']) == true) {
+            if ((int) $expression['object'] == __OHCRUD_PERMISSION_ALL__ || ((int) $expression['object'] >= $userPermissions && $userPermissions !== false))
+                $objectHasPermission = true;
+        }
+
+        // If no method is specified, return object permission result
+        if (isset($method) == false) {
+            return $objectHasPermission;
+        }
+
+        // Check method permission
+        if (isset($expression[$method]) == true) {
+            if ((int) $expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions !== false))
+                $methodHasPermission = true;
+        } else {
+            $methodHasPermission = false;
+        }
+
+        // Return true only if both object and method permissions are granted
+        return ($objectHasPermission && $methodHasPermission);
+    }
+
+    // Helper method for authorize/forbidden logic
+    private function handleAuthFailure() {
+        if (isset($_SESSION['User']) == false) {
+            $this->authorize();
+        } else {
+            $this->forbidden();
+        }
+    }
+
+    // Handle user authorization.
+    private function authorize() {
+
+        // Variables
+        $users = new \ohCRUD\Users;
+        $httpHeaders = getallheaders();
+        $userHasLoggedIn = false;
+
+        // Authenticate the user using basic authentication or a token.
+        if (isset($_SERVER['PHP_AUTH_USER']) == true || isset($_SERVER['PHP_AUTH_PW']) == true || isset($httpHeaders['Token']) == true) {
+            $userHasLoggedIn = $users->login($_SERVER['PHP_AUTH_USER'] ?? null, $_SERVER['PHP_AUTH_PW'] ?? null, $httpHeaders['Token'] ?? null);
+        }
+        if ($userHasLoggedIn == true) {
+            $this->route();
+        } else {
+            if (isset($httpHeaders['Token']) == true) {
+                $this->forbidden();
+            } else {
+                // Unauthorized access - Send HTTP headers for basic authentication.
+                $this->includeOutputHeader('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
+                $this->includeOutputHeader('HTTP/1.0 401 Unauthorized');
+                $this->output();
+            }
         }
     }
 

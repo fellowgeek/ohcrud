@@ -12,7 +12,7 @@ class cUsers extends \ohCRUD\DB {
         'object' => __OHCRUD_PERMISSION_ALL__,
         'login' => __OHCRUD_PERMISSION_ALL__,
         'verify' => __OHCRUD_PERMISSION_ALL__,
-        'logout' => __OHCRUD_PERMISSION_ALL__
+        'logout' => __OHCRUD_PERMISSION_ALL__,
     ];
 
     // This method, handles user login functionality
@@ -44,7 +44,7 @@ class cUsers extends \ohCRUD\DB {
 
         // If login is unsuccessful, output an error and return
         if ($response === false) {
-            $this->error('Unable to login, check your Username and Password.');
+            $this->error('Unable to login, check your Username and Password.', 401);
             $this->output();
             return $this;
         }
@@ -82,7 +82,7 @@ class cUsers extends \ohCRUD\DB {
 
         // Check if the user has logged in yet (in the current temporary session)
         if (isset($_SESSION['tempUser']) == false)
-            $this->error('User has not logged in yet.');
+            $this->error('User has not logged in yet.', 401);
 
         // If there are errors, output them and return
         if ($this->success === false) {
@@ -95,7 +95,7 @@ class cUsers extends \ohCRUD\DB {
 
         // If verification is unsuccessful, output an error and return
         if ($response === false) {
-            $this->error('Unable to verify, check your two factor authentication code.');
+            $this->error('Unable to verify, check your two factor authentication code.', 401);
             $this->output();
             return $this;
         }

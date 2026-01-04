@@ -1,4 +1,13 @@
 <?php
+    // Prevent direct access to this class.
+    if (isset($GLOBALS['OHCRUD']) == false) { die(); }
+
+    // Check if user is logged in and has admin permissions
+    if(isset($_SESSION['User']) == false || $_SESSION['User']->PERMISSIONS !== 1) {
+        $this->redirect('/?action=login&redirect=/?action=logs');
+        exit();
+    }
+
     // Sanitize the log name
     $log = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $this->purifier->purify($_REQUEST['log'] ?? 'app.log'));
 ?>

@@ -3,17 +3,16 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
-		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		{{CMS:META}}
 		<title>ohCRUD Admin - Edit: {{CMS:TITLE}}</title>
-		<link rel="stylesheet" href="/assets/css/framework7-bundle.min.css" media="all" />
-		<link rel="stylesheet" href="/assets/css/framework7-icons.css" media="all" />
-		<link rel="stylesheet" href="/assets/css/font-awesome.min.css" media="all" />
-		<link rel="stylesheet" href="/assets/css/simplemde.min.css" media="all" />
-		<link rel="stylesheet" href="/assets/css/styles.css" media="all" />
+        <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
+		<link rel="stylesheet" href="assets/css/framework7-bundle.min.css" media="all" />
+		<link rel="stylesheet" href="assets/css/framework7-icons.css" media="all" />
+		<link rel="stylesheet" href="assets/css/font-awesome.min.css" media="all" />
+		<link rel="stylesheet" href="assets/css/simplemde.min.css" media="all" />
+		<link rel="stylesheet" href="assets/css/styles.css" media="all" />
 		{{CMS:STYLESHEET}}
-		<link rel="icon" type="image/png" href="/assets/img/favicon.png" />
 	</head>
 	<body>
 
@@ -21,8 +20,8 @@
 			<!-- Status bar overlay for fullscreen mode-->
 			<div class="statusbar-overlay"></div>
 
-			<!-- Right panel with reveal effect-->
-			<div class="panel panel-left panel-push">
+			<!-- Left panel with reveal effect-->
+			<div class="panel panel-left panel-push panel-init" data-collapsed-breakpoint="1920" data-visible-breakpoint="1920">
 
 				<div class="page">
 
@@ -78,6 +77,33 @@
 							</ul>
 						</div>
 
+                        <!-- DEVELOPER -->
+						<div class="block-header">DEVELOPER</div>
+						<div class="list list-strong-ios list-dividers-ios inset-ios">
+							<ul>
+								<li>
+									<a class="item-link item-content external" href="/?action=sql">
+										<div class="item-media">
+											<i class="f7-icons">hammer</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Run SQL Query</div>
+										</div>
+									</a>
+								</li>
+								<li>
+									<a class="item-link item-content external" href="/?action=server">
+										<div class="item-media">
+											<i class="f7-icons">info_circle</i>
+										</div>
+										<div class="item-inner">
+											<div class="item-title">Server Details</div>
+										</div>
+									</a>
+								</li>
+                            </ul>
+                        </div>
+
 						<!-- LOGS -->
 						<div class="block-header">LOGS</div>
 						<div class="list list-strong-ios list-dividers-ios inset-ios">
@@ -117,9 +143,9 @@
 				<div class="page" data-name="edit">
 
 					<!-- Settings -->
-					<div class="fab fab-left-bottom">
-						<a href="#" class="panel-open" data-panel="left">
-							<i class="f7-icons">gear_alt</i>
+					<div class="fab fab-left-bottom panel-left-fab">
+						<a href="#">
+							<i class="f7-icons panel-left-fab-icon">chevron_left</i>
 						</a>
 					</div>
 

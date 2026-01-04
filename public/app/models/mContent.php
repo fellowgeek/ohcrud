@@ -17,6 +17,12 @@ class mContent {
     //The layout associated with the content.
     public $layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
 
+    // The status of the content.
+    public $status = \app\models\mPages::PUBLISHED;
+
+    // Indicates the HTTP status code that the content represents.
+    public $statusCode = 200;
+
     // The type of content, either 'DB' or 'FILE'.
     public $type = '';
 
@@ -37,9 +43,6 @@ class mContent {
 
     // The JavaScript content.
     public $javascript = '';
-
-    // Indicates if the content represents a 404 error page.
-    public $is404 = false;
 
     // Indicates if the content has been marked as deleted.
     public $isDeleted = false;

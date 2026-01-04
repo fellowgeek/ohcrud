@@ -13,7 +13,7 @@ class cPages extends \app\models\mPages {
     public $permissions = [
         'object' => __OHCRUD_PERMISSION_ALL__,
         'save' => 1,
-        'restoreDeletePage' => 1
+        'restoreDeletePage' => 1,
     ];
 
     // Method to save or edit a page.
@@ -28,12 +28,13 @@ class cPages extends \app\models\mPages {
         if (isset($request->payload) == false ||
             empty($request->payload->URL) == true ||
             empty($request->payload->TITLE) == true ||
-            empty($request->payload->TEXT) == true)
+            empty($request->payload->TEXT) == true ||
+            empty($request->payload->STATUS) == true)
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
-            $this->error('You can\'t edit a hard coded page.');
+        if ($this->isHardCoded($request->payload->URL) == true)
+            $this->error('You can\'t edit a hard coded page.', 403);
 
         if ($this->success === false) {
             $this->output();
@@ -46,6 +47,7 @@ class cPages extends \app\models\mPages {
         $purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
 
         $request->payload->TITLE = $purifier->purify($request->payload->TITLE);
+        $request->payload->TEXT = $purifier->purify($request->payload->TEXT);
 
         // Set default values for THEME and LAYOUT if missing in the payload.
         if (isset($request->payload->THEME) == false) {
@@ -53,6 +55,13 @@ class cPages extends \app\models\mPages {
         }
         if (isset($request->payload->LAYOUT) == false) {
             $request->payload->LAYOUT = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
+        // Set default value for STATUS if missing or invalid in the payload.
+        if (in_array((int) $request->payload->STATUS, [$this::PUBLISHED, $this::DELETED, $this::DRAFT]) == true) {
+            $request->payload->STATUS = (int) $request->payload->STATUS;
+        } else {
+            $request->payload->STATUS = $this::DRAFT;
         }
 
         // Check if the page exists in the database.
@@ -77,7 +86,7 @@ class cPages extends \app\models\mPages {
                 'TEXT' => $request->payload->TEXT,
                 'THEME' => $request->payload->THEME,
                 'LAYOUT' => $request->payload->LAYOUT,
-                'STATUS' => $this::ACTIVE
+                'STATUS' => $request->payload->STATUS,
                 ]
             );
         } else {
@@ -88,7 +97,7 @@ class cPages extends \app\models\mPages {
                     'TEXT' => $request->payload->TEXT,
                     'THEME' => $request->payload->THEME,
                     'LAYOUT' => $request->payload->LAYOUT,
-                    'STATUS' => $this::ACTIVE
+                    'STATUS' => $request->payload->STATUS
                 ],
                 'URL = :URL',
                 [
@@ -118,8 +127,8 @@ class cPages extends \app\models\mPages {
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
-        if (file_exists(__SELF__ . 'app/views/cms/' . trim($request->payload->URL ?? '', '/') . '.phtml') == true)
-            $this->error('You can\'t delete a hard coded page.');
+        if ($this->isHardCoded($request->payload->URL) == true)
+            $this->error('You can\'t delete a hard coded page.', 403);
 
         if ($this->success === false) {
             $this->output();
@@ -141,10 +150,10 @@ class cPages extends \app\models\mPages {
         )->first();
 
         if ($page !== false) {
-            // Update the record: toggle the STATUS between ACTIVE and INACTIVE.
+            // Update the record: toggle the STATUS between PUBLISHED and DELETED.
             $this->update('Pages',
                 [
-                    'STATUS' => ((int) $page->STATUS == $this::ACTIVE) ? $this::INACTIVE : $this::ACTIVE
+                    'STATUS' => ((int) $page->STATUS == $this::PUBLISHED) ? $this::DELETED : $this::PUBLISHED
                 ],
                 'URL = :URL',
                 [
@@ -158,6 +167,23 @@ class cPages extends \app\models\mPages {
         $this->unsetCache($cacheKey);
 
         $this->output();
+    }
+
+    private function isHardCoded($url) {
+        $path = trim($url ?? '', '/');
+        if (empty($path)) {
+            return false;
+        }
+        $fullPath = __SELF__ . 'app/views/cms/' . $path . '.phtml';
+
+        $baseDir = realpath(__SELF__ . 'app/views/cms');
+        $realFullPath = realpath($fullPath);
+
+        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+            return true;
+        }
+
+        return false;
     }
 
 }

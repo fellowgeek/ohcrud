@@ -49,8 +49,8 @@ class cFiles extends \app\models\mFiles {
 
         // Validation: Check if a file with index 0 is present in the uploaded files.
         if (isset($_FILES[0]) == false) {
-            // If not, generate an error message and respond with a 403 Forbidden status.
-            $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.', 403);
+            // If not, generate an error message
+            $this->error('I\'m sorry Dave, I\'m afraid I can\'t do that.');
             $this->output();
             return $this;
         }
@@ -64,8 +64,8 @@ class cFiles extends \app\models\mFiles {
 
         // Check allowed file extension
         if (in_array($TYPE, $this->filesAllowed) == false) {
-            // If not allowed, generate an error message and respond with a 403 Forbidden status.
-            $this->error('This file type is not allowed.', 403);
+            // If not allowed, generate an error message and respond with status code 415 ( Unsupported Media Type )
+            $this->error('This file type is not allowed.', 415);
             $this->output();
             return $this;
         }
@@ -73,18 +73,17 @@ class cFiles extends \app\models\mFiles {
         // Detect MIME type using finfo
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $detectedMime = finfo_file($finfo, $TEMP);
-        finfo_close($finfo);
 
-        // Check allowed MIME type
+        // Check allowed MIME type, if not allowed, generate an error message and respond with status code 415 ( Unsupported Media Type )
         if (!in_array($detectedMime, $this->mimeTypesAllowed)) {
-            $this->error('Unsupported file type detected.', 403);
+            $this->error('Unsupported file type detected.', 415);
             $this->output();
             return $this;
         }
 
         // Move the uploaded file to a designated path.
         if (move_uploaded_file($TEMP, __SELF__ . $PATH) == false) {
-            $this->error('Unable to move uploaded file.', 403);
+            $this->error('Unable to move uploaded file.', 500);
             $this->output();
             return $this;
         }
@@ -116,6 +115,13 @@ class cFiles extends \app\models\mFiles {
 
         // Create a new file entry in the database using the 'create' method.
         $filesOutput = $this->create('Files', $filesParameters);
+        if ($this->success == false) {
+            // If the creation fails, generate an error message.
+            $this->errors = [];
+            $this->error('Another file with the same name already exists.', 409);
+            $this->output();
+            return $this;
+        }
 
         // Check if the file creation was successful and retrieve the last inserted ID.
         if (isset($filesOutput->lastInsertId) == true) {
@@ -127,20 +133,12 @@ class cFiles extends \app\models\mFiles {
         $this->output();
     }
 
-    /**
-     * Resizes, caches, and serves an image based on GET parameters.
-     *
-     * @param object $request The request object containing filename and optional parameters.
-     * - filename: The name of the image.
-     * - w: Target width (optional, integer, 1-2000).
-     * - h: Target height (optional, integer, 1-2000).
-     * - q: Quality for JPEG images (optional, integer, 1-100).
-     */
+    // Resizes, caches, and serves an image based on GET parameters.
     public function image($request) {
 
         // Validation & File Setup ---
         if (empty($request->filename)) {
-            $this->error('Filename is required.', 400);
+            $this->error('Filename is required.');
         }
 
         $basePath = __SELF__ . 'global/files/';
@@ -159,9 +157,9 @@ class cFiles extends \app\models\mFiles {
         }
 
         // Validate optional parameters
-        $width = isset($request->w) ? (int)$request->w : null;
-        $height = isset($request->h) ? (int)$request->h : null;
-        $quality = isset($request->q) ? (int)$request->q : null;
+        $width = isset($request->w) ? (int) $request->w : null;
+        $height = isset($request->h) ? (int) $request->h : null;
+        $quality = isset($request->q) ? (int) $request->q : null;
 
         if ($width !== null && ($width <= 0 || $width > 3840)) {
             $this->error('Width must be a positive integer up to 3840.', 400);
@@ -273,10 +271,6 @@ class cFiles extends \app\models\mFiles {
                 break;
         }
 
-        // Clean up
-        imagedestroy($sourceImage);
-        imagedestroy($newImage);
-
         // Output New Image
         $this->serveImage($newFilePath, $cacheEnabled);
     }
@@ -299,6 +293,11 @@ class cFiles extends \app\models\mFiles {
         } else {
             header("Cache-Control: public, max-age=2592000"); // Cache for 30 days
             header("Expires: " . gmdate("D, d M Y H:i:s", time() + 2592000) . " GMT");
+        }
+        // Remove X-Powered-By header for security reasons
+        if (ini_get('expose_php') == true) {
+            ini_set('expose_php', 'Off');
+            header_remove("X-Powered-By");
         }
         readfile($filePath);
         die();

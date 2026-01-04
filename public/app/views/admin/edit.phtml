@@ -1,8 +1,20 @@
+<?php
+    // Prevent direct access to this class.
+    if (isset($GLOBALS['OHCRUD']) == false) { die(); }
+
+    // Check if user is logged in and has admin permissions
+    if(isset($_SESSION['User']) == false || $_SESSION['User']->PERMISSIONS !== 1) {
+        $this->redirect('/?action=login&redirect=/?action=edit');
+        exit();
+    }
+?>
+
 <input type="hidden" id="currentTHEME" value="{{CMS:THEME}}" />
 <input type="hidden" id="currentLAYOUT" value="{{CMS:LAYOUT}}" />
+<input type="hidden" id="currentSTATUS" value="{{CMS:STATUS}}" />
 <input type="FILE" id="FILE" multiple style="display: none;" />
 
-<div class="grid grid-gap grid-cols-1 medium-grid-cols-3 margin-top">
+<div class="grid grid-gap grid-cols-1 medium-grid-cols-4 margin-top">
 
     <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
         <ul>
@@ -38,6 +50,22 @@
                 <div class="item-title item-label">Layout</div>
                 <div class="item-input-wrap input-dropdown-wrap">
                     <select id="LAYOUT" name="LAYOUT">
+                    </select>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="list list-strong-ios list-dividers-ios inset-ios no-margin-vertical">
+        <ul>
+            <li class="item-content item-input">
+                <div class="item-inner">
+                <div class="item-title item-label">Status</div>
+                <div class="item-input-wrap input-dropdown-wrap">
+                    <select id="STATUS" name="STATUS">
+                        <option value="2">Draft</option>
+                        <option value="1">Published</option>
+                        <option value="0">Deleted</option>
                     </select>
                 </div>
             </li>

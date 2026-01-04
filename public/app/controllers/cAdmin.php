@@ -24,7 +24,8 @@ class cAdmin extends \ohCRUD\DB {
         'refreshUserSecrets' => 1,
         'getLogList' => 1,
         'getLogData' => 1,
-        'clearLog' => 1
+        'clearLog' => 1,
+        'runSQLQuery' => 1,
     ];
 
     public ?array $pagination = null;
@@ -124,14 +125,37 @@ class cAdmin extends \ohCRUD\DB {
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
 
+        // Whitelist validation for ORDER and ORDER_BY clauses
+        $tableColumns = [];
+        $tableDetails = $this->details($table, true);
+        $tableObject = null;
+        if(is_object($tableDetails) && !empty(get_object_vars($tableDetails))) {
+            $tableName = array_keys(get_object_vars($tableDetails))[0];
+            $tableObject = $tableDetails->$tableName;
+        }
+
+        if(isset($tableObject->COLUMNS)) {
+            foreach($tableObject->COLUMNS as $column) {
+                $tableColumns[] = $column->NAME;
+            }
+        }
+
         // Default values for optional parameters.
         $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
         $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+
         $order = $request->payload->ORDER ??  'DESC';
+        if (strtoupper($order) !== 'ASC' && strtoupper($order) !== 'DESC') {
+            $order = 'DESC';
+        }
+
         $orderBy = $request->payload->ORDER_BY ?? $this->getPrimaryKeyColumn($table);
+        if ($orderBy != false && (empty($tableColumns) || in_array($orderBy, $tableColumns) == false)) {
+            $orderBy = $this->getPrimaryKeyColumn($table);
+        }
 
         // Get total records
-        $totalRecords = $this->RUN("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;
+        $totalRecords = $this->run("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;
         $totalPages = ceil($totalRecords / $limit);
 
         // Clamp the variable ranges
@@ -139,7 +163,7 @@ class cAdmin extends \ohCRUD\DB {
         if ($limit > $totalRecords) $limit = $totalRecords;
         if ($page > $totalPages) $page = $totalPages;
         $offset = ($page - 1) * $limit;
-        if ($offset < 0) $offset = 0;
+        if ($offset <= 0) $offset = 0;
 
         // Build the SQL query
         $SQL = "SELECT * FROM " . $table . "\n";
@@ -686,7 +710,7 @@ class cAdmin extends \ohCRUD\DB {
 
                 // Check if this is the last super admin
                 if ((int) $superAdmins->COUNT === 1) {
-                    $this->error('You can\'t delete the only existing superuser.');
+                    $this->error('You can\'t delete the only existing superuser.' , 403);
                     $this->data = new \stdClass();
                     $this->output();
                     return $this;
@@ -771,7 +795,7 @@ class cAdmin extends \ohCRUD\DB {
         )->first();
 
         if ($user == false) {
-            $this->error('User not found.');
+            $this->error('User not found.', 404);
             $this->output();
             return $this;
         }
@@ -846,7 +870,7 @@ class cAdmin extends \ohCRUD\DB {
         )->first();
 
         if ($userExists === false) {
-            $this->error('User not found.');
+            $this->error('User not found.', 404);
             $this->output();
             return $this;
         }
@@ -901,6 +925,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->output();
     }
 
+    // This function returns the data from a given log file with pagination support.
     public function getLogData($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -936,7 +961,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Ensure the resolved path is inside the log directory
         if (strpos($filepath, realpath(__OHCRUD_LOG_PATH__)) !== 0 || !file_exists($filepath)) {
-            $this->error('Log file not found or invalid path.');
+            $this->error('Log file not found or invalid path.', 404);
             $this->output();
             return $this;
         }
@@ -948,7 +973,7 @@ class cAdmin extends \ohCRUD\DB {
         // Get total records
         $totalRecords = $this->countLogRecords($filename);
         if ($totalRecords === false) {
-            $this->error('Log file not found.');
+            $this->error('Log file not found.', 404);
             $this->output();
             return $this;
         }
@@ -966,7 +991,7 @@ class cAdmin extends \ohCRUD\DB {
         // Open log file
         $fp = fopen($filepath, 'r');
         if (!$fp) {
-            $this->error('Unable to open log file: ' . $filename);
+            $this->error('Unable to open log file: ' . $filename, 500);
             $this->output();
             return $this;
         }
@@ -1048,6 +1073,7 @@ class cAdmin extends \ohCRUD\DB {
         $this->output();
     }
 
+    // This function clears the contents of a given log file.
     public function clearLog($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -1080,7 +1106,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Ensure the resolved path is inside the log directory
         if (strpos($filepath, realpath(__OHCRUD_LOG_PATH__)) !== 0 || !file_exists($filepath)) {
-            $this->error('Log file not found or invalid path.');
+            $this->error('Log file not found or invalid path.', 404);
             $this->output();
             return $this;
         }
@@ -1091,6 +1117,191 @@ class cAdmin extends \ohCRUD\DB {
         $this->success = true;
 
         $this->output();
+    }
+
+    // This function runs a raw SQL query against the database.
+    public function runSQLQuery($request) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        if(__OHCRUD_ADMIN_ENABLE_SQL_EXECUTION__ === false) {
+            $this->error('SQL execution is disabled.', 403);
+            $this->output();
+            return $this;
+        }
+
+        // Delay to mitigate brute force and timing attacks, only in production mode
+        if(__OHCRUD_DEBUG_MODE__ == false) {
+            usleep(rand(500000, 1000000));
+        }
+
+        // Initializes variables
+        $this->data = new \stdClass();
+        $this->pagination = null;
+
+        // Performs CSRF token validation and displays an error if the token is missing or invalid.
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false)
+            $this->error('Missing or invalid CSRF token.');
+
+        // Check if the request payload contains the necessary data.
+        if (isset($request->payload) == false ||
+            empty($request->payload->SQL) == true)
+            $this->error('Missing or incomplete data.');
+
+        if ($this->success === false) {
+            $this->output();
+            return $this;
+        }
+
+        // Cleanup the input data
+        $sql = $this->stripSQLComments($request->payload->SQL);
+
+        // Check if SQL is empty after stripping comments
+        if (trim($sql) === '') {
+            $this->error('The SQL query is empty or contains only comments.');
+            $this->output();
+            return $this;
+        }
+
+        // Handle pagination for SELECT queries
+        if (preg_match("/^SELECT(.*?)/i", $sql) === 1) {
+
+            // Default values for optional parameters.
+            if (isset($request->payload->PAGE) == false) $request->payload->PAGE = 1;
+            if (isset($request->payload->LIMIT) == false) $request->payload->LIMIT = 10;
+            $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
+            $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+
+            // Get total records
+            $totalRecords = $this->run("SELECT COUNT(*) AS `COUNT` FROM ( {$sql} ) AS _total_records_query;", [], false)->first()->COUNT ?? 0;
+            $totalPages = ceil($totalRecords / $limit);
+
+            // Clamp the variable ranges
+            if ($limit > 100) $limit = 100;
+            if ($limit > $totalRecords) $limit = $totalRecords;
+            if ($page > $totalPages) $page = $totalPages;
+            $offset = ($page - 1) * $limit;
+            if ($offset <= 0) $offset = 0;
+
+            // Modify the SQL to include LIMIT and OFFSET
+            $limitedSQL = "SELECT *
+                FROM (
+                    {$sql}
+                ) AS _limited_query
+                LIMIT {$limit} OFFSET {$offset};
+            ";
+            $sql = $limitedSQL;
+
+            // Get pagination meta data
+            $hasNextPage = $page < $totalPages;
+            $hasPreviousPage = $page > 1;
+            $showingRangeFrom = ($offset + 1);
+            $showingRangeTo = ($offset + $limit);
+            if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
+
+            $showing = $showingRangeFrom . ' - ' . $showingRangeTo . ' of ' . $totalRecords;
+
+            $this->pagination = [
+                'totalRecords' => $totalRecords,
+                'totalPages' => $totalPages,
+                'currentPage' => $page,
+                'limit' => $limit,
+                'hasNextPage' => $hasNextPage,
+                'hasPreviousPage' => $hasPreviousPage,
+                'showing' => $showing
+            ];
+        }
+
+        // Run the query
+        try {
+            $this->data = new \stdClass();
+            $result = $this->db->prepare($sql);
+            $this->success = $result->execute();
+
+            // Check if execution failed
+            if ($this->success === false) {
+                $errorInfo = $result->errorInfo();
+                $errorMessage = "DB Error: " . (isset($errorInfo[2]) ? $errorInfo[2] : "Unknown error.");
+                $this->error($errorMessage, 500);
+                return $this->output();
+            }
+
+            // Determine query type and handle return
+            $sqlCommand = strtoupper(substr($sql, 0, strpos($sql, ' ') ?: strlen($sql)));
+
+            // SELECT and EXPLAIN (which behaves like SELECT in returning a result set)
+            if (preg_match("/^SELECT(.*?)/i", $sql) === 1 || $sqlCommand === 'EXPLAIN') {
+                $result->setFetchMode(\PDO::FETCH_ASSOC);
+                $rows = array();
+                while ($row = $result->fetch()) {
+                    $rows[] = (object) $row;
+                }
+
+                // Cleanup the data and shorten long results and obfuscate ohCRUD secrets
+                foreach ($rows as $index => $value) {
+                    // Shorten long results
+                    foreach ($value as $key => $value) {
+                        if (gettype($value) === 'string') {
+                            $rows[$index]->{$key} = $this->shortenString($value, 100);
+                        }
+                    }
+                }
+
+                // Get columns metadata
+                if (isset($rows[0]) == true) {
+                    foreach($rows[0] as $columnName => $columnValue) {
+                        $field = new \stdClass();
+                        $field->NAME = $columnName;
+                        $field->TYPE = gettype($columnValue);
+                        $field->DETECTED_TYPE = $this->detectDataType((string) $columnValue, $field->TYPE);
+                        $field->ICON = $this->getFAIconForDetectedType($field->TYPE, $field->DETECTED_TYPE, strtoupper($columnName));
+                        $this->data->COLUMNS[] = $field;
+                    }
+                }
+
+                $this->data->RESULTS = $rows;
+            } else {
+                // NON-SELECT/DML/DDL/TCL Query
+                $rowCount = $result->rowCount();
+                $this->lastInsertId = ($sqlCommand === 'INSERT') ? $this->db->lastInsertId() : 0;
+                $message = '';
+
+                switch ($sqlCommand) {
+                    case 'INSERT':
+                        $message = "Record(s) successfully inserted (Affected rows: {$rowCount}, Last Insert ID: {$this->lastInsertId}).";
+                        break;
+                    case 'UPDATE':
+                    case 'DELETE':
+                        $message = "{$rowCount} row(s) were " . strtolower($sqlCommand) . "d.";
+                        break;
+                    case 'CREATE':
+                    case 'ALTER':
+                    case 'DROP':
+                    case 'TRUNCATE':
+                        $message = "Database structure command '" . strtolower($sqlCommand) . "' executed successfully.";
+                        break;
+                    case 'BEGIN':
+                    case 'START':
+                    case 'COMMIT':
+                    case 'ROLLBACK':
+                        $message = "Transaction command '" . strtolower($sqlCommand) . "' executed successfully.";
+                        break;
+                    default:
+                        $message = "Command '" . strtolower($sqlCommand) . "' executed successfully (Affected rows: {$rowCount}).";
+                        break;
+                }
+
+                // Store the message in the data property
+                $this->data = $message;
+            }
+        } catch (\PDOException $e) {
+            $this->data = false;
+            $this->error($e->getMessage(), 500);
+            $this->output();
+            return $this;
+        }
+
+        $this->output();
+        return $this;
     }
 
     // This function returns a font-awesome icon based on a given data type.
@@ -1237,6 +1448,19 @@ class cAdmin extends \ohCRUD\DB {
         }
         fclose($handle);
         return $lineCount;
+    }
+
+    // This function strips SQL comments from a given SQL string.
+    private function stripSQLComments($sql) {
+        // Remove multi-line comments (/* ... */)
+        $sql = preg_replace('/\/\*[\s\S]*?\*\//', '', $sql);
+        // Remove single-line comments (-- ... and # ...)
+        $sql = preg_replace('/(--|#).*$/m', '', $sql);
+        // Cleanup extra whitespace and empty lines left behind
+        $sql = preg_replace('/^\s*$/m', '', $sql);
+        // Remove trailing semicolon if present
+        $sql = rtrim($sql, " \t\n\r\0\x0B;");
+        return trim($sql);
     }
 
 }

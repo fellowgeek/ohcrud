@@ -9,7 +9,7 @@ use MatthiasMullie\Minify;
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cCMS - CMS controller used by the OhCRUD framework
-class cCMS extends \ohCRUD\DB {
+class cCMS extends \app\models\mPages {
 
     // The path of the requested content.
     public $path;
@@ -31,6 +31,8 @@ class cCMS extends \ohCRUD\DB {
     public $useCache = true;
     // Flag indicating whether the user is logged in.
     public $loggedIn = false;
+    // Flag indicating whether the user is an admin.
+    public $isAdmin = false;
     // Request data.
     public object $request;
     // Instance for managing pages.
@@ -47,7 +49,9 @@ class cCMS extends \ohCRUD\DB {
     // Max recursive content
     public $maxRecursiveContent = 7;
     // Allowed CMS actions
-    public $allowedActions = ['edit', 'users', 'tables', 'files', 'logs', 'settings'];
+    public $allowedActions = ['edit', 'users', 'tables', 'files', 'sql', 'server', 'logs'];
+    // Allowed components for instantiation
+    public $allowedComponents = [];
 
     public function __construct($request) {
         parent::__construct();
@@ -59,16 +63,29 @@ class cCMS extends \ohCRUD\DB {
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
 
-        // Set action mode
-        if ($this->loggedIn == true && in_array($this->request->action ?? '', $this->allowedActions) == true) {
-            $this->actionMode = $this->request->action;
-            $this->useCache = false;
+        // Capture and validate action
+        $action = $this->request->action ?? '';
+
+        // Check if action is in allowed list AND user has admin permissions
+        $this->isAdmin = $this->loggedIn && $_SESSION['User']->PERMISSIONS === 1;
+
+        if (in_array($action, $this->allowedActions) && $this->isAdmin) {
+            $this->actionMode = $action;
+        } else {
+            $this->actionMode = false;
         }
 
-        // Redirect to login page if not logged in
-        if ($this->loggedIn == false && in_array($this->request->action ?? '', $this->allowedActions) == true) {
-            $this->redirect('/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $this->request->action);
-            return;
+        // Handle logic for active action modes
+        if ($this->actionMode !== false) {
+            // We already know they are logged in and an admin if actionMode is not false,
+            // but we check loggedIn here for clarity or future-proofing.
+            if ($this->loggedIn) {
+                $this->useCache = false;
+            } else {
+                $loginUrl = '/login/?redirect=' . $GLOBALS['PATH'] . '?action=' . $action;
+                $this->redirect($loginUrl);
+                return;
+            }
         }
 
         // Disable cache for login pages
@@ -88,6 +105,9 @@ class cCMS extends \ohCRUD\DB {
         // Setup minifiers
         $this->minifierCSS = new Minify\CSS();
         $this->minifierJS = new Minify\JS();
+
+        // Scan for allowed components to build a whitelist.
+        $this->allowedComponents = $this->scanComponents(__SELF__ . 'app/components');
     }
 
     // Handler for all incoming requests
@@ -129,7 +149,7 @@ class cCMS extends \ohCRUD\DB {
         $this->processTheme();
 
         // Set cache
-        if ($this->actionMode == false && $this->content->is404 == false) {
+        if ($this->actionMode == false && $this->content->statusCode == 200) {
             $this->setCache($cacheKey, $this->data);
         }
 
@@ -257,7 +277,7 @@ class cCMS extends \ohCRUD\DB {
         $content = new \app\models\mContent;
 
         // Try getting page content from file
-        if (file_exists(__SELF__ . 'app/views/cms/' . trim($path, '/') . '.phtml') == true) {
+        if ($this->isHardCoded($path) == true) {
             $content = $this->getContentFromFile($path);
             // Handle special paths
             if ($path === '/login/') {
@@ -277,18 +297,15 @@ class cCMS extends \ohCRUD\DB {
             ]
         )->first();
 
-        // Check if page does not exists
-        if ($page === false || (int) $page->STATUS != $this::ACTIVE) {
-            if ($shouldSetOutputStatusCode) $this->outputStatusCode = 404;
+        // Handle non-existing page
+        if ($page === false) {
+            if ($shouldSetOutputStatusCode == true) $this->outputStatusCode = 404;
 
             $content->title = trim(ucwords(str_replace('/', ' ', $path)));
-            if (($this->request->action ?? '') !== 'edit') {
-                $content = $this->getContentFromFile($path, true);
+            if (($this->actionMode ?? '') !== 'edit') {
+                $content = $this->getContentFromFile($path, 404);
             }
-            if (($page->STATUS ?? -1) == $this::INACTIVE) {
-                $content->isDeleted = true;
-            }
-            $content->is404 = true;
+            $content->statusCode = 404;
             return $content;
         }
 
@@ -297,30 +314,93 @@ class cCMS extends \ohCRUD\DB {
         $content->title = $page->TITLE;
         $content->theme = $page->THEME;
         $content->layout = $page->LAYOUT;
+        $content->status = (int) $page->STATUS;
 
         // Check if user has permission
         $page->PERMISSIONS = (int) $page->PERMISSIONS;
         $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
-        if ($page->PERMISSIONS == __OHCRUD_PERMISSION_ALL__ || ($page->PERMISSIONS >= $userPermissions && $userPermissions !== false)) {
-            $content->text = $page->TEXT;
-            // Process strikethrough text
-            $page->TEXT = preg_replace('/~~(.*?)~~/i', '<del>$1</del>', $page->TEXT);
-            // Convert Markdown to HTML
-            $content->html = $this->purifier->purify($this->markdownExtra->transform($page->TEXT));
-        } else {
-            $content->html = '<mark>ohCRUD! You are not allowed to see this.</mark>';
+
+        // Check if page is public
+        if ($page->PERMISSIONS !== __OHCRUD_PERMISSION_ALL__) {
+            // Check if user is logged in
+            if ($userPermissions === false) {
+                $content = $this->getContentFromFile($path, 403);
+                $content->statusCode = 403;
+                if ($shouldSetOutputStatusCode == true) $this->outputStatusCode = 403;
+                return $content;
+            }
+            // Check if user has the right permission to see the page
+            if ($page->PERMISSIONS < $userPermissions) {
+                $content = $this->getContentFromFile($path, 403);
+                $content->statusCode = 403;
+                if ($shouldSetOutputStatusCode == true) $this->outputStatusCode = 403;
+                return $content;
+            }
+        }
+
+        // Handle page status
+        switch (($page->STATUS ?? 0)) {
+            case $this::PUBLISHED:
+                // Published page
+                $content->text = $page->TEXT;
+                $content->html = $this->purifier->purify($this->markdownExtra->transform(preg_replace('/~~(.*?)~~/i', '<del>$1</del>', $page->TEXT)));
+                break;
+            case $this::DRAFT:
+                // Allow editing draft pages
+                if ($this->actionMode == 'edit') {
+                    $content->text = $page->TEXT;
+                    break;
+                }
+                // Draft page
+                $content = $this->getContentFromFile($path, 404);
+                $content->statusCode = 404;
+                if ($shouldSetOutputStatusCode == true) $this->outputStatusCode = 404;
+                break;
+            case $this::DELETED:
+                if ($this->actionMode == 'edit') {
+                    $content->isDeleted = true;
+                    break;
+                }
+                // Deleted page
+                $content = $this->getContentFromFile($path, 404);
+                $content->statusCode = 404;
+                $content->isDeleted = true;
+                if ($shouldSetOutputStatusCode == true) $this->outputStatusCode = 404;
+                break;
+            default:
+                $content = $this->getContentFromFile($path, 404);
+                $content->statusCode = 404;
+                // Unknown status, treat as not found
+                if ($shouldSetOutputStatusCode == true) $this->outputStatusCode = 404;
+                break;
         }
 
         return $content;
     }
 
     // Load hard-coded content
-    private function getContentFromFile($path, $is404 = false) {
+    private function getContentFromFile($path, $statusCode = 200) {
         $content = new \app\models\mContent;
         $content->type = \app\models\mContent::TYPE_FILE;
         $content->title = ucwords(trim($path, '/'));
+        $content->statusCode = $statusCode;
+
+        // Determine the final path to include
+        $finalPath = $statusCode !== 200 ? (string) $statusCode : $path;
+        $viewPath = 'app/views/cms/' . trim($finalPath, '/') . '.phtml';
+        $fullPath = __SELF__ . $viewPath;
+
+        // Mitigate path traversal.
+        $baseDir = realpath(__SELF__ . 'app/views/cms');
+        $realFullPath = realpath($fullPath);
+        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+            $this->log('warn', 'Local File Inclusion (LFI) attempt blocked.', ['path' => $path]);
+            $realFullPath = __SELF__ . 'app/views/cms/404.phtml';
+            $content->statusCode = 404;
+        }
+
         ob_start();
-        include(__SELF__ . 'app/views/cms/' . trim(($is404 ? '404' : $path), '/') . '.phtml');
+        include($realFullPath);
         $content->text = ob_get_clean();
         $content->html = $content->text;
 
@@ -348,7 +428,7 @@ class cCMS extends \ohCRUD\DB {
                     continue;
                 }
                 $embeddedContent = $this->getContent('/' . $match . '/', false);
-                if ($embeddedContent->is404 == true) {
+                if ($embeddedContent->statusCode == 404) {
                     $content->html = str_ireplace('{{' . $match . '}}', '<mark>ohCRUD! Content not found.</mark>', $content->html);
                     continue;
                 }
@@ -375,7 +455,7 @@ class cCMS extends \ohCRUD\DB {
                     continue;
                 }
                 $embeddedContent = $this->getComponent($match, false);
-                if ($embeddedContent->is404 == true) {
+                if ($embeddedContent->statusCode == 404) {
                     $content->html = str_ireplace('[[' . $match . ']]', '<mark>ohCRUD! Component not found.</mark>', $content->html);
                     continue;
                 }
@@ -412,6 +492,14 @@ class cCMS extends \ohCRUD\DB {
         $content = new \app\models\mContent;
         $componentParameters = $this->parseString($componentString);
         $componentClassFile = str_replace('\\', '/', key($componentParameters));
+
+        // Check if the component is in the whitelist.
+        if (in_array($componentClassFile, $this->allowedComponents) == false) {
+            $this->log('warn', 'Component not in whitelist blocked.', ['component' => $componentClassFile]);
+            $content->statusCode = 404;
+            return $content;
+        }
+
         $componentClass = '\app\components\\' . str_replace('/', '\\', $componentClassFile);
         array_shift($componentParameters);
 
@@ -436,7 +524,7 @@ class cCMS extends \ohCRUD\DB {
             }
 
         } else {
-            $content->is404 = true;
+            $content->statusCode = 404;
         }
 
         return $content;
@@ -475,7 +563,7 @@ class cCMS extends \ohCRUD\DB {
         $output = '';
         $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->path);
 
-        if ($this->loggedIn == true) {
+        if ($this->isAdmin == true) {
             $output.= '<div id="btnCMSEdit" data-url="' . $path . '?action=edit"></div>';
         }
 
@@ -545,7 +633,7 @@ class cCMS extends \ohCRUD\DB {
         $footer .= ' | ';
         $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . __SITE__ ;
         $footer .= ' | ';
-        $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 3) . ' second(s). - PHP ' . PHP_VERSION;
+        $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4) . ' second(s). - PHP ' . PHP_VERSION;
         $footer .= ' | ';
         $loginUrl = '/login/';
         if ($this->path !== '/login/') {
@@ -568,16 +656,24 @@ class cCMS extends \ohCRUD\DB {
         }
 
         // Handle admin themes and layouts
-        if ($this->loggedIn == true && isset($this->request->action) == true) {
-            switch ($this->request->action) {
+        if ($this->isAdmin == true && $this->actionMode !== false) {
+            switch ($this->actionMode) {
                 case 'edit':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'edit';
                     break;
-                case 'files':
                 case 'tables':
+                case 'files':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'tables';
+                    break;
+                case 'sql':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'sql';
+                    break;
+                case 'sql':
+                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
+                    $this->layout = 'server';
                     break;
                 case 'logs':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
@@ -645,15 +741,16 @@ class cCMS extends \ohCRUD\DB {
         $this->getJSAssets();
 
         if ($this->actionMode == true) {
-            $output = str_ireplace('{{CMS:CONTENT}}', $this->getContentFromFile($this->actionMode, false, true)->html, $output);
+            $output = str_ireplace('{{CMS:CONTENT}}', $this->getAdminView($this->actionMode)->html, $output);
             $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
             $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
+            $output = str_ireplace('{{CMS:STATUS}}', $this->content->status, $output);
             $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
         }
 
         // Replace ohCRUD core content templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:CONTENT}}", $this->content->html . "{{CMS:UNCACHABLE-HTML}}", $output);
-        $output = str_ireplace("{{CMS:CONTENT-TEXT}}", $this->content->text, $output);
+        $output = str_ireplace("{{CMS:CONTENT-TEXT}}", htmlspecialchars($this->content->text, ENT_QUOTES, 'UTF-8'), $output);
 
         // Replace ohCRUD templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:APP}}", __APP__, $output);
@@ -661,7 +758,7 @@ class cCMS extends \ohCRUD\DB {
         $output = str_ireplace("{{CMS:DOMAIN}}", __DOMAIN__, $output);
         $output = str_ireplace("{{CMS:SUB_DOMAIN}}", __SUB_DOMAIN__, $output);
         $output = str_ireplace("{{CMS:PATH}}", $path, $output);
-        $output = str_ireplace("{{CMS:TITLE}}", $this->content->title, $output);
+        $output = str_ireplace("{{CMS:TITLE}}", htmlspecialchars($this->content->title, ENT_QUOTES, 'UTF-8'), $output);
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
         $output = str_ireplace("{{CMS:STYLESHEET}}", $this->content->stylesheet, $output);
 
@@ -680,6 +777,67 @@ class cCMS extends \ohCRUD\DB {
         }
 
         $this->data = $output;
+    }
+
+    // Scan components directory and return a list of component paths
+    // Load admin panel views
+    private function getAdminView($viewName) {
+        $content = new \app\models\mContent;
+        $viewPath = 'app/views/admin/' . $viewName . '.phtml';
+        $fullPath = __SELF__ . $viewPath;
+
+        // Security check
+        $baseDir = realpath(__SELF__ . 'app/views/admin');
+        $realFullPath = realpath($fullPath);
+
+        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+            $this->log('warn', 'Admin view Local File Inclusion (LFI) attempt blocked', ['view' => $viewName]);
+            $content->html = '<p>Admin view not found.</p>';
+            return $content;
+        }
+
+        ob_start();
+        include($realFullPath);
+        $content->html = ob_get_clean();
+        return $content;
+    }
+
+    private function scanComponents($dir) {
+        $components = [];
+        try {
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+            foreach ($files as $file) {
+                if ($file->isDir()){
+                    continue;
+                }
+                if ($file->getExtension() == 'php') {
+                    $componentPath = str_replace(__SELF__ . 'app/components/', '', $file->getPathname());
+                    $componentPath = str_replace('.php', '', $componentPath);
+                    $components[] = $componentPath;
+                }
+            }
+        } catch(\Exception $e) {
+            $this->log('error', 'Failed to scan components directory.', ['error' => $e->getMessage()]);
+        }
+        return $components;
+    }
+
+    // Check if the requested path is a hard-coded file
+    private function isHardCoded($path) {
+        $path = trim($path ?? '', '/');
+        if (empty($path)) {
+            return false;
+        }
+        $fullPath = __SELF__ . 'app/views/cms/' . $path . '.phtml';
+
+        $baseDir = realpath(__SELF__ . 'app/views/cms');
+        $realFullPath = realpath($fullPath);
+
+        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+            return true;
+        }
+
+        return false;
     }
 
 }

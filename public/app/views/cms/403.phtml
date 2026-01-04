@@ -1,0 +1,32 @@
+<?php
+    // Sanitize the path
+    $path = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $this->purifier->purify($path));
+?>
+
+<header class="post-header">
+    <p class="eyebrow">OHCRUD!</p>
+    <h1>You just got 403'd.</h1>
+    <p class="meta"><?= $path ?></p>
+</header>
+
+<br/>
+
+<p>It looks like you've reached a digital "No Entry" sign. You don't have permission to view the resource at <b><?= $path ?></b>.</p>
+
+<p>This might be because the area is restricted, your session has timed out, or you're trying to sneak into a VIP section without a pass.</p>
+
+<p>Here’s what you can do instead:</p>
+<ul>
+    <li>Head back to the <b>Home</b> page to find something you can access.</li>
+    <li>If you believe you should have access, try <b>Logging In</b> with a your account.</li>
+    <li>Contact an administrator if you're sure this is a mistake on our end.</li>
+</ul>
+
+<p>Safety first! We keep these doors locked to make sure everyone's data stays right where it belongs.</p>
+
+<br/>
+
+<p>
+    <a class="btn btn-outline btn-muted" href="/">Home</a>
+    <a class="btn btn-outline btn-muted" href="/login/?redirect=<?= $path ?>">Login</a>
+</p>

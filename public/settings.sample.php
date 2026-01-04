@@ -1,4 +1,9 @@
 <?php
+// Prevent direct access to this class.
+if (isset($GLOBALS['OHCRUD']) == false) {
+    http_response_code(404);
+    die();
+}
 
 // Define the base path for the application, normalized for both Nginx and Apache.
 define('__SELF__', __DIR__ . '/');
@@ -26,6 +31,9 @@ define('__OHCRUD_DEBUG_MODE_SHOW_SQL__', false);
 
 // Specify the initial expanded debug levels for debugging (HTML mode only).
 define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
+
+// Enable raw SQL execution in the admin panel (set to false for production use).
+define('__OHCRUD_ADMIN_ENABLE_SQL_EXECUTION__', true);
 
 // Configure logging settings.
 define('__OHCRUD_LOG_ENABLED__', true);
@@ -58,7 +66,7 @@ define('__OHCRUD_DB_STAMP__', true);
 
     If you are using local docker development, you can use the following settings:
 
-    define('__OHCRUD_DB_CONFIG__', serialize([
+    define('__OHCRUD_DB_CONFIG__', [
             'DRIVER' => 'MYSQL', // 'MYSQL' or 'SQLITE'
             'PERSISTENT_CONNECTION' => false,
             'SQLITE_DB' 	=> '/data/data.db',
@@ -66,13 +74,12 @@ define('__OHCRUD_DB_STAMP__', true);
             'MYSQL_DB' 	=> 'ohcrud',
             'USERNAME' 	=> 'ohcrud',
             'PASSWORD' 	=> 'secret'
-            ]
-        )
+        ]
     );
 
 */
 
-define('__OHCRUD_DB_CONFIG__', serialize([
+define('__OHCRUD_DB_CONFIG__', [
         'DRIVER' => 'MYSQL', // 'MYSQL' or 'SQLITE'
         'PERSISTENT_CONNECTION' => false,
         'SQLITE_DB' 	=> 'database_filename.db',
@@ -80,8 +87,7 @@ define('__OHCRUD_DB_CONFIG__', serialize([
         'MYSQL_DB' 	=> 'database',
         'USERNAME' 	=> 'username',
         'PASSWORD' 	=> 'password'
-        ]
-    )
+    ]
 );
 
 // IMPORTANT

@@ -5,12 +5,16 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		{{CMS:META}}
-		<title>ohCRUD Admin - Logs</title>
+		<title>ohCRUD Admin - SQL</title>
 		<link rel="icon" type="image/x-icon" href="assets/img/favicon.ico" />
-		<link rel="stylesheet" href="/assets/css/framework7-bundle.min.css" media="all" />
-		<link rel="stylesheet" href="/assets/css/framework7-icons.css" media="all" />
-		<link rel="stylesheet" href="/assets/css/font-awesome.min.css" media="all" />
-		<link rel="stylesheet" href="/assets/css/styles.css" media="all" />
+		<link rel="stylesheet" href="assets/css/framework7-bundle.min.css" media="all" />
+		<link rel="stylesheet" href="assets/css/framework7-icons.css" media="all" />
+		<link rel="stylesheet" href="assets/css/codemirror.min.css" media="all" />
+		<link rel="stylesheet" href="assets/css/xq-light.css" media="all" />
+		<link rel="stylesheet" href="assets/css/xq-dark.css" media="all" />
+		<link rel="stylesheet" href="assets/css/font-awesome.min.css" media="all" />
+		<link rel="stylesheet" href="assets/css/styles.css" media="all" />
+		<link rel="stylesheet" href="assets/css/sql.css" media="all" />
 		{{CMS:STYLESHEET}}
 	</head>
 	<body>
@@ -136,44 +140,9 @@
 
 			</div>
 
-			<!-- Context Popup -->
-			<div class="popup popup-push context-popup" data-close-on-escape="true" data-row-key-value="">
-				<div class="view">
-					<div class="page">
-						<div class="navbar">
-							<div class="navbar-bg"></div>
-							<div class="navbar-inner">
-								<div class="title">Log Context</div>
-								<div class="right">
-									<!-- Link to close popup -->
-									<a class="link popup-close"><i class="f7-icons">xmark</i></a>
-								</div>
-							</div>
-						</div>
-						<div class="page-content">
-
-                            <div id="logHeader" class="block margin-top-15px margin-bottom-15px">
-                            </div>
-
-                            <div class="block-title margin-top-15px">Context</div>
-                            <div class="list list-strong-ios list-dividers-ios inset-ios margin-top-15px">
-                                <ul id="logContext">
-                                </ul>
-                            </div>
-
-                            <div class="block-title">Extra</div>
-                            <div class="card monospace">
-                                <div id="logExtra" class="card-content card-content-padding"></div>
-                            </div>
-
-						</div>
-					</div>
-				</div>
-			</div>
-
 			<!-- Your main view, should have " view-main" class -->
 			<div class="view view-main view-init safe-areas" data-url="/">
-				<div class="page" data-name="logs">
+				<div class="page" data-name="sql">
 
 					<!-- Settings -->
 					<div class="fab fab-left-bottom panel-left-fab">
@@ -193,9 +162,10 @@
 			{{CMS:OHCRUD}}
 		</div>
 
-		<script src="/assets/js/framework7-bundle.min.js"></script>
-		<script src="/assets/js/qrcode.min.js"></script>
-		<script src="/assets/js/admin.js"></script>
+		<script src="assets/js/framework7-bundle.min.js"></script>
+		<script src="assets/js/codemirror.min.js"></script>
+		<script src="assets/js/sql.min.js"></script>
+		<script src="assets/js/admin.js"></script>
 		{{CMS:JAVASCRIPT}}
 	</body>
 </html>

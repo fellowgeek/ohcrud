@@ -14,9 +14,8 @@ class cExample extends \ohCRUD\DB {
         'object' => __OHCRUD_PERMISSION_ALL__,
         'whoami' => __OHCRUD_PERMISSION_ALL__,
         'protectedEndPoint' => 1,
-        'publicEndPoint' => __OHCRUD_PERMISSION_ALL__
+        'publicEndPoint' => __OHCRUD_PERMISSION_ALL__,
     ];
-
 
     // This function returns information about the current user of the API
     public function whoami($request) {

@@ -21,138 +21,19 @@ class Core {
     public $data;
     public $errors = [];
     public $success = true;
-    public $outputType = null;
+    public $outputType = 'HTML';
     public $outputHeaders = [];
     public $outputHeadersSent = false;
     public $outputStatusCode = 200;
     public $runtime;
-    public $version = '2.5';
+    public $version = '2.6';
 
-    // Set the output type for the response.
-    public function setOutputType($outputType) {
-        $this->outputType = $outputType;
-        return $this;
-    }
-
-    // Set custom output headers for the response.
-    public function setOutputHeaders($outputHeaders = array()) {
-        if (is_array($outputHeaders) == true) {
-            $this->outputHeaders = $outputHeaders;
-        } else {
-            $this->error('outputHeaders, must be an array.');
-        }
-        return $this;
-    }
-
-    // Set the HTTP status code for the response.
-    public function setOutputStatusCode($outputStatusCode) {
-        $this->outputStatusCode = $outputStatusCode;
-        return $this;
-    }
-
-    // Set a session variable and ensure it is stored.
-    public function setSession($key, $value) {
-        session_start();
-        if (isset($key) == true && isset($value) == true) {
-            $_SESSION[$key] = $value;
-        }
-        session_write_close();
-        return $this;
-    }
-
-    // Get a session variable.
-    public function getSession($key) {
-        session_start();
-        if (isset($_SESSION[$key]) == true) {
-            return $_SESSION[$key];
-        }
-        return false;
-    }
-
-    // Unset a session variable.
-    public function unsetSession($key) {
-        session_start();
-        if (isset($_SESSION[$key]) == true) {
-            unset($_SESSION[$key]);
-        }
-        session_write_close();
-        return $this;
-    }
-
-    // Regenerate session id
-    public function regenerateSession() {
-        session_start();
-        session_regenerate_id();
-        return $this;
-    }
-
-    // Clear all session variables.
-    public function clearSession() {
-        session_start();
-        session_destroy();
-        return $this;
-    }
-
-    // Generate a CSRF token and store it in the session.
-    public function CSRF() {
-
-        if (empty($_SESSION['CSRF']) == true) {
-            $this->setSession('CSRF', bin2hex(random_bytes(32)));
-        }
-        return $_SESSION['CSRF'];
-    }
-
-    // Check if a given token matches the stored CSRF token.
-    public function checkCSRF($token) {
-        // Disable CSRF check for debug mode
-        if (__OHCRUD_DEBUG_MODE__ == true) return true;
-        return hash_equals($_SESSION['CSRF'] ?? '', $token);
-    }
-
-    // Generate and send the response based on the output type.
-    public function output() {
-
-        $output = '';
-
-        switch ($this->outputType) {
-            case 'HTML':
-                if (is_string($this->data) == true) {
-                    $output = $this->data;
-                }
-                break;
-            case 'JSON':
-                if (in_array('Content-Type: application/json', $this->outputHeaders) == false) {
-                    array_push($this->outputHeaders, 'Content-Type: application/json');
-                }
-                if (headers_sent() == false && $this->outputHeadersSent == false) {
-                    $json = clone $this;
-                    unset($json->config);
-                    unset($json->outputType);
-                    unset($json->outputHeaders);
-                    unset($json->outputHeadersSent);
-                    unset($json->permissions);
-                    unset($json->db);
-                    if (__OHCRUD_DEBUG_MODE__ == true) {
-                        $json->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
-                    }
-                    $output = json_encode($json, JSON_PRETTY_PRINT | JSON_NUMERIC_CHECK);
-                }
-                break;
+    public function includeOutputHeader($header) {
+        if (in_array($header, $this->outputHeaders) == true) {
+            return $this;
         }
 
-        if (__OHCRUD_DEBUG_MODE__ == true) {
-            $this->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
-        }
-
-        $this->headers();
-        if (empty($output) == false) {
-            print($output);
-        }
-
-        if (PHP_SAPI === 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
-            $this->debug();
-        }
-
+        array_push($this->outputHeaders, $header);
         return $this;
     }
 
@@ -193,6 +74,132 @@ class Core {
         return false;
     }
 
+    // Set the output type for the response.
+    public function setOutputType($outputType) {
+        $this->outputType = $outputType;
+        return $this;
+    }
+
+    // Generate and send the response based on the output type.
+    public function output() {
+
+        $output = '';
+
+        switch ($this->outputType) {
+            case 'HTML':
+                if (is_string($this->data) == true) {
+                    $output = $this->data;
+                }
+                break;
+            case 'JSON':
+                if (in_array('Content-Type: application/json', $this->outputHeaders) == false) {
+                    array_push($this->outputHeaders, 'Content-Type: application/json');
+                }
+                if (headers_sent() == false && $this->outputHeadersSent == false) {
+                    $payload = (function($obj) {
+                        return get_object_vars($obj);
+                    }) ($this);
+
+                    unset(
+                        $payload['config'],
+                        $payload['outputType'],
+                        $payload['outputHeaders'],
+                        $payload['outputHeadersSent'],
+                        $payload['permissions'],
+                        $payload['db']
+                    );
+
+                    if (__OHCRUD_DEBUG_MODE__ == true) {
+                        $payload['runtime'] = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+                    }
+
+                    $flags = 0;
+                    if (__OHCRUD_DEBUG_MODE__ === true) {
+                        $flags |= JSON_PRETTY_PRINT;
+                    }
+                    $output = json_encode($payload, $flags);
+                }
+                break;
+        }
+
+        if (__OHCRUD_DEBUG_MODE__ == true) {
+            $this->runtime = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+        }
+
+        $this->headers();
+        if (empty($output) == false) {
+            print($output);
+        }
+
+        if (PHP_SAPI === 'cli' && $this->outputType == null && __OHCRUD_DEBUG_MODE__ == true) {
+            $this->debug();
+        }
+
+        return $this;
+    }
+
+    // Set a session variable and ensure it is stored.
+    public function setSession($key, $value) {
+        session_start();
+        if (isset($key) == true && isset($value) == true) {
+            $_SESSION[$key] = $value;
+        }
+        session_write_close();
+        return $this;
+    }
+
+    // Get a session variable.
+    public function getSession($key) {
+        session_start();
+        if (isset($_SESSION[$key]) == true) {
+            return $_SESSION[$key];
+        }
+        return false;
+    }
+
+    // Unset a session variable.
+    public function unsetSession($key) {
+        session_start();
+        if (isset($_SESSION[$key]) == true) {
+            unset($_SESSION[$key]);
+        }
+        session_write_close();
+        return $this;
+    }
+
+    // Regenerate session id
+    public function regenerateSession() {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        session_regenerate_id(true);
+        session_write_close();
+        return $this;
+    }
+
+    // Clear all session variables.
+    public function clearSession() {
+        session_start();
+        session_destroy();
+        return $this;
+    }
+
+    // Generate a CSRF token and store it in the session.
+    public function CSRF() {
+
+        if (empty($_SESSION['CSRF']) == true) {
+            $this->setSession('CSRF', bin2hex(random_bytes(32)));
+        }
+        return $_SESSION['CSRF'];
+    }
+
+    // Check if a given token matches the stored CSRF token.
+    public function checkCSRF($token) {
+        // Disable CSRF check for debug mode
+        if (__OHCRUD_DEBUG_MODE__ == true) return true;
+        return hash_equals($_SESSION['CSRF'] ?? '', $token);
+    }
+
     // Retrieve data from cache if available and not expired.
     public function getCache($key, $duration = 3600) {
 
@@ -212,7 +219,11 @@ class Core {
             return false;
         }
 
-        $data = @unserialize(file_get_contents($path), ['allowed_classes' => ['stdClass']]);
+        try {
+            $data = json_decode(file_get_contents($path));
+        } catch (\Exception $e) {
+            return false;
+        }
         return $data;
     }
 
@@ -226,8 +237,15 @@ class Core {
         $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
 
-        $serialized = serialize($data);
-        return file_put_contents($path, $serialized, LOCK_EX);
+        try {
+            if (is_dir(__OHCRUD_CACHE_PATH__) == false) {
+                mkdir(__OHCRUD_CACHE_PATH__, 0755, true);
+            }
+            $data = json_encode($data);
+            return file_put_contents($path, $data, LOCK_EX);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     // Remove data from cache.
@@ -247,7 +265,7 @@ class Core {
     public function encryptText($text, $password = '') {
         $method = 'aes-256-cbc';
         $key = hash('sha256', $password . __OHCRUD_SECRET__, true);
-        $iv = openssl_random_pseudo_bytes(16);
+        $iv = random_bytes(16);
 
         $encrypted = openssl_encrypt($text, $method, $key, 0, $iv);
         return base64_encode($iv . $encrypted);
@@ -290,7 +308,7 @@ class Core {
     }
 
     // Handle errors by logging and setting the HTTP status code.
-    public function error($message, $outputStatusCode = 500) {
+    public function error($message, $outputStatusCode = 400) {
         $debug = [];
 
         $this->outputStatusCode = $outputStatusCode;
@@ -301,7 +319,8 @@ class Core {
             $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         }
 
-        if ($outputStatusCode != 404) {
+        // Avoid logging 403 and 404 errors to reduce log noise
+        if ($outputStatusCode != 403 || $outputStatusCode != 404) {
             $this->log('error', $message, $debug);
         }
 
@@ -341,13 +360,18 @@ class Core {
     }
 
     // Run a CLI route in the background
-    public function background($command, $wait = 0) {
+    public function background($route, $wait = 0) {
+        // Ensure the path to index.php is safe
+        $indexPath = escapeshellarg(__SELF__ . 'index.php');
+        $safeRoute = escapeshellarg($route);
+
         if ($wait > 0) {
+            $wait = (int) $wait;
             pclose(
-                popen('sleep ' . $wait . ' && php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &', 'r')
+                popen("sleep $wait && php $indexPath $safeRoute > /dev/null 2>&1 &", 'r')
             );
         } else {
-            exec('php ' . __SELF__ . 'index.php ' . $command . ' > /dev/null 2>&1 &');
+            exec("php $indexPath $safeRoute > /dev/null 2>&1 &");
         }
     }
 

@@ -494,7 +494,9 @@ mark {
     font-weight: 700;
     box-shadow: var(--shadow);
     transition: filter .12s ease, box-shadow .12s ease;
-    margin: .35rem .5rem .35rem 0
+    margin: .35rem .5rem .35rem 0;
+    min-width: 100px;
+    justify-content: center;
 }
 
 .btn:hover {
