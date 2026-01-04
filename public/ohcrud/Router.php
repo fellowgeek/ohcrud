@@ -100,7 +100,7 @@ class Router extends \ohCRUD\Core {
                 if (is_callable([$object, $matchedMethod]) == true) {
                     // Check method-level Permissions
                     if ($this->checkPermissions($object->permissions, $matchedMethod)) {
-                        $object->$matchedMethod($this->request, $this->requestMethod);
+                        $object->$matchedMethod($this->request);
                         return $this;
                     } else {
                         $this->handleAuthFailure();

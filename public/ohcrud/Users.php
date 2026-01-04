@@ -37,6 +37,18 @@ class Users extends \ohCRUD\DB {
                         );
                     ";
                     $this->run($sql);
+
+                    $sql = "CREATE UNIQUE INDEX IF NOT EXISTS idx_USERNAME ON Users (`USERNAME`);";
+                    $this->run($sql);
+
+                    $sql = "CREATE UNIQUE INDEX IF NOT EXISTS idx_EMAIL ON Users (`EMAIL`);";
+                    $this->run($sql);
+
+                    $sql = "CREATE UNIQUE INDEX IF NOT EXISTS idx_HASH ON Users (`HASH`);";
+                    $this->run($sql);
+
+                    $sql = "CREATE UNIQUE INDEX IF NOT EXISTS idx_TOKEN ON Users (`TOKEN`);";
+                    $this->run($sql);
                     break;
 
                 case "MYSQL":

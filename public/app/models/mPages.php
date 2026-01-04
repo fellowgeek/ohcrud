@@ -35,6 +35,9 @@ class mPages extends \ohCRUD\DB {
                         );
                     ";
                     $this->run($sql);
+
+                    $sql = "CREATE UNIQUE INDEX IF NOT EXISTS idx_URL ON Pages (`URL`);";
+                    $this->run($sql);
                     break;
 
                 case "MYSQL":
