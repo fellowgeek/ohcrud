@@ -35,6 +35,9 @@ class mFiles extends \ohCRUD\DB {
                         );
                     ";
                     $this->run($sql);
+
+                    $sql = "CREATE UNIQUE INDEX IF NOT EXISTS idx_PATH ON Files (`PATH`);";
+                    $this->run($sql);
                     break;
 
                 case "MYSQL":
