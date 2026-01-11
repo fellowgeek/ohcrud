@@ -33,58 +33,48 @@ class Router extends \ohCRUD\Core {
         $matchedObject = null;
         $matchedMethod = null;
 
-        // Input processing
-        if (PHP_SAPI === 'cli') {
-            $parameters = [];
-            // Use parse_url to safely extract query string
-            parse_str(parse_url($rawPath, PHP_URL_QUERY) ?? '', $parameters);
-            $this->request = (object) $parameters;
-            $this->requestMethod = 'CLI';
-        } else {
-            $this->request = (object) $_REQUEST;
-            $this->requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-            // Check if content type contains 'json'
-            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-            if (stripos($contentType, 'json') !== false) {
-                $payload = file_get_contents('php://input');
-                $this->request->payload = json_decode($payload);
-            } else {
-                $this->request->payload = file_get_contents('php://input');
-            }
-        }
+        // Define Environment
+        $isCLI = (PHP_SAPI === 'cli');
 
-        // Skip CSRF and Access Policy checks for CLI requests
-        if (PHP_SAPI !== 'cli') {
-            // CSRF Protection using Fetch Metadata
-            if ($this->isRequestAllowedByFetchMetadata() == false) {
-                $this->forbidden();
-                return $this;
-            }
-
-            // Access Policy check
-            if ($this->isRequestAllowedByAccessPolicy() == false) {
-                $this->forbidden();
-                return $this;
-            }
-        }
-
-        // Strategy A: exact path match
-        if (isset(__OHCRUD_ENDPOINTS__[$path])) {
+        // ---------------------------------------------------
+        // STEP 1: Find Match
+        // ---------------------------------------------------
+        if (isset(__OHCRUD_ENDPOINTS__[$path]) == true) {
+            // Strategy A: exact path match
             $matchedObject = __OHCRUD_ENDPOINTS__[$path];
         }
-        // Strategy B: base path + method match
         else {
+            // Strategy B: base path + method match
             $methodCandidate = array_pop($pathArray);
             $basePath = '/' . implode('/', $pathArray) . '/';
 
-            if (isset(__OHCRUD_ENDPOINTS__[$basePath])) {
+            if (isset(__OHCRUD_ENDPOINTS__[$basePath]) == true) {
                 $matchedObject = __OHCRUD_ENDPOINTS__[$basePath];
                 $matchedMethod = $methodCandidate;
             }
         }
 
-        // Execution
-        if ($matchedObject) {
+        // ---------------------------------------------------
+        // STEP 2: Execute Match (API)
+        // ---------------------------------------------------
+        if (isset($matchedObject) == true) {
+
+            // Build Request (Parse Payload: True)
+            $this->setRequest($isCLI, $rawPath, true);
+
+            // Security Checks (Skip for CLI)
+            if ($isCLI == false) {
+                if ($this->isRequestAllowedByFetchMetadata() == false) {
+                    $this->forbidden();
+                    return $this;
+                }
+                if ($this->isRequestAllowedByAccessPolicy() == false) {
+                    $this->forbidden();
+                    return $this;
+                }
+            }
+
+            // Instantiate Object
             $object = new $matchedObject;
 
             // Check Class-level Permissions
@@ -93,13 +83,11 @@ class Router extends \ohCRUD\Core {
                 return $this;
             }
 
-            // If a method was targeted (Strategy B)
-            if ($matchedMethod) {
-
-                // Check if method exists and it is public and executable
+            // Strategy B (Method Target)
+            if (isset($matchedMethod) == true) {
                 if (is_callable([$object, $matchedMethod]) == true) {
-                    // Check method-level Permissions
-                    if ($this->checkPermissions($object->permissions, $matchedMethod)) {
+                    // Check Method-level Permissions
+                    if ($this->checkPermissions($object->permissions, $matchedMethod) == true) {
                         $object->$matchedMethod($this->request);
                         return $this;
                     } else {
@@ -107,26 +95,58 @@ class Router extends \ohCRUD\Core {
                         return $this;
                     }
                 }
-            } else {
-                // Strategy A: return the object context
+            }
+            // Strategy A (Object Context)
+            else {
                 return $this;
             }
         }
 
-        // Default path handler (CMS)
-        if (defined('__OHCRUD_DEFAULT_PATH_HANDLER__') && __OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
+        // ---------------------------------------------------
+        // STEP 3: Default Handler (CMS)
+        // ---------------------------------------------------
+        if (defined('__OHCRUD_DEFAULT_PATH_HANDLER__') == true && __OHCRUD_DEFAULT_PATH_HANDLER__ != '') {
             $class = __OHCRUD_DEFAULT_PATH_HANDLER__;
+
+            // Build Request (Parse Payload: False - CMS handles its own)
+            $this->setRequest($isCLI, $rawPath, false);
+
             $object = new $class($this->request);
-            if (method_exists($object, 'defaultPathHandler')) {
+            if (method_exists($object, 'defaultPathHandler') == true) {
                 $object->defaultPathHandler($GLOBALS['PATH']);
                 return $this;
             }
         }
 
-        // 404 Not Found if all else fails
+        // 404 Not Found
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
         $this->error('ohCRUD! You just got 404\'d.', 404);
         $this->output();
+    }
+
+    // Helper to consolidate request creation
+    private function setRequest($isCLI, $rawPath, $parsePayload = false) {
+        if ($isCLI == true) {
+            $parameters = [];
+            parse_str(parse_url($rawPath, PHP_URL_QUERY) ?? '', $parameters);
+            $this->request = (object) $parameters;
+            $this->requestMethod = 'CLI';
+        } else {
+            $this->request = (object) $_REQUEST;
+            $this->requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+            // Only read/decode input if explicitly requested (API only)
+            if ($parsePayload == true) {
+                $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+                $input = file_get_contents('php://input');
+
+                if (stripos($contentType, 'json') !== false) {
+                    $this->request->payload = json_decode($input);
+                } else {
+                    $this->request->payload = $input;
+                }
+            }
+        }
     }
 
     // Handle CORS (Cross-Origin Resource Sharing) and access policies for incoming requests.
@@ -150,20 +170,27 @@ class Router extends \ohCRUD\Core {
         }
 
         // If the origin is not set or the request is coming from the current site, allow access.
-        if ($origin === ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) return true;
-        if ($origin === '') return true;
+        if ($origin === ($_SERVER['REQUEST_SCHEME'] ?? '') . '://' . __SITE__) {
+            return true;
+        }
+
+        // If no origin is provided, allow access (e.g., direct API calls, non-browser clients).
+        if ($origin === '') {
+            return true;
+        }
 
         // Handle cross-origin requests and set appropriate CORS headers for allowed origins.
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || __OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
+
             // Set CORS headers
-            $this->includeOutputHeader('Access-Control-Allow-Origin: ' . $origin);
-            $this->includeOutputHeader('Access-Control-Allow-Credentials: true');
-            $this->includeOutputHeader('Access-Control-Max-Age: 86400');
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+            header('Access-Control-Max-Age: 86400');
 
             // Preflight request handling
             if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
                 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS");
-                header("Access-Control-Allow-Headers: token, Content-Type, Accept, Origin");
+                header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin, Token");
                 die();
             }
             return true;
@@ -254,6 +281,7 @@ class Router extends \ohCRUD\Core {
                 $this->forbidden();
             } else {
                 // Unauthorized access - Send HTTP headers for basic authentication.
+                $this->outputStatusCode = 401;
                 $this->includeOutputHeader('WWW-Authenticate: Basic realm="' . __SITE__ . '"');
                 $this->includeOutputHeader('HTTP/1.0 401 Unauthorized');
                 $this->output();

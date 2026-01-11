@@ -1,5 +1,5 @@
 # [collect SESSION & CSRF]
-## 0. navigate to homepage and grab the PHP session cookie and CSRF token
+## Navigate to homepage and grab the PHP session cookie and CSRF token
 GET https://{{host}}
 [Options]
 verbose: true
@@ -12,7 +12,7 @@ PHPSESSID: cookie "PHPSESSID"
 body contains "ohCRUD!"
 cookie "PHPSESSID" exists
 
-## ?. perform a good login (defualt inital setup admin user)
+## Perform a good login (defualt inital setup admin user)
 POST https://{{host}}/ohcrud/users/login/
 [Options]
 verbose: true
@@ -30,7 +30,7 @@ PHPSESSID: cookie "PHPSESSID"
 [Asserts]
 jsonpath "$.success" == true
 
-## ?. call the API to validate the user
+## Call the API to validate the user
 POST https://{{host}}/example/whoami/
 [Options]
 verbose: true
@@ -45,7 +45,7 @@ HTTP 200
 jsonpath "$.success" == true
 jsonpath "$.data" == "admin"
 
-## ?. call the API getTableList and validate base tables
+## Call the API getTableList and validate base tables
 POST https://{{host}}/ohcrud/admin/getTableList
 [Options]
 verbose: true
@@ -61,7 +61,7 @@ jsonpath "$.success" == true
 jsonpath "$.data.Pages" exists
 jsonpath "$.data.Users" exists
 
-## ?. call the API to create a test page
+## Call the API to create a test page
 POST https://{{host}}/ohcrud/pages/save/
 [Options]
 verbose: true
@@ -79,7 +79,7 @@ HTTP 200
 [Asserts]
 jsonpath "$.success" == true
 
-## ?. get the created test page
+## Get the created test page
 GET https://{{host}}/system/test/
 [Options]
 verbose: true
@@ -88,7 +88,7 @@ HTTP 200
 [Asserts]
 body contains "This is a test page."
 
-## ?. edit the test page
+## Edit the test page
 POST https://{{host}}/ohcrud/pages/save/
 [Options]
 verbose: true
@@ -106,7 +106,7 @@ HTTP 200
 [Asserts]
 jsonpath "$.success" == true
 
-## ?. get the created test page and verify edit was successful
+## Get the created test page and verify edit was successful
 GET https://{{host}}/system/test/
 [Options]
 verbose: true
@@ -115,7 +115,7 @@ HTTP 200
 [Asserts]
 body contains "This is a test page 2."
 
-## ?. delete the test page
+## Delete the test page
 POST https://{{host}}/ohcrud/pages/restoreDeletePage/
 [Options]
 verbose: true
@@ -130,14 +130,14 @@ HTTP 200
 [Asserts]
 jsonpath "$.success" == true
 
-## ?. get the created test page verify it was deleted
+## Get the created test page verify it was deleted
 GET https://{{host}}/system/test/
 [Options]
 verbose: true
 delay: 1s
 HTTP 404
 
-## ?. upload an image to the CMS end point
+## Upload an image to the CMS end point
 POST https://{{host}}/ohcrud/files/upload/?CSRF={{CSRF}}
 [Options]
 verbose: true
@@ -151,7 +151,7 @@ IMAGE: jsonpath "$.data.PATH"
 [Asserts]
 jsonpath "$.success" == true
 
-## ?. upload a forbidden file to the CMS end point
+## Upload a forbidden file to the CMS end point
 POST https://{{host}}/ohcrud/files/upload/?CSRF={{CSRF}}
 [Options]
 verbose: true
@@ -162,7 +162,7 @@ HTTP 415
 [Asserts]
 jsonpath "$.success" == false
 
-## ?. delete the file from the CMS
+## Delete the file from the CMS
 POST https://{{host}}/ohcrud/admin/deleteTableRow/
 [Options]
 verbose: true
@@ -179,3 +179,33 @@ PHPSESSID: {{PHPSESSID}}
 HTTP 200
 [Asserts]
 jsonpath "$.success" == true
+
+## A trusted origin asks permissions to send a POST request
+OPTIONS https://{{host}}/example/whoami/
+Origin: https://example.com
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Content-Type, Authorization
+[Options]
+verbose: true
+very-verbose: true
+delay: 1s
+HTTP 200
+[Asserts]
+header "Access-Control-Allow-Origin" == "https://example.com"
+header "Access-Control-Allow-Methods" contains "POST"
+header "Access-Control-Allow-Headers" contains "Content-Type"
+header "Access-Control-Allow-Headers" contains "Authorization"
+header "Access-Control-Allow-Credentials" == "true"
+
+## The trusted origin sends the real data
+POST https://{{host}}/example/whoami/
+Origin: https://example.com
+Content-Type: application/json
+[Options]
+verbose: true
+very-verbose: true
+delay: 1s
+HTTP 200
+[Asserts]
+header "Access-Control-Allow-Origin" == "https://example.com"
+header "Access-Control-Allow-Credentials" == "true"
