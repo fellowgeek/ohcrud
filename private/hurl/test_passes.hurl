@@ -12,7 +12,7 @@ PHPSESSID: cookie "PHPSESSID"
 body contains "ohCRUD!"
 cookie "PHPSESSID" exists
 
-## Perform a good login (defualt inital setup admin user)
+## Perform a good login (default initial setup admin user)
 POST https://{{host}}/ohcrud/users/login/
 [Options]
 verbose: true

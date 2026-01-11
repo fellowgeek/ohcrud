@@ -83,8 +83,8 @@ class Router extends \ohCRUD\Core {
                 return $this;
             }
 
-            // Strategy B (Method Target)
             if (isset($matchedMethod) == true) {
+                // Strategy B (Method Target)
                 if (is_callable([$object, $matchedMethod]) == true) {
                     // Check Method-level Permissions
                     if ($this->checkPermissions($object->permissions, $matchedMethod) == true) {
@@ -95,9 +95,8 @@ class Router extends \ohCRUD\Core {
                         return $this;
                     }
                 }
-            }
-            // Strategy A (Object Context)
-            else {
+            } else {
+                // Strategy A (Object Context)
                 return $this;
             }
         }
