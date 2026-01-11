@@ -1,5 +1,5 @@
 # [collect SESSION & CSRF]
-## 0. navigate to homepage and grab the PHP session cookie and CSRF token
+## Navigate to homepage and grab the PHP session cookie and CSRF token
 GET https://{{host}}
 [Options]
 verbose: true
@@ -12,7 +12,7 @@ PHPSESSID: cookie "PHPSESSID"
 body contains "ohCRUD!"
 cookie "PHPSESSID" exists
 
-## 1. get a 404 page
+## Get a 404 page
 GET https://{{host}}/this-does-not-exist/
 [Options]
 verbose: true
@@ -24,7 +24,7 @@ PHPSESSID: {{PHPSESSID}}
 }
 HTTP 404
 
-## 2. get the login page
+## Get the login page
 GET https://{{host}}/login/
 [Options]
 verbose: true
@@ -38,7 +38,7 @@ HTTP 200
 [Asserts]
 body contains "LOGIN"
 
-## 3. perform a bad login
+## Perform a bad login
 POST https://{{host}}/ohcrud/users/login/
 [Options]
 verbose: true
@@ -55,7 +55,7 @@ HTTP 401
 jsonpath "$.success" == false
 jsonpath "$.errors" exists
 
-## 4. perform a bad login with bad CSRF token (debug mode should be false)
+## Perform a bad login with bad CSRF token (debug mode should be false)
 POST https://{{host}}/ohcrud/users/login/
 [Options]
 verbose: true
@@ -73,7 +73,7 @@ HTTP 400
 jsonpath "$.success" == false
 jsonpath "$.errors" exists
 
-## 5. call the API to validate the user with bad ohCRUD token (should fail)
+## Call the API to validate the user with bad ohCRUD token (should fail)
 POST https://{{host}}/example/protectedEndPoint/
 Token: bad_ohcrud_token_spt0q7fsb4vp9vusa67u
 [Options]
@@ -89,7 +89,7 @@ HTTP 403
 jsonpath "$.success" == false
 jsonpath "$.errors" exists
 
-## 6. call public API (should pass)
+## Call public API (should pass)
 POST https://{{host}}/example/publicEndPoint/
 [Options]
 verbose: true
@@ -103,7 +103,7 @@ HTTP 200
 [Asserts]
 body contains "Hello from ohCRUD!"
 
-## 7. call private API (should fail)
+## Call private API (should fail)
 POST https://{{host}}/ohcrud/admin/getTableList/
 [Options]
 verbose: true
@@ -115,16 +115,28 @@ PHPSESSID: {{PHPSESSID}}
 }
 HTTP 401
 
-## 8. access settings.php should get 404
+## Access settings.php should get 404
 GET https://{{host}}/settings.php
 [Options]
 verbose: true
 delay: 1s
 HTTP 404
 
-## 9. access .git folder should get 404
+## Access .git folder should get 404
 GET https://{{host}}/.git/config
 [Options]
 verbose: true
 delay: 1s
 HTTP 403
+
+## A malicious/untrusted CSRF request
+POST https://{{host}}/example/whoami/
+Sec-Fetch-Site: cross-site
+[Options]
+verbose: true
+very-verbose: true
+delay: 1s
+HTTP 403
+[Asserts]
+jsonpath "$.success" == false
+jsonpath "$.errors" exists

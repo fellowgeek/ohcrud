@@ -53,7 +53,6 @@ class mFiles extends \ohCRUD\DB {
                             `IP` varchar(32) NOT NULL DEFAULT '',
                             `STATUS` tinyint(1) NOT NULL DEFAULT 0,
                             PRIMARY KEY (`ID`),
-                            UNIQUE KEY `idx_NAME` (`NAME`) USING BTREE,
                             UNIQUE KEY `idx_PATH` (`PATH`) USING BTREE
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                     ";
