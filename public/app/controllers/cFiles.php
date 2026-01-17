@@ -281,6 +281,7 @@ class cFiles extends \app\models\mFiles {
      * @param string $filePath Path to the image file.
      */
     private function serveImage($filePath, $cache = true) {
+
         $imageInfo = getimagesize($filePath);
         $mime = $imageInfo['mime'];
 
@@ -291,8 +292,10 @@ class cFiles extends \app\models\mFiles {
             header("Pragma: no-cache");
             header("Expires: 0");
         } else {
+            header_remove("Pragma");
             header("Cache-Control: public, max-age=2592000"); // Cache for 30 days
             header("Expires: " . gmdate("D, d M Y H:i:s", time() + 2592000) . " GMT");
+            header("ETag: \"" . md5($filePath . filesize($filePath)) . "\"");
         }
         // Remove X-Powered-By header for security reasons
         if (ini_get('expose_php') == true) {
