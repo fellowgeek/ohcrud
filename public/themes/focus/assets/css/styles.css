@@ -668,3 +668,7 @@ code:not([class]) {
 :root[data-theme="light"] {
     background: #ffffff;
 }
+
+@view-transition {
+	navigation: auto;
+}
