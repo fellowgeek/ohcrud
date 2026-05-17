@@ -11,6 +11,7 @@ services:
       - ./private/cert.pem:/ssl/cert.pem
       - ./private/key.pem:/ssl/key.pem
       - ./public:/app
+      - ./logs:/var/log/nginx
     depends_on:
       - php
       - mysql

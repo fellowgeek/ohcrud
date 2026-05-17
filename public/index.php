@@ -9,7 +9,7 @@
     require_once __DIR__ . '/vendor/autoload.php';
 
     // Register the Whoops error handling library if in debug mode.
-    if (__OHCRUD_DEBUG_MODE__ === true) {
+    if (__OHCRUD_DEBUG_MODE__ === true && PHP_SAPI != 'cli') {
         $GLOBALS['coreErrorHandlersRegistered'] = true;
         $whoops = new \Whoops\Run;
         $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
