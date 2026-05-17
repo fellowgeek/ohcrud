@@ -283,10 +283,18 @@ class Core {
     }
 
     // Log messages using Monolog if logging is enabled.
-    public function log($level, $message, array $context = array(), $channel = 'system', $logFile = 'app.log') {
+    public function log($level, $message, $context = array(), $channel = 'system', $logFile = 'app.log') {
 
         if (__OHCRUD_LOG_ENABLED__ == false) {
             return $this;
+        }
+
+        if (is_array($context) == false) {
+            if (is_object($context) == true) {
+                $context = get_object_vars($context);
+            } else {
+                $context = ['context' => $context];
+            }
         }
 
         $logger = new Logger($channel);
@@ -329,7 +337,7 @@ class Core {
 
     // Register core error handlers
     public function registerCoreErrorHandlers() {
-        if (__OHCRUD_DEBUG_MODE__ == false && isset($GLOBALS['coreErrorHandlersRegistered']) == false) {
+        if (isset($GLOBALS['coreErrorHandlersRegistered']) == false) {
             set_error_handler([$this, 'coreErrorHandler']);
             set_exception_handler([$this, 'coreExceptionHandler']);
             register_shutdown_function([$this, 'coreShutdownHandler']);
