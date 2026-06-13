@@ -145,6 +145,10 @@ class cCMS extends \app\models\mPages {
         // Process embedded content & components
         $this->content = $this->processContent($this->content);
 
+        //process code blocks for <code class="xxx"> change to <code class="xxx language-xxx"> for better syntax highlighting support
+        $this->content->html = preg_replace('/<code class="(.*?)"/i', '<code class="language-$1 $1"', $this->content->html);
+        $this->content->html = preg_replace('/<pre><code>/i', '<pre><code class="language-plain plain">', $this->content->html);
+
         // Process theme & layout
         $this->processTheme();
 
