@@ -9,7 +9,7 @@
     require_once __DIR__ . '/vendor/autoload.php';
 
     // Refuse an unconfigured secret instead of serving an insecure installation.
-    if (strlen(__OHCRUD_SECRET__) < 32 || __OHCRUD_SECRET__ === 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX') {
+    if (__OHCRUD_DEBUG_MODE__ == false && (strlen(__OHCRUD_SECRET__) < 32 || __OHCRUD_SECRET__ === 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')) {
         http_response_code(503);
         exit('Application configuration is incomplete.');
     }
