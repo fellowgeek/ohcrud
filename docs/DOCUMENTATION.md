@@ -258,12 +258,16 @@ The framework is composed of four main objects that handle most of the heavy lif
 -   **[Router](./Router.md)**: Handles all incoming requests, checks permissions, and routes them to the appropriate controller and method.
 -   **[Users](./Users.md)**: Extends the `DB` object and manages user authentication, authorization, and session management.
 
-### Default Admin Credentials
+### Database and administrator setup
 
-When `__OHCRUD_DEBUG_MODE__` is set to `TRUE`, if the `Users` table does not exist, ohCRUD will auto-create the table and insert a default admin user into it.
+Run `php private/migrate.php` to create the configured database, initialize all
+framework tables and apply pending migrations. Debug mode may remain disabled.
+Use `php private/migrate.php --status` to inspect migration history. See
+[Database setup and migrations](./Migrations.md) for deployment and authoring details.
 
-*   **Username:** admin
-*   **Password:** admin
+Provision the first administrator with `php private/create-admin.php`, supplying
+`OHCRUD_ADMIN_USERNAME`, `OHCRUD_ADMIN_EMAIL` and `OHCRUD_ADMIN_PASSWORD` securely
+through the environment. No default administrator credentials are installed.
 
 ## Guides
 

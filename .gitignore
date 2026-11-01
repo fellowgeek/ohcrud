@@ -33,3 +33,6 @@ GEMINI.md
 memory/
 .mcp_memory
 data.db
+
+# SQLite migration coordination files
+*.migration.lock

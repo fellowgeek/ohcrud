@@ -15,4 +15,5 @@ subprocess.run([sys.executable, 'private/tests/http_tests.py', 'private/tests/cm
 subprocess.run([sys.executable, 'private/tests/http_tests.py', 'private/tests/admin-pagination.php'], cwd=repo, check=True)
 for suite in sorted((repo / 'private/hurl/security').glob('*.hurl')):
     subprocess.run([sys.executable, 'private/tests/http_tests.py', str(suite)], cwd=repo, check=True)
+subprocess.run([sys.executable, 'private/tests/migrations.py'], cwd=repo, check=True)
 print('All security regression suites passed.')

@@ -37,14 +37,22 @@
 
 2.  **Install dependencies:**
     ```bash
-    composer install
+    composer --working-dir=public install
     ```
 
 3.  **Configure your application:**
     -   Copy `public/settings.sample.php` to `public/settings.php`.
     -   Update `public/settings.php` with your database credentials and other settings.
 
-4.  **Set up your web server:**
+4.  **Initialize the database and apply migrations:**
+    ```bash
+    php private/migrate.php
+    ```
+    Run this command after updates as well. Use `--status` to inspect pending
+    migrations. See [database setup and migrations](docs/Migrations.md) for Compose
+    usage and custom migrations.
+
+5.  **Set up your web server:**
     -   Point your web server's document root to the `public` directory.
     -   Ensure URL rewriting is enabled to direct all requests to `index.php`.
 
@@ -53,8 +61,9 @@
 After installation, you can access the built-in CMS and admin panel.
 
 -   **Admin Login:** `/login`
--   **Default Username:** `admin`
--   **Default Password:** `admin`
+-   **First administrator:** Run `php private/create-admin.php` with
+    `OHCRUD_ADMIN_USERNAME`, `OHCRUD_ADMIN_EMAIL`, and `OHCRUD_ADMIN_PASSWORD` set
+    securely in the environment. No default account or password is installed.
 
 ## Documentation
 

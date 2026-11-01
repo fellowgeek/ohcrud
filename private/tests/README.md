@@ -89,3 +89,7 @@ CMS asset bundles use ordered source paths, size, inode and modification metadat
 for versioning. Set `__OHCRUD_CMS_ASSET_VERSION__` to a new release identifier when
 deploying assets with preserved metadata (or clear `public/global/minified/`).
 In-place edits with identical size and timestamps require the same invalidation.
+
+The migration CLI and its isolated SQLite/MySQL checks are documented in
+[Database setup and migrations](../../docs/Migrations.md). The default regression
+runner includes the SQLite migration checks; MySQL is an explicit optional run.

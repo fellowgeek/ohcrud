@@ -12,10 +12,11 @@ class mFiles extends \ohCRUD\DB {
         'object' => __OHCRUD_PERMISSION_ALL__
     ];
 
-    function __construct() {
+    function __construct($initializeSchema = false) {
         parent::__construct();
 
-        if (__OHCRUD_DEBUG_MODE__ == true) {
+        // Explicit CLI provisioning is available with debug mode disabled.
+        if (__OHCRUD_DEBUG_MODE__ == true || ($initializeSchema == true && PHP_SAPI === 'cli')) {
 
             // Check if the 'Files' table exists based on the database driver.
             $tableExists = false;
