@@ -6,50 +6,13 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cAdmin - admin controller used by the CMS admin interface.
 
+#[\ohCRUD\Permission(1)]
 class cAdmin extends \ohCRUD\DB {
-
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'getTableList' => 1,
-        'getTableDetails' => 1,
-        'getTableData' => 1,
-        'createTableRow' => 1,
-        'readTableRow' => 1,
-        'updateTableRow' => 1,
-        'deleteTableRow' => 1,
-        'createUserRow' => 1,
-        'updateUserRow' => 1,
-        'getUserSecrets' => 1,
-        'refreshUserSecrets' => 1,
-        'getLogList' => 1,
-        'getLogData' => 1,
-        'clearLog' => 1,
-        'runSQLQuery' => 1,
-    ];
-
-    // Declare HTTP methods independently of authorization.
-    public $methods = [
-        'getTableList' => ['POST'],
-        'getTableDetails' => ['POST'],
-        'getTableData' => ['POST'],
-        'createTableRow' => ['POST'],
-        'readTableRow' => ['POST'],
-        'updateTableRow' => ['POST'],
-        'deleteTableRow' => ['POST'],
-        'createUserRow' => ['POST'],
-        'updateUserRow' => ['POST'],
-        'getUserSecrets' => ['POST'],
-        'refreshUserSecrets' => ['POST'],
-        'getLogList' => ['POST'],
-        'getLogData' => ['POST'],
-        'clearLog' => ['POST'],
-        'runSQLQuery' => ['POST'],
-    ];
 
     public ?array $pagination = null;
 
     // This function returns a list of all the tables in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getTableList($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -73,6 +36,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns information about the table(s) in the database and their columns.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getTableDetails($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -124,6 +88,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the data for a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getTableData($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -247,6 +212,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function inserts a new row into a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function createTableRow($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -295,6 +261,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the data for a given table row in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function readTableRow($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -345,6 +312,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function updates a row in a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function updateTableRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -403,6 +371,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function creates a new user row in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function createUserRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -552,6 +521,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function update a user row in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function updateUserRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -706,6 +676,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function deletes a row from a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function deleteTableRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -823,6 +794,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the secrets for a given user.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getUserSecrets($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -884,6 +856,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function re-generates secrets for a given user.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function refreshUserSecrets($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -950,6 +923,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns a list of all available log files.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getLogList($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -983,6 +957,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the data from a given log file with pagination support.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getLogData($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -1131,6 +1106,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function clears the contents of a given log file.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function clearLog($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -1177,6 +1153,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function runs a raw SQL query against the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function runSQLQuery($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 

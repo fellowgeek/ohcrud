@@ -112,11 +112,11 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cExample - sample public and protected endpoints.
 class cExample extends \ohCRUD\DB {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'whoami' => __OHCRUD_PERMISSION_ALL__,
-    ];
+    // Explicitly expose the public endpoint.
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__, methods: ['GET'])]
+    public function whoami($request) {
+        // Prepare and output the response.
+    }
 }
 ```
 
@@ -158,8 +158,8 @@ $page = $this->read(
 
 Controllers receive `$request`; API JSON lives under `$request->payload`.
 Follow the existing sequence of selecting output type, validating input and CSRF,
-performing work, setting response data, and calling `output()`. Register route
-and permission entries when adding endpoints. Follow the relevant controller's
+performing work, setting response data, and calling `output()`. Register routes
+and declare endpoint attributes when adding endpoints. Follow the relevant controller's
 error/early-return pattern and keep expected HTTP status codes intact.
 
 Reuse `Core` and `DB` helpers rather than inventing a second response or query

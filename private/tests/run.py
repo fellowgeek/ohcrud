@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 repo = Path(__file__).resolve().parents[2]
-for name in ('component', 'login', 'csrf', 'bootstrap', 'output'):
+for name in ('component', 'login', 'csrf', 'bootstrap', 'output', 'router'):
     subprocess.run(['php', f'private/tests/{name}.php'], cwd=repo, check=True)
 subprocess.run(['php', 'private/tests/bootstrap.php', 'production'], cwd=repo, check=True)
 subprocess.run(['node', 'private/tests/admin-output.js'], cwd=repo, check=True)

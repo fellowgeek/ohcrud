@@ -7,28 +7,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cUsers - users controller used by the OhCRUD framework
 class cUsers extends \ohCRUD\DB {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'login' => __OHCRUD_PERMISSION_ALL__,
-        'verify' => __OHCRUD_PERMISSION_ALL__,
-        'logout' => __OHCRUD_PERMISSION_ALL__,
-        'beginTOTP' => PHP_INT_MAX,
-        'confirmTOTP' => PHP_INT_MAX,
-        'disableTOTP' => PHP_INT_MAX,
-    ];
-
-    // Declare HTTP methods independently of authorization.
-    public $methods = [
-        'login' => ['POST'],
-        'verify' => ['POST'],
-        'logout' => ['POST'],
-        'beginTOTP' => ['POST'],
-        'confirmTOTP' => ['POST'],
-        'disableTOTP' => ['POST'],
-    ];
-
     // This method, handles user login functionality
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__, methods: ['POST'])]
     public function login($request) {
 
         // Sets the output type for this controller to JSON.
@@ -73,6 +53,7 @@ class cUsers extends \ohCRUD\DB {
     }
 
     // Handles user TOTP verification after login
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__, methods: ['POST'])]
     public function verify($request) {
 
         // Sets the output type for this controller to JSON.
@@ -118,16 +99,19 @@ class cUsers extends \ohCRUD\DB {
     }
 
     // Begin a self-service enrollment after verifying the existing credentials.
+    #[\ohCRUD\Endpoint(permission: PHP_INT_MAX, methods: ['POST'])]
     public function beginTOTP($request) {
         return $this->changeTOTP($request, 'beginTOTP');
     }
 
     // Prove possession of the pending authenticator before enabling it.
+    #[\ohCRUD\Endpoint(permission: PHP_INT_MAX, methods: ['POST'])]
     public function confirmTOTP($request) {
         return $this->changeTOTP($request, 'confirmTOTP');
     }
 
     // Require the existing credentials before removing a factor.
+    #[\ohCRUD\Endpoint(permission: PHP_INT_MAX, methods: ['POST'])]
     public function disableTOTP($request) {
         return $this->changeTOTP($request, 'disableTOTP');
     }
@@ -150,6 +134,7 @@ class cUsers extends \ohCRUD\DB {
     }
 
     // Handles user logout
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__, methods: ['POST'])]
     public function logout($request) {
 
         // Sets the output type for this controller to JSON.

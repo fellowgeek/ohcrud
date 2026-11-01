@@ -7,18 +7,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cThemes - themes controller used by the CMS
 class cThemes extends \ohCRUD\DB {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'getThemes' => 1,
-    ];
-
-    // Declare HTTP methods independently of authorization.
-    public $methods = [
-        'getThemes' => ['GET', 'POST'],
-    ];
-
     // Get themes and layouts from themes directory
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['GET', 'POST'])]
     public function getThemes() {
 
         // Set the output type for this controller to JSON

@@ -7,19 +7,6 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cFiles - files controller used by the CMS
 class cFiles extends \app\models\mFiles {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'image' => __OHCRUD_PERMISSION_ALL__,
-        'upload' => 1,
-    ];
-
-    // Declare HTTP methods independently of authorization.
-    public $methods = [
-        'image' => ['GET'],
-        'upload' => ['POST'],
-    ];
-
     // Match extensions to content types; active SVG documents are not accepted.
     private $mimeTypesAllowed = [
         'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'],
@@ -32,6 +19,7 @@ class cFiles extends \app\models\mFiles {
     ];
 
     // Define the 'upload' method for this controller.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function upload($request) {
 
         // Set the output type of this controller to JSON.
@@ -139,6 +127,7 @@ class cFiles extends \app\models\mFiles {
     }
 
     // Validate image work before decoding; stream derivatives without unbounded disk caching.
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__, methods: ['GET'])]
     public function image($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
         if (isset($request->filename) == false || is_string($request->filename) == false ||

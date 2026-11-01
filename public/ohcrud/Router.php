@@ -64,6 +64,13 @@ class Router extends \ohCRUD\Core {
         // ---------------------------------------------------
         if (isset($matchedObject) == true) {
 
+            // Only explicitly annotated public instance methods are routable.
+            $policy = $this->getEndpointPolicy($matchedObject, $matchedMethod);
+            if ($policy === false) {
+                return $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON)->error('Endpoint not found.', 404)->output();
+            }
+            $allowedMethods = $policy['methods'];
+
             // Build Request (Parse Payload: True)
             if ($this->setRequest($isCLI, $rawPath, true) === false) {
                 return $this;
@@ -75,17 +82,13 @@ class Router extends \ohCRUD\Core {
                     $this->forbidden();
                     return $this;
                 }
-                if ($this->isRequestAllowedByAccessPolicy() == false) {
+                if ($this->isRequestAllowedByAccessPolicy($allowedMethods) == false) {
                     $this->forbidden();
                     return $this;
                 }
             }
 
-            // Instantiate Object
-            $object = new $matchedObject;
-
             // Enforce declared verbs before invoking a handler or authenticating it.
-            $allowedMethods = $object->methods[$matchedMethod ?? ''] ?? null;
             if ($isCLI == false && $allowedMethods !== null && in_array($this->requestMethod, $allowedMethods, true) == false) {
                 $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
                 $this->includeOutputHeader('Allow: ' . implode(', ', $allowedMethods));
@@ -93,8 +96,7 @@ class Router extends \ohCRUD\Core {
             }
 
             // Authenticate once, then recheck both permission levels without routing recursively.
-            if (isset($object->permissions) == false ||
-                $this->checkPermissions($object->permissions, $matchedMethod) == false) {
+            if ($this->checkPermissions($policy['permissions']) == false) {
                 if (isset($_SESSION['User']) == true) {
                     $this->forbidden();
                     return $this;
@@ -102,21 +104,16 @@ class Router extends \ohCRUD\Core {
                 if ($this->authorize() == false) {
                     return $this;
                 }
-                if (isset($object->permissions) == false ||
-                    $this->checkPermissions($object->permissions, $matchedMethod) == false) {
+                if ($this->checkPermissions($policy['permissions']) == false) {
                     $this->forbidden();
                     return $this;
                 }
             }
 
-            if (isset($matchedMethod) == true) {
-                if (is_callable([$object, $matchedMethod]) == true) {
-                    $object->$matchedMethod($this->request);
-                    return $this;
-                }
-            } else {
-                return $this;
-            }
+            // Construct the controller only after its access policy has passed.
+            $object = new $matchedObject;
+            $object->$matchedMethod($this->request);
+            return $this;
         }
 
         // ---------------------------------------------------
@@ -172,7 +169,7 @@ class Router extends \ohCRUD\Core {
     }
 
     // Handle CORS (Cross-Origin Resource Sharing) and access policies for incoming requests.
-    private function isRequestAllowedByAccessPolicy() {
+    private function isRequestAllowedByAccessPolicy($allowedMethods) {
 
         // Set up CSRF (Cross-Site Request Forgery) token.
         $this->CSRF();
@@ -214,7 +211,13 @@ class Router extends \ohCRUD\Core {
 
             // Preflight request handling
             if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-                header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS");
+                $preflightMethod = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'] ?? '';
+                if ($allowedMethods !== null && in_array($preflightMethod, $allowedMethods, true) == false) {
+                    $this->includeOutputHeader('Allow: ' . implode(', ', $allowedMethods));
+                    $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON)->error('Method not allowed.', 405)->output();
+                    exit;
+                }
+                header('Access-Control-Allow-Methods: ' . implode(', ', $allowedMethods ?? [$preflightMethod]));
                 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin, Token");
                 die();
             }
@@ -244,47 +247,46 @@ class Router extends \ohCRUD\Core {
         return true;
     }
 
-    // Check if the user has the necessary permissions for an operation.
-    private function checkPermissions($expression, $method = null) {
-
-        // Grant permission if the script is called from the command-line interface.
-        if (PHP_SAPI === 'cli') return true;
-
-        // Variables
-        $objectHasPermission = false;
-        $methodHasPermission = false;
-        $userPermissions = (isset($_SESSION['User']->PERMISSIONS) == true) ? (int) $_SESSION['User']->PERMISSIONS : false;
-
-        // Check object permission
-        if (isset($expression['object']) == true) {
-            if ((int) $expression['object'] == __OHCRUD_PERMISSION_ALL__ || ((int) $expression['object'] >= $userPermissions && $userPermissions !== false))
-                $objectHasPermission = true;
+    // Resolve only the selected method; inherited helpers stay private to the framework.
+    private function getEndpointPolicy($class, $method) {
+        if ($method === null || strncmp($method, '__', 2) === 0 || method_exists($class, $method) == false) {
+            return false;
         }
-
-        // If no method is specified, return object permission result
-        if (isset($method) == false) {
-            return $objectHasPermission;
+        $reflection = new \ReflectionMethod($class, $method);
+        if ($reflection->isPublic() == false || $reflection->isStatic() == true) {
+            return false;
         }
-
-        // Check method permission
-        if (isset($expression[$method]) == true) {
-            if ((int) $expression[$method] == __OHCRUD_PERMISSION_ALL__ || ($expression[$method] >= $userPermissions && $userPermissions !== false))
-                $methodHasPermission = true;
-        } else {
-            $methodHasPermission = false;
+        $attributes = $reflection->getAttributes(\ohCRUD\Endpoint::class);
+        if (count($attributes) !== 1) {
+            return false;
         }
+        $endpoint = $attributes[0]->newInstance();
+        $permissions = [$endpoint->permission];
 
-        // Return true only if both object and method permissions are granted
-        return ($objectHasPermission && $methodHasPermission);
+        // Parent controller restrictions remain in force in subclasses.
+        $controller = new \ReflectionClass($class);
+        do {
+            foreach ($controller->getAttributes(\ohCRUD\Permission::class) as $attribute) {
+                $permissions[] = $attribute->newInstance()->permission;
+            }
+            $controller = $controller->getParentClass();
+        } while ($controller !== false);
+
+        return ['methods' => $endpoint->methods, 'permissions' => $permissions];
     }
 
-    // Helper method for authorize/forbidden logic
-    private function handleAuthFailure() {
-        if (isset($_SESSION['User']) == false) {
-            $this->authorize();
-        } else {
-            $this->forbidden();
+    // Require every class and method restriction to pass; CLI keeps its permission bypass.
+    private function checkPermissions($permissions) {
+        if (PHP_SAPI === 'cli') return true;
+
+        $userPermissions = isset($_SESSION['User']->PERMISSIONS) == true ? (int) $_SESSION['User']->PERMISSIONS : false;
+        foreach ($permissions as $permission) {
+            if ($permission !== __OHCRUD_PERMISSION_ALL__ &&
+                ($userPermissions === false || $userPermissions > $permission)) {
+                return false;
+            }
         }
+        return true;
     }
 
     // Handle user authorization.

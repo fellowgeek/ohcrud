@@ -1,48 +1,58 @@
 # Router Object
 
-The `Router` object is your interface to the outside world, it will take a `path` which can be a `URI` or a `console argument` and will call upon the appropriate class and method to handle the request.
+The router maps API prefixes in `__OHCRUD_ENDPOINTS__` to controller classes. The
+last path segment selects an explicitly annotated method. Paths outside those
+prefixes use `__OHCRUD_DEFAULT_PATH_HANDLER__` for CMS rendering.
 
-To accomplish this task, the Router will look at the `__OHCRUD_ENDPOINTS__` constant and will call the class and method based on the defined namespace. If the path was not defined in `__OHCRUD_ENDPOINTS__`, then the Router will look at `__OHCRUD_DEFAULT_PATH_HANDLER__` and will route the request to the `defaultPathHandler` method of the class defined here.
-
-If the Router fails to find a path after trying the steps above, it will return a 404 error.
-
-## Permissions
-
-Before calling objects and methods the Router checks the target class for the public `$permissions` array property.
+## Endpoint access
 
 ```php
-namespace app\models;
-
+// Optional class restriction, applied in addition to each endpoint permission.
+#[\ohCRUD\Permission(2)]
 class Example extends \ohCRUD\DB {
 
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'exampleMethodA' => 2,
-        'exampleMethodB' => 7
-    ];
-
-    // ...
+    // Only permission levels 1 and 2 may save, and only using POST.
+    #[\ohCRUD\Endpoint(permission: 2, methods: ['POST'])]
+    public function save($request) {
+        // Validate CSRF and input before changing data.
+    }
 }
 ```
 
-If a user is present in the `$_SESSION`, the Router will check that user's `PERMISSIONS` value against the number assigned to the target method in the `$permissions` array. If the user's `PERMISSIONS` value is *smaller than or equal to* the method's value it will grant access, otherwise it will return a 403 error.
+`Endpoint` requires an integer permission. `__OHCRUD_PERMISSION_ALL__` permits
+anonymous access; otherwise a signed-in user's numeric `PERMISSIONS` must be less
+than or equal to the declared level. Class restrictions, including those declared
+on parent classes, must also pass. A class attribute alone never exposes a method.
 
-The `'object'` key in the `$permissions` array controls the global access to the object.
+Omitting `methods` permits every HTTP verb. An explicit nonempty array restricts
+verbs and must contain uppercase names, such as `['GET', 'POST']`. Unsupported
+verbs receive **405** with an `Allow` header. `HEAD` is not implicitly added to
+`GET`; declare it when supported. Allowed cross-origin preflights use the selected
+endpoint's verbs without requiring authentication; a disallowed requested verb
+receives 405. Origin, IP and Fetch Metadata policies remain in force.
 
-To grant full access to a method or object without requiring the user to login, use the `__OHCRUD_PERMISSION_ALL__` constant.
+Missing attributes, nonexistent methods, nonpublic/static methods, magic methods,
+and bare API prefixes receive **404**, without constructing the controller or
+falling through to the CMS. Annotated inherited methods remain exposed; overriding
+one requires an attribute on the override. Invalid attribute arguments are
+configuration errors and fail closed.
 
-## CORS and Security
+Anonymous callers of protected endpoints may authenticate using Basic Auth or a
+`Token` header. Failed/missing authentication receives 401 or 403 according to the
+existing authentication flow; an authenticated user lacking permission receives
+403. Endpoint declarations do not replace CSRF validation in mutation handlers.
 
-The router automatically handles Cross-Origin Resource Sharing (CORS) and IP filtering based on the configuration in `routes.php`. It also handles CSRF token generation and validation.
+CLI routing also requires the endpoint attribute but bypasses HTTP verb and user
+permission checks. CMS page permissions remain separate from API attributes.
 
-## Routing Logic
+## Migration from controller maps
 
-The `route()` method is the core of the router. It performs the following steps:
+Replace each `$permissions` method entry and corresponding `$methods` entry with
+an `Endpoint` attribute directly above that method. Convert any restrictive
+`'object'` permission into a class-level `Permission` attribute. The old maps are
+no longer consulted: retaining them without attributes does not expose endpoints.
+See `public/app/controllers/cExample.php` for public, protected and unrestricted-verb
+examples. This is an intentional access-policy migration for custom controllers.
 
-1.  **Processes Request**: It gathers request data from `php://input`, `$_REQUEST`, `$_GET`, `$_POST`, or command-line arguments.
-2.  **Endpoint Matching**: It first tries to match the full request path against the `__OHCRUD_ENDPOINTS__` array.
-3.  **Method Matching**: If a full path match is not found, it treats the last part of the path as a method name and tries to match the base path against `__OHCRUD_ENDPOINTS__`.
-4.  **Default Handler**: If no endpoint matches, it falls back to the `__OHCRUD_DEFAULT_PATH_HANDLER__` and calls its `defaultPathHandler` method.
-5.  **404 Error**: If no route is found, it returns a 404 error.
-
-Before executing a route, it performs permission checks and handles authorization via Basic Auth or a `Token` header if required.
+The router reflects only the selected method and its controller ancestry. It does
+not scan every controller or build a filesystem policy cache on each request.

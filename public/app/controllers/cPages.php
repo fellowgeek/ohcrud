@@ -9,20 +9,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cPages - pages controller used by the CMS
 class cPages extends \app\models\mPages {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'save' => 1,
-        'restoreDeletePage' => 1,
-    ];
-
-    // Declare HTTP methods independently of authorization.
-    public $methods = [
-        'save' => ['POST'],
-        'restoreDeletePage' => ['POST'],
-    ];
-
     // Method to save or edit a page.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function save($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -127,6 +115,7 @@ class cPages extends \app\models\mPages {
     }
 
     // Method to restore or delete a page.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function restoreDeletePage($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);

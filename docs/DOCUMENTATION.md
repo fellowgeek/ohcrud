@@ -280,7 +280,7 @@ ohCRUD uses the [Monolog](https://github.com/Seldaek/monolog) library to handle 
 
 ## Command Line Interface
 
-You can call ohCRUD paths and endpoints from your server's command line. When calling an endpoint from the command line, ohCRUD will bypass the permissions array completely. If the output type is not defined, ohCRUD will print a debug output in the console.
+You can call ohCRUD paths and endpoints from your server's command line. When calling an endpoint from the command line, ohCRUD will require an `Endpoint` attribute but bypass its user-permission and HTTP-method restrictions. If the output type is not defined, ohCRUD will print a debug output in the console.
 
 ```bash
 php path/to/public/index.php "/endpoint/example/"
