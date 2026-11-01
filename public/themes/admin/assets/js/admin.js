@@ -1,3 +1,14 @@
+// Cancel superseded read requests so older responses cannot replace current results.
+const adminReadRequests = {};
+function startAdminRead(key) {
+    if (adminReadRequests[key]) {
+        adminReadRequests[key].abort();
+    }
+    const request = new AbortController();
+    adminReadRequests[key] = request;
+    return request;
+}
+
 // Framework7 app instance
 var app = null;
 // Assign Dom7 to $$ for easier DOM manipulation
@@ -151,8 +162,8 @@ $$(document).on('page:init', function (e, pageObject) {
                             $$('#TOTP').focus();
                         }
                     } else {
-                        if (data.REDIRECT != '') {
-                            window.location.href = data.REDIRECT;
+                        if (json.data.REDIRECT != '') {
+                            window.location.href = json.data.REDIRECT;
                         } else {
                             window.location.href = '/';
                         }
@@ -165,7 +176,7 @@ $$(document).on('page:init', function (e, pageObject) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join('<br/>'),
+                        text: json.errors.map(escapeHtml).join('<br/>'),
                         closeOnClick: true,
                     });
                     // Re-enable the button and change its content back to "Login"
@@ -209,8 +220,8 @@ $$(document).on('page:init', function (e, pageObject) {
                 },
                 async function (response) {
                     const json = await response.json();
-                    if (data.REDIRECT != '') {
-                        window.location.href = data.REDIRECT;
+                    if (json.data.REDIRECT != '') {
+                        window.location.href = json.data.REDIRECT;
                     } else {
                         window.location.href = '/';
                     }
@@ -222,7 +233,7 @@ $$(document).on('page:init', function (e, pageObject) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join('<br/>'),
+                        text: json.errors.map(escapeHtml).join('<br/>'),
                         closeOnClick: true,
                     });
                     btnLoginVerify.removeClass('disabled');
@@ -351,7 +362,7 @@ $$(document).on('page:init', function (e, pageObject) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join('<br/>'),
+                        text: json.errors.map(escapeHtml).join('<br/>'),
                         closeOnClick: true,
                     });
                     btnCMSSave.removeClass('disabled');
@@ -394,7 +405,7 @@ $$(document).on('page:init', function (e, pageObject) {
                         icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                         title: 'ohCRUD!',
                         titleRightText: 'now',
-                        text: json.errors.join('<br/>'),
+                        text: json.errors.map(escapeHtml).join('<br/>'),
                         closeOnClick: true,
                     });
                     btnCMSDeleteRestore.removeClass('disabled');
@@ -436,7 +447,7 @@ $$(document).on('page:init', function (e, pageObject) {
                             icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                             title: 'ohCRUD!',
                             titleRightText: 'now',
-                            text: json.errors.join('<br/>'),
+                            text: json.errors.map(escapeHtml).join('<br/>'),
                             closeOnClick: true,
                         });
                         if (fileToUploadMode === 'image') {
@@ -701,7 +712,7 @@ $$(document).on('page:init', function (e, pageObject) {
                             icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                             title: 'ohCRUD!',
                             titleRightText: 'now',
-                            text: json.errors.join('<br/>'),
+                            text: json.errors.map(escapeHtml).join('<br/>'),
                             closeOnClick: true,
                         });
                     },
@@ -901,7 +912,7 @@ function loadThemes() {
             for (const theme in themes) {
                 let option = document.createElement('option');
                 option.value = theme;
-                option.innerHTML = theme;
+                option.textContent = theme;
                 themeSelect.append(option);
             }
             loadLayouts(__CURRENT_THEME__);
@@ -981,12 +992,12 @@ function loadTableList() {
                 if (['Users', 'Pages', 'Files'].includes(table)) return;
                 let listTablesItem = `
                 <li>
-                    <a class="item-link item-content listTablesItem" data-table-name="${tableData.NAME}" data-table-row-count="${tableData.ROW_COUNT}">
+                    <a class="item-link item-content listTablesItem" data-table-name="${escapeHtml(tableData.NAME)}" data-table-row-count="${escapeHtml(tableData.ROW_COUNT)}">
                         <div class="item-media">
                             <i class="f7-icons">cube</i>
                         </div>
                         <div class="item-inner">
-                            <div class="item-title">${tableData.NAME}</div>
+                            <div class="item-title">${escapeHtml(tableData.NAME)}</div>
                         </div>
                     </a>
                 </li>
@@ -1031,7 +1042,7 @@ function loadTableDetails(table) {
         async function (response) {
             const json = await response.json();
 
-            if (typeof json.data[table] != undefined) {
+            if (typeof json.data[table] !== 'undefined') {
                 let tableHeader = `
                 <tr>
                     <th class="checkbox-cell">
@@ -1046,10 +1057,10 @@ function loadTableDetails(table) {
                     if (column.PRIMARY_KEY === true) {
                         column.ICON = 'fa-key';
                     }
-                    tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
+                    tableHeaderTHIcon = '<i class="fa ' + escapeHtml(column.ICON) + '" aria-hidden="true"></i> ';
                     let tableHeaderTH = `
-                    <th class="label-cell" data-detected-type="${column.DETECTED_TYPE}">
-                        ${tableHeaderTHIcon}${column.NAME}
+                    <th class="label-cell" data-detected-type="${escapeHtml(column.DETECTED_TYPE)}">
+                        ${tableHeaderTHIcon}${escapeHtml(column.NAME)}
                     </th>
                     `;
 
@@ -1100,10 +1111,10 @@ function loadTableColumnToggles(table) {
         let listColumnsToggleLI = `
             <li class="item-content">
                 <div class="item-inner">
-                    <div class="item-title">${column.NAME}</div>
+                    <div class="item-title">${escapeHtml(column.NAME)}</div>
                     <div class="item-after">
                         <label class="toggle">
-                            <input type="checkbox" data-column-name="${column.NAME}" class="listColumnsToggleItem" ${columnEnabled === true ? 'checked="true"' : ''}>
+                            <input type="checkbox" data-column-name="${escapeHtml(column.NAME)}" class="listColumnsToggleItem" ${columnEnabled === true ? 'checked="true"' : ''}>
                             <span class="toggle-icon"></span>
                         </label>
                     </div>
@@ -1130,6 +1141,7 @@ function loadTableColumnToggles(table) {
 
 // Load table data
 function loadTableData(table, page) {
+    const request = startAdminRead('table');
 
     if (page === false) {
         page = 1;
@@ -1144,6 +1156,7 @@ function loadTableData(table, page) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
         {
             method: 'POST',
+            signal: request.signal,
             cache: 'no-cache',
             credentials: 'same-origin',
             headers: new Headers(
@@ -1159,7 +1172,8 @@ function loadTableData(table, page) {
         },
         async function (response) {
             const json = await response.json();
-            if (typeof json.data != undefined) {
+            if (request.signal.aborted === true) return;
+            if (typeof json.data !== 'undefined') {
                 let tableBody = '';
                 let tableBodyTD = '';
                 let columnValue = '';
@@ -1183,7 +1197,7 @@ function loadTableData(table, page) {
                     primaryColumnValue = '';
 
                     Object.entries(row).forEach(([key, value]) => {
-                        columnValue = value;
+                        columnValue = escapeHtml(value);
 
                         // Get primary column key and value
                         if (columnDetails[key].PRIMARY_KEY === true) {
@@ -1225,7 +1239,7 @@ function loadTableData(table, page) {
                                 `;
                                 break;
                             default:
-                                columnValue = value;
+                                columnValue = escapeHtml(value);
                                 break;
                         }
 
@@ -1261,8 +1275,8 @@ function loadTableData(table, page) {
                     tableBody += tableBodyTD;
                     tableBody += `
                         <td class="actions-cell">
-                            <a class="btnRecordEdit link icon-only" data-table="${table}" ${pageURL != '' ? 'data-page-url="' + pageURL + '?action=edit"' : ''} data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">square_pencil</i></a>
-                            <a class="btnRecordDelete link icon-only" data-row-key-column="${primaryColumnName}" data-row-key-value="${primaryColumnValue}"><i class="icon f7-icons">trash</i></a>
+                            <a class="btnRecordEdit link icon-only" data-table="${escapeHtml(table)}" ${pageURL != '' ? 'data-page-url="' + escapeHtml(safeLocalURL(pageURL) + '?action=edit') + '"' : ''} data-row-key-column="${escapeHtml(primaryColumnName)}" data-row-key-value="${escapeHtml(primaryColumnValue)}"><i class="icon f7-icons">square_pencil</i></a>
+                            <a class="btnRecordDelete link icon-only" data-row-key-column="${escapeHtml(primaryColumnName)}" data-row-key-value="${escapeHtml(primaryColumnValue)}"><i class="icon f7-icons">trash</i></a>
                         </td>
                     </tr>
                     `;
@@ -1348,7 +1362,7 @@ function loadTableData(table, page) {
                                             icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                                             title: 'ohCRUD!',
                                             titleRightText: 'now',
-                                            text: json.errors.join('<br/>'),
+                                            text: json.errors.map(escapeHtml).join('<br/>'),
                                             closeOnClick: true,
                                         });
                                     }
@@ -1363,7 +1377,8 @@ function loadTableData(table, page) {
                 });
 
                 // Update the pagination buttons and text
-                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                page = json.pagination.currentPage;
+                $$('#PAGE_CURRENT').val(page);
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');
@@ -1560,7 +1575,7 @@ function saveRowData(table, mode = 'update', data, keyColumn, keyValue) {
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
                 titleRightText: 'now',
-                text: json.errors.join('<br/>'),
+                text: json.errors.map(escapeHtml).join('<br/>'),
                 closeOnClick: true,
             });
         }
@@ -1627,7 +1642,7 @@ function saveUserRowData(mode = 'update', data, id) {
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
                 titleRightText: 'now',
-                text: json.errors.join('<br/>'),
+                text: json.errors.map(escapeHtml).join('<br/>'),
                 closeOnClick: true,
             });
         }
@@ -1772,11 +1787,11 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
         }
 
         let fieldHtmlInner = `
-            <div class="item-title item-label">${column.NAME}</div>
+            <div class="item-title item-label">${escapeHtml(column.NAME)}</div>
             <div class="item-input-wrap">
                 <input
-                    id="${table}-${column.NAME}"
-                    name="${column.NAME}"
+                    id="${escapeHtml(table)}-${escapeHtml(column.NAME)}"
+                    name="${escapeHtml(column.NAME)}"
                     type="${inputType}"
                     ${maxLength ? `maxlength="${maxLength}"` : ''}
                     ${required ? 'required="true"' : ''}
@@ -1784,7 +1799,7 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
                     ${config.pattern ? 'validate="true"' : ''}
                     ${config.pattern ? `pattern="${config.pattern}"` : ''}
                     ${config.errorMessage ? `data-error-message="${config.errorMessage}"` : ''}
-                    value="${fieldValue}"
+                    value="${escapeHtml(fieldValue)}"
                     spellcheck="false"
                     autocorrect="off"
                     autocapitalize="off"
@@ -1796,17 +1811,17 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
 
         if (column.DETECTED_TYPE === 'boolean'){
             fieldHtmlInner = `
-                <div class="item-title item-label">${column.NAME}</div>
+                <div class="item-title item-label">${escapeHtml(column.NAME)}</div>
                 <div class="item-after">
                     <label class="toggle">
                         <input
-                            id="${column.NAME}"
-                            name="${column.NAME}"
+                            id="${escapeHtml(column.NAME)}"
+                            name="${escapeHtml(column.NAME)}"
                             type="${inputType}"
                             ${required ? 'required="true"' : ''}
                             ${readonly ? 'readonly="true"' : ''}
                             ${fieldValue === true ? 'checked="true"' : ''}
-                            value="${fieldValue}"
+                            value="${escapeHtml(fieldValue)}"
                             class="formRecordInput"
                         />
                         <span class="toggle-icon"></span>
@@ -1820,7 +1835,7 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
             <li>
                 <div class="item-content item-input">
                     <div class="item-media">
-                        <i class="fa ${column.ICON}"></i>
+                        <i class="fa ${escapeHtml(column.ICON)}"></i>
                     </div>
                     <div class="item-inner">
                         ${fieldHtmlInner}
@@ -1842,6 +1857,10 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
 
 // This function gets user secrets from API and displays to the admins
 function showUserSecrets(id, type = 'TOKEN') {
+    if (type === 'TOTP_SECRET') {
+        window.location.href = '/security/';
+        return;
+    }
 
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getUserSecrets/',
         {
@@ -1944,6 +1963,10 @@ function showUserSecrets(id, type = 'TOKEN') {
 
 // This function refreshes the user secrets
 function refreshUserSecrets(id, type = 'TOKEN') {
+    if (type === 'TOTP_SECRET') {
+        window.location.href = '/security/';
+        return;
+    }
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/refreshUserSecrets/',
         {
             method: 'POST',
@@ -1996,6 +2019,7 @@ function refreshUserSecrets(id, type = 'TOKEN') {
 
 // Load files data
 function loadFilesData(page) {
+    const request = startAdminRead('files');
 
     if (page === false) {
         page = 1;
@@ -2011,6 +2035,7 @@ function loadFilesData(page) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
         {
             method: 'POST',
+            signal: request.signal,
             cache: 'no-cache',
             credentials: 'same-origin',
             headers: new Headers(
@@ -2026,7 +2051,8 @@ function loadFilesData(page) {
         },
         async function (response) {
             const json = await response.json();
-            if (typeof json.data != undefined) {
+            if (request.signal.aborted === true) return;
+            if (typeof json.data !== 'undefined') {
 
                 let fileType = '';
                 let fileCards = '';
@@ -2042,6 +2068,8 @@ function loadFilesData(page) {
                         return;
                     }
 
+                    // File URLs must remain within the application's generated upload names.
+                    if (/^\/global\/files\/[a-f0-9]{32}\.[a-z0-9]+$/.test(row.PATH) === false) return;
                     fileType = row.TYPE.toUpperCase();
                     if (['CSV', 'TXT', 'PDF', 'XML', 'XLXS', 'JSON', 'ZIP', 'MP3'].includes(fileType) === true) {
                         fileCards += `
@@ -2052,39 +2080,39 @@ function loadFilesData(page) {
                                     <div class="chip-label">${formatBytesForDocuments(row.SIZE)}</div>
                                 </div>
                                 <div class="chip file-card-chip">
-                                    <div class="chip-label">${fileType}</div>
+                                    <div class="chip-label">${escapeHtml(fileType)}</div>
                                 </div>
                             </div>
                             <div class="card-content card-content-padding">
-                                <p>${row.NAME}<br/>
-                                    <small>${row.CDATE}</small>
+                                <p>${escapeHtml(row.NAME)}<br/>
+                                    <small>${escapeHtml(row.CDATE)}</small>
                                 </p>
                             </div>
                             <div class="card-footer">
-                                <a class="link external f7-icons" href="${row.PATH}" target="_blank">link</a>
-                                <a class="link f7-icons" onclick="copyToClipboard('[${row.NAME}](${row.PATH})', true)">square_on_square</a>
+                                <a class="link external f7-icons" href="${escapeHtml(row.PATH)}" target="_blank">link</a>
+                                <a class="link f7-icons" data-copy="${escapeHtml('[' + row.NAME + '](' + row.PATH + ')')}">square_on_square</a>
                             </div>
                         </div>
                         `;
                     } else {
                         fileCards += `
                         <div class="card card-outline-md file-card">
-                            <div style="background-image:url(${row.PATH}?w=400)" valign="bottom" class="card-header file-card-header">
+                            <div style="background-image:url(${escapeHtml(row.PATH)}?w=400)" valign="bottom" class="card-header file-card-header">
                                 <div class="chip file-card-chip">
                                     <div class="chip-label">${formatBytesForDocuments(row.SIZE)}</div>
                                 </div>
                                 <div class="chip file-card-chip">
-                                    <div class="chip-label">${fileType}</div>
+                                    <div class="chip-label">${escapeHtml(fileType)}</div>
                                 </div>
                             </div>
                             <div class="card-content card-content-padding">
-                                <p>${row.NAME}<br/>
-                                    <small>${row.CDATE}</small>
+                                <p>${escapeHtml(row.NAME)}<br/>
+                                    <small>${escapeHtml(row.CDATE)}</small>
                                 </p>
                             </div>
                             <div class="card-footer">
-                                <a class="link external f7-icons" href="${row.PATH}" target="_blank">link</a>
-                                <a class="link f7-icons" onclick="copyToClipboard('![${row.NAME}](${row.PATH})', true)">square_on_square</a>
+                                <a class="link external f7-icons" href="${escapeHtml(row.PATH)}" target="_blank">link</a>
+                                <a class="link f7-icons" data-copy="${escapeHtml('![' + row.NAME + '](' + row.PATH + ')')}">square_on_square</a>
                             </div>
                         </div>
                         `;
@@ -2093,9 +2121,13 @@ function loadFilesData(page) {
 
                 $$('.fileCards').empty();
                 $$('.fileCards').html(fileCards);
+                $$('.fileCards [data-copy]').on('click', function () {
+                    copyToClipboard($$(this).attr('data-copy'), true);
+                });
 
                 // Update the pagination buttons and text
-                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                page = json.pagination.currentPage;
+                $$('#PAGE_CURRENT').val(page);
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');
@@ -2224,7 +2256,7 @@ function runSQLQuery(sqlQuery, page) {
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
                 titleRightText: 'now',
-                text: json.errors.join('<br/>'),
+                text: json.errors.map(escapeHtml).join('<br/>'),
                 closeOnClick: true,
             });
             sqlQueryTextResult.addClass('text-color-red');
@@ -2246,10 +2278,10 @@ function loadSQLQueryDetails(hash ,columns, results) {
 
     columns.forEach(column => {
         let tableHeaderTHIcon = '';
-        tableHeaderTHIcon = '<i class="fa ' + column.ICON + '" aria-hidden="true"></i> ';
+        tableHeaderTHIcon = '<i class="fa ' + escapeHtml(column.ICON) + '" aria-hidden="true"></i> ';
         let tableHeaderTH = `
-        <th class="label-cell" data-detected-type="${column.DETECTED_TYPE}">
-            ${tableHeaderTHIcon}${column.NAME}
+        <th class="label-cell" data-detected-type="${escapeHtml(column.DETECTED_TYPE)}">
+            ${tableHeaderTHIcon}${escapeHtml(column.NAME)}
         </th>
         `;
 
@@ -2294,7 +2326,7 @@ function loadSQLQueryData(hash, results) {
         tableBodyTD = '';
 
         Object.entries(row).forEach(([key, value]) => {
-            columnValue = value;
+            columnValue = escapeHtml(value);
 
             // Hash and encrypted chips
             switch (columnDetails[key].DETECTED_TYPE) {
@@ -2319,7 +2351,7 @@ function loadSQLQueryData(hash, results) {
                     `;
                     break;
                 default:
-                    columnValue = value;
+                    columnValue = escapeHtml(value);
                     break;
             }
 
@@ -2373,10 +2405,10 @@ function loadSQLQueryColumnToggles(hash) {
         let listColumnsToggleLI = `
             <li class="item-content">
                 <div class="item-inner">
-                    <div class="item-title">${column.NAME}</div>
+                    <div class="item-title">${escapeHtml(column.NAME)}</div>
                     <div class="item-after">
                         <label class="toggle">
-                            <input type="checkbox" data-column-name="${column.NAME}" class="listColumnsToggleItem" ${columnEnabled === true ? 'checked="true"' : ''}>
+                            <input type="checkbox" data-column-name="${escapeHtml(column.NAME)}" class="listColumnsToggleItem" ${columnEnabled === true ? 'checked="true"' : ''}>
                             <span class="toggle-icon"></span>
                         </label>
                     </div>
@@ -2456,6 +2488,7 @@ function loadLogList() {
 
 // Load log data
 function loadLogData(log, page) {
+    const request = startAdminRead('logs');
     if (page === false) {
         page = 1;
     } else {
@@ -2468,6 +2501,7 @@ function loadLogData(log, page) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getLogData/',
         {
             method: 'POST',
+            signal: request.signal,
             cache: 'no-cache',
             credentials: 'same-origin',
             headers: new Headers(
@@ -2483,7 +2517,8 @@ function loadLogData(log, page) {
         },
         async function (response) {
             const json = await response.json();
-            if (typeof json.data != undefined) {
+            if (request.signal.aborted === true) return;
+            if (typeof json.data !== 'undefined') {
                 let tableBody = '';
                 let level = '';
                 let extra = '';
@@ -2501,21 +2536,21 @@ function loadLogData(log, page) {
                         case 'DEBUG':
                             level = `
                                 <div class="chip color-blue">
-                                    <div class="chip-label">${row.level_name}</div>
+                                    <div class="chip-label">${escapeHtml(row.level_name)}</div>
                                 </div>
                             `;
                             break;
                         case 'INFO':
                             level = `
                                 <div class="chip color-green">
-                                    <div class="chip-label">${row.level_name}</div>
+                                    <div class="chip-label">${escapeHtml(row.level_name)}</div>
                                 </div>
                             `;
                             break;
                         case 'WARNING':
                             level = `
                                 <div class="chip color-orange">
-                                    <div class="chip-label">${row.level_name}</div>
+                                    <div class="chip-label">${escapeHtml(row.level_name)}</div>
                                 </div>
                             `;
                             break;
@@ -2523,14 +2558,14 @@ function loadLogData(log, page) {
                         case 'CRITICAL':
                             level = `
                                 <div class="chip color-red">
-                                    <div class="chip-label">${row.level_name}</div>
+                                    <div class="chip-label">${escapeHtml(row.level_name)}</div>
                                 </div>
                             `;
                             break;
                         default:
                             level = `
                                 <div class="chip">
-                                    <div class="chip-label">${row.level_name}</div>
+                                    <div class="chip-label">${escapeHtml(row.level_name)}</div>
                                 </div>
                             `;
                     }
@@ -2578,8 +2613,8 @@ function loadLogData(log, page) {
                             </label>
                         </td>
                         <td>${level}</td>
-                        <td>${row.channel}</td>
-                        <td data-detected-type="message">${row.message}</td>
+                        <td>${escapeHtml(row.channel)}</td>
+                        <td data-detected-type="message">${escapeHtml(row.message)}</td>
                         <td>${extra}</td>
                         <td>${context}</td>
                         <td data-detected-type="datetime">${formatDatetime(row.datetime)}</td>
@@ -2610,7 +2645,8 @@ function loadLogData(log, page) {
                 });
 
                 // Update the pagination buttons and text
-                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                page = json.pagination.currentPage;
+                $$('#PAGE_CURRENT').val(page);
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');
@@ -2771,7 +2807,7 @@ function clearLogFile(log) {
                 icon: '<i class="f7-icons icon color-red">exclamationmark_triangle_fill</i>',
                 title: 'ohCRUD!',
                 titleRightText: 'now',
-                text: json.errors.join('<br/>'),
+                text: json.errors.map(escapeHtml).join('<br/>'),
                 closeOnClick: true,
             });
         }
@@ -2955,7 +2991,7 @@ function copyToClipboard(text, showNotification = false) {
                     <div class="item-content item-input">
                         <div class="item-inner">
                             <div class="item-input-wrap">
-                                <input id="" name="" type="text" readonly value="${text}">
+                                <input id="" name="" type="text" readonly value="${escapeHtml(text)}">
                             </div>
                         </div>
                     </div>
@@ -2964,6 +3000,11 @@ function copyToClipboard(text, showNotification = false) {
             closeOnClick: true,
         });
     }
+}
+
+// Accept local CMS navigation paths before assigning them to browser navigation.
+function safeLocalURL(value) {
+    return typeof value === 'string' && /^\/(?![\/\\])/.test(value) && /[\x00-\x20\x7f\\]/.test(value) === false ? value : '/';
 }
 
 // This function escapes HTML special characters in a string to prevent XSS attacks

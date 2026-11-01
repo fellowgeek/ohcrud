@@ -54,19 +54,23 @@ class Component extends \ohCRUD\DB {
     public function loadView($fileName) {
         $output = '';
 
-        // Check if the file specified by 'fileName' exists.
-        if (file_exists(__SELF__ . $fileName) == false) {
+        // Resolve only trusted component templates, including symlink targets.
+        $basePath = realpath(__SELF__ . 'app/components');
+        $viewPath = is_string($fileName) == true ? realpath(__SELF__ . $fileName) : false;
+        if ($basePath === false || $viewPath === false ||
+            strncmp($viewPath, $basePath . DIRECTORY_SEPARATOR, strlen($basePath) + 1) !== 0 ||
+            pathinfo($viewPath, PATHINFO_EXTENSION) !== 'phtml' || is_file($viewPath) == false) {
             return false;
         }
 
         // Extract variables for use in the view, if 'variables' is not empty.
         if (empty($this->variables) == false) {
-            extract($this->variables);
+            extract($this->variables, EXTR_SKIP);
         }
 
         // Start output buffering, include the view file, and capture the output.
         ob_start();
-        include(__SELF__ . $fileName);
+        include($viewPath);
         $output = \ob_get_clean();
 
         return $output;

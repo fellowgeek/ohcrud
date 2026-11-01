@@ -1,48 +1,88 @@
-# Router Object
+# Routing reference
 
-The `Router` object is your interface to the outside world, it will take a `path` which can be a `URI` or a `console argument` and will call upon the appropriate class and method to handle the request.
+[Documentation](DOCUMENTATION.md) · [Architecture](architecture.md) · [Authentication](Users.md)
 
-To accomplish this task, the Router will look at the `__OHCRUD_ENDPOINTS__` constant and will call the class and method based on the defined namespace. If the path was not defined in `__OHCRUD_ENDPOINTS__`, then the Router will look at `__OHCRUD_DEFAULT_PATH_HANDLER__` and will route the request to the `defaultPathHandler` method of the class defined here.
+Source: [Router.php](../public/ohcrud/Router.php), [Endpoint.php](../public/ohcrud/Endpoint.php), [Permission.php](../public/ohcrud/Permission.php), [routes.php](../public/routes.php).
 
-If the Router fails to find a path after trying the steps above, it will return a 404 error.
+## Mapping a URL
 
-## Permissions
-
-Before calling objects and methods the Router checks the target class for the public `$permissions` array property.
+Add a prefix to the existing endpoint map:
 
 ```php
-namespace app\models;
+'/reports/' => 'app\controllers\cReports',
+```
 
-class Example extends \ohCRUD\DB {
+Then declare a method in that controller:
 
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'exampleMethodA' => 2,
-        'exampleMethodB' => 7
-    ];
-
-    // ...
+```php
+// Return a report only to users at permission level 5 or lower.
+#[\ohCRUD\Endpoint(permission: 5, methods: ['GET'])]
+public function summary($request) {
+    $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+    $this->data = ['year' => date('Y')];
+    return $this->output();
 }
 ```
 
-If a user is present in the `$_SESSION`, the Router will check that user's `PERMISSIONS` value against the number assigned to the target method in the `$permissions` array. If the user's `PERMISSIONS` value is *smaller than or equal to* the method's value it will grant access, otherwise it will return a 403 error.
+`GET /reports/summary/` selects `cReports::summary()`. Paths normalize to a trailing slash. The map is literal: no named parameters, regex routes, or wildcard resource binding. Use query/body fields for identifiers. An exact prefix request such as `/reports/` has no selected method and returns 404; there is no implicit `index()` action. Keep route keys and class filenames case-correct.
 
-The `'object'` key in the `$permissions` array controls the global access to the object.
+## Endpoint and class policy
 
-To grant full access to a method or object without requiring the user to login, use the `__OHCRUD_PERMISSION_ALL__` constant.
+`Endpoint($permission, $methods = null)` accepts an integer permission of `-1` or at least `1` and must appear exactly once on a public, non-static method. Magic methods and methods without the attribute cannot be dispatched. Omitting `methods` allows all HTTP verbs; declare verbs for new handlers. The constructor requires a nonempty array of uppercase verbs when provided.
 
-## CORS and Security
+A controller can add a class restriction:
 
-The router automatically handles Cross-Origin Resource Sharing (CORS) and IP filtering based on the configuration in `routes.php`. It also handles CSRF token generation and validation.
+```php
+#[\ohCRUD\Permission(1)]
+class cReports extends \ohCRUD\DB {
+    // Add annotated methods here.
+}
+```
 
-## Routing Logic
+Every class restriction, including those inherited from parent controllers, and the selected endpoint restriction must pass. A public method attribute does not override a protected class. Numeric permissions admit authenticated users whose `PERMISSIONS <= required level`. `__OHCRUD_PERMISSION_ALL__` (`-1`) means public; `PHP_INT_MAX` is used for authenticated-account operations.
 
-The `route()` method is the core of the router. It performs the following steps:
+Legacy `$permissions` arrays are not the router's authorization mechanism. Endpoint attributes are still required on CLI calls.
 
-1.  **Processes Request**: It gathers request data from `php://input`, `$_REQUEST`, `$_GET`, `$_POST`, or command-line arguments.
-2.  **Endpoint Matching**: It first tries to match the full request path against the `__OHCRUD_ENDPOINTS__` array.
-3.  **Method Matching**: If a full path match is not found, it treats the last part of the path as a method name and tries to match the base path against `__OHCRUD_ENDPOINTS__`.
-4.  **Default Handler**: If no endpoint matches, it falls back to the `__OHCRUD_DEFAULT_PATH_HANDLER__` and calls its `defaultPathHandler` method.
-5.  **404 Error**: If no route is found, it returns a 404 error.
+## Request parsing
 
-Before executing a route, it performs permission checks and handles authorization via Basic Auth or a `Token` header if required.
+| Input | Controller access |
+| --- | --- |
+| `?id=42` or ordinary form field | `$request->id` |
+| JSON object body with JSON Content-Type | `$request->payload->ID` |
+| Other API body | `$request->payload` is the raw body string |
+| Multipart upload | `$_FILES`; ordinary fields on `$request` |
+| CLI path query | Top-level properties parsed with `parse_str()` |
+
+Malformed JSON, JSON arrays, and scalar JSON bodies return HTTP 400 before the handler. Validate each field's type; query parameters can be arrays. `$request` starts from PHP's `$_REQUEST`, so its merged sources also depend on PHP configuration. Do not assume it contains only query parameters.
+
+## HTTP access checks
+
+For matched API endpoints, the router checks Fetch Metadata, optional IP filtering, origin policy, declared verbs, and permissions before construction. Cookie-bearing requests with `Sec-Fetch-Site: cross-site` are rejected. Missing Origin/Referer is accepted for non-browser use; origin checks are not authentication.
+
+Same-origin calls are accepted using the detected request scheme and configured host. Otherwise `__OHCRUD_ALLOWED_ORIGINS__` contains exact origin strings, including scheme and port. Allowed cross-origin responses echo the origin and set `Vary: Origin`; credentials are enabled only for explicitly listed origins. Disabling origin filtering permits arbitrary origins but does not automatically enable credentials for them. Cross-origin preflight checks the endpoint verb declaration. The allowed headers include `Content-Type`, `Authorization`, and `Token`.
+
+CSRF token generation occurs here, but **validation belongs in the handler**. Use [the write-endpoint pattern](models-and-controllers.md#controller-validation-and-writes). Debug mode does not bypass `checkCSRF()`.
+
+## Authentication and errors
+
+A valid session is checked first. When a protected route lacks one, the router can authenticate HTTP Basic credentials or a `Token` header. It then rechecks permission thresholds. Existing insufficient sessions are denied rather than silently replaced with header credentials. Public routes do not trigger header authentication just because a token was supplied.
+
+| Status | Common cause |
+| --- | --- |
+| 400 | JSON body is not an object or handler validation fails |
+| 401 | Protected request lacks successful Basic/session authentication |
+| 403 | Access policy, insufficient permissions, or invalid token |
+| 404 | Unknown/unannotated method or missing CMS page |
+| 405 | Verb not declared; response includes `Allow` |
+
+Earlier policy checks can reject a request before a verb error is reached. Not every router error has the same body shape; inspect the HTTP status first.
+
+## CLI
+
+```sh
+php public/index.php '/greeting/hello/?name=Ada'
+```
+
+CLI dispatch bypasses user permission, HTTP method, IP, origin, and Fetch Metadata restrictions. It does not bypass the endpoint attribute requirement or validations written inside the handler. In particular, a JSON/CSRF-oriented web handler does not automatically become a useful CLI command. Use dedicated CLI scripts for provisioning, and never expose arbitrary CLI route execution to untrusted input.
+
+Continue with [controller patterns](models-and-controllers.md) or [CMS fallback rendering](cms-and-admin.md).

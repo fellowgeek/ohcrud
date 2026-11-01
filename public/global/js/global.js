@@ -13,19 +13,40 @@ async function httpRequest(url, options, successCallback, errorCallback, isRaw =
         options.body = JSON.stringify(options.body);
     }
 
+    let failure;
     try {
-        const fetchResult = fetch(url, options);
-        const response = await fetchResult;
-        if (response.ok) {
-            if (typeof successCallback != 'undefined')
-                successCallback(response);
-        } else {
-            if (typeof errorCallback != 'undefined')
-                errorCallback(response);
+        const response = await fetch(url, options);
+        if (options.signal && options.signal.aborted === true) return;
+        if (response.ok === true) {
+            if (typeof successCallback === 'function') {
+                await successCallback(response);
+            }
+            return;
         }
+        failure = response;
     } catch (error) {
-        if (typeof errorCallback != 'undefined')
-            errorCallback(error);
+        if (options.signal && options.signal.aborted === true) return;
+        failure = error;
+    }
+
+    // Existing callbacks can read JSON for HTTP, network and malformed-response errors.
+    if (typeof errorCallback === 'function') {
+        const fallback = {success: false, errors: ['The request failed. Please try again.']};
+        const errorResponse = {
+            ok: false,
+            status: failure.status || 0,
+            json: async function () {
+                if (typeof failure.json === 'function') {
+                    try {
+                        return await failure.json();
+                    } catch (error) {
+                        return fallback;
+                    }
+                }
+                return fallback;
+            }
+        };
+        await errorCallback(errorResponse);
     }
 }
 

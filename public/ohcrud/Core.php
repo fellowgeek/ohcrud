@@ -74,6 +74,42 @@ class Core {
         return false;
     }
 
+    // Escape plain text for HTML text and quoted attributes.
+    public function escapeHTML($value) {
+        return htmlspecialchars(is_scalar($value) == true ? (string) $value : '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    // Permit ordinary navigation URLs while rejecting active schemes and controls.
+    public function safeURL($value) {
+        if (is_string($value) == false) {
+            return '';
+        }
+        $value = trim(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if (preg_match('/[\\x00-\\x20\\x7f\\\\]/', $value) === 1 || substr($value, 0, 2) === '//') {
+            return '';
+        }
+        $parts = parse_url($value);
+        if ($parts === false || (isset($parts['scheme']) == true &&
+            in_array(strtolower($parts['scheme']), ['http', 'https', 'mailto', 'tel'], true) == false)) {
+            return '';
+        }
+        return $value;
+    }
+
+    // Accept only local absolute paths for browser return destinations.
+    public function localRedirect($url) {
+        if (is_string($url) == false || $url === '' || $url[0] !== '/' ||
+            substr($url, 0, 2) === '//' || preg_match('/[\\x00-\\x20\\x7f\\\\]/', $url) === 1) {
+            return '/';
+        }
+        // Reject encoded slashes, backslashes and control characters as well.
+        $decoded = rawurldecode($url);
+        if (substr($decoded, 0, 2) === '//' || preg_match('/[\\x00-\\x20\\x7f\\\\]/', $decoded) === 1) {
+            return '/';
+        }
+        return $url;
+    }
+
     // Set the output type for the response.
     public function setOutputType($outputType) {
         $this->outputType = $outputType;
@@ -195,9 +231,9 @@ class Core {
 
     // Check if a given token matches the stored CSRF token.
     public function checkCSRF($token) {
-        // Disable CSRF check for debug mode
-        if (__OHCRUD_DEBUG_MODE__ == true) return true;
-        return hash_equals($_SESSION['CSRF'] ?? '', $token);
+        // Debug mode must not bypass request authentication.
+        return is_string($token) == true && is_string($_SESSION['CSRF'] ?? null) == true &&
+            $_SESSION['CSRF'] !== '' && $token !== '' && hash_equals($_SESSION['CSRF'], $token);
     }
 
     // Retrieve data from cache if available and not expired.
@@ -209,42 +245,55 @@ class Core {
 
         $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
+        clearstatcache(true, $path);
 
         if (file_exists($path) == false) {
             return false;
         }
 
-        $age = time() - filemtime($path);
-        if ($age >= $duration) {
-            return false;
-        }
-
         try {
-            $data = json_decode(file_get_contents($path));
+            if (time() - filemtime($path) >= $duration) {
+                return false;
+            }
+            $json = file_get_contents($path);
+            if ($json === false) {
+                return false;
+            }
+            return json_decode($json, false, 512, JSON_THROW_ON_ERROR);
         } catch (\Exception $e) {
             return false;
         }
-        return $data;
     }
 
-    // Store data in cache.
+    // Atomically publish complete JSON so concurrent readers never see a partial write.
     public function setCache($key, $data) {
-
         if (__OHCRUD_CACHE_ENABLED__ == false) {
             return false;
         }
 
-        $hash = md5(__APP__ . $key) . '.cache';
-        $path = __OHCRUD_CACHE_PATH__ . $hash;
-
+        $path = __OHCRUD_CACHE_PATH__ . md5(__APP__ . $key) . '.cache';
+        $temporaryPath = false;
         try {
+            // Validate serialization before replacing an existing cache entry.
+            $json = json_encode($data, JSON_THROW_ON_ERROR);
             if (is_dir(__OHCRUD_CACHE_PATH__) == false) {
                 mkdir(__OHCRUD_CACHE_PATH__, 0755, true);
             }
-            $data = json_encode($data);
-            return file_put_contents($path, $data, LOCK_EX);
+            $temporaryPath = tempnam(__OHCRUD_CACHE_PATH__, '.cache-');
+            if ($temporaryPath === false) {
+                return false;
+            }
+            $bytes = file_put_contents($temporaryPath, $json);
+            if ($bytes !== strlen($json) || rename($temporaryPath, $path) == false) {
+                return false;
+            }
+            return $bytes;
         } catch (\Exception $e) {
             return false;
+        } finally {
+            if ($temporaryPath !== false && is_file($temporaryPath) == true) {
+                unlink($temporaryPath);
+            }
         }
     }
 
@@ -307,7 +356,7 @@ class Core {
         } catch(\Exception $e) {
             $this->outputStatusCode = 500;
             $this->success = false;
-            $this->errors[] = $e->getMessage();
+            $this->errors[] = 'Unable to write application log.';
             if (__OHCRUD_DEBUG_MODE__ == true) {
                 $this->debug();
             }
@@ -328,7 +377,7 @@ class Core {
         }
 
         // Avoid logging 403 and 404 errors to reduce log noise
-        if ($outputStatusCode != 403 || $outputStatusCode != 404) {
+        if ($outputStatusCode != 403 && $outputStatusCode != 404) {
             $this->log('error', $message, $debug);
         }
 
@@ -356,7 +405,12 @@ class Core {
 
     // Custom exception handler for uncaught exceptions
     public function coreExceptionHandler($exception) {
-        $this->log('error', $exception->getMessage(), debug_backtrace());
+        // Keep request arguments and credentials out of exception logs.
+        $this->log('error', $exception->getMessage(), [
+            'file' => $exception->getFile(), 'line' => $exception->getLine(),
+        ]);
+        $this->setOutputType(self::OUTPUT_JSON);
+        $this->error('Internal server error.', 500)->output();
     }
 
     // Shutdown function to handle fatal errors
@@ -364,6 +418,8 @@ class Core {
         $error = error_get_last();
         if ($error && ($error['type'] === E_ERROR || $error['type'] === E_CORE_ERROR || $error['type'] === E_COMPILE_ERROR || $error['type'] === E_PARSE)) {
             $this->log('error', $error['message'], $error);
+            $this->setOutputType(self::OUTPUT_JSON);
+            $this->error('Internal server error.', 500)->output();
         }
     }
 

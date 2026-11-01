@@ -590,14 +590,16 @@ mark {
 }
 
 code:not([class]) {
-    background: rgba(255, 255, 255, .06);
+    background: rgba(125, 15, 15, 0.5);
     border: 1px solid var(--line);
     padding: .1em .35em;
-    border-radius: .35em
+    border-radius: .35em;
+    color: #e67777;
 }
 
 :root[data-theme="light"] code:not([class]) {
-    background: #f1f3f8
+    background: #f6f0f0;
+    color: #c53030;
 }
 
 @media (min-width: 1024px) {

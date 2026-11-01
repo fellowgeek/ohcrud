@@ -7,34 +7,19 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cFiles - files controller used by the CMS
 class cFiles extends \app\models\mFiles {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'image' => __OHCRUD_PERMISSION_ALL__,
-        'upload' => 1,
-    ];
-
-    // Define an array of file extensions allowed for uploading.
-    private $filesAllowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip', 'mp3'];
-
-    // Allowed MIME types
+    // Match extensions to content types; active SVG documents are not accepted.
     private $mimeTypesAllowed = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/svg+xml',
-        'text/csv',
-        'text/plain',
-        'application/pdf',
-        'application/xml',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/json',
-        'application/zip',
-        'audio/mpeg',
+        'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'],
+        'gif' => ['image/gif'], 'webp' => ['image/webp'],
+        'csv' => ['text/csv', 'text/plain'], 'txt' => ['text/plain'],
+        'pdf' => ['application/pdf'], 'xml' => ['application/xml', 'text/xml'],
+        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+        'json' => ['application/json', 'text/plain'], 'zip' => ['application/zip'],
+        'mp3' => ['audio/mpeg'],
     ];
 
     // Define the 'upload' method for this controller.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function upload($request) {
 
         // Set the output type of this controller to JSON.
@@ -55,15 +40,26 @@ class cFiles extends \app\models\mFiles {
             return $this;
         }
 
+        // Validate upload completion and application size limits before inspecting content.
+        if (($_FILES[0]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK ||
+            is_string($_FILES[0]['name'] ?? null) == false ||
+            is_string($_FILES[0]['tmp_name'] ?? null) == false ||
+            is_uploaded_file($_FILES[0]['tmp_name']) == false) {
+            return $this->error('Incomplete upload.')->output();
+        }
+        if (filesize($_FILES[0]['tmp_name']) > 16 * 1024 * 1024) {
+            return $this->error('Upload exceeds 16 MiB.', 413)->output();
+        }
+
         // Get file information such as name, extension, and generate a unique path.
         $BASENAME = basename($_FILES[0]['name']);
         $NAME = pathinfo($BASENAME, PATHINFO_FILENAME);
         $TYPE = strtolower(pathinfo($BASENAME, PATHINFO_EXTENSION));
-        $PATH = 'global/files/' . md5($BASENAME . microtime()) . '.' . $TYPE;
+        $PATH = 'global/files/' . bin2hex(random_bytes(16)) . '.' . $TYPE;
         $TEMP = $_FILES[0]['tmp_name'];
 
         // Check allowed file extension
-        if (in_array($TYPE, $this->filesAllowed) == false) {
+        if (isset($this->mimeTypesAllowed[$TYPE]) == false) {
             // If not allowed, generate an error message and respond with status code 415 ( Unsupported Media Type )
             $this->error('This file type is not allowed.', 415);
             $this->output();
@@ -75,29 +71,25 @@ class cFiles extends \app\models\mFiles {
         $detectedMime = finfo_file($finfo, $TEMP);
 
         // Check allowed MIME type, if not allowed, generate an error message and respond with status code 415 ( Unsupported Media Type )
-        if (!in_array($detectedMime, $this->mimeTypesAllowed)) {
+        if (in_array($detectedMime, $this->mimeTypesAllowed[$TYPE], true) == false) {
             $this->error('Unsupported file type detected.', 415);
             $this->output();
             return $this;
         }
 
-        // Move the uploaded file to a designated path.
-        if (move_uploaded_file($TEMP, __SELF__ . $PATH) == false) {
-            $this->error('Unable to move uploaded file.', 500);
-            $this->output();
-            return $this;
+        // Reject malformed raster images and excessive source dimensions before moving.
+        if (in_array($TYPE, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) == true) {
+            $dimensions = $this->getImageDimensions($TEMP);
+            if ($dimensions === false || $dimensions['width'] * $dimensions['height'] > 20000000) {
+                return $this->error('Invalid or oversized image.', 415)->output();
+            }
+            $WIDTH = $dimensions['width'];
+            $HEIGHT = $dimensions['height'];
         }
 
-        // If the file is an image, get its dimensions.
-        if (in_array($TYPE, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
-            $dimensions = $this->getImageDimensions(__SELF__ . $PATH);
-            if ($dimensions === false) {
-                $WIDTH = null;
-                $HEIGHT = null;
-            } else {
-                $WIDTH = $dimensions['width'];
-                $HEIGHT = $dimensions['height'];
-            }
+        // Move the uploaded file only after all content checks have passed.
+        if (move_uploaded_file($TEMP, __SELF__ . $PATH) == false) {
+            return $this->error('Unable to move uploaded file.', 500)->output();
         }
 
         // Prepare parameters for file insertion into the database.
@@ -116,7 +108,8 @@ class cFiles extends \app\models\mFiles {
         // Create a new file entry in the database using the 'create' method.
         $filesOutput = $this->create('Files', $filesParameters);
         if ($this->success == false) {
-            // If the creation fails, generate an error message.
+            // Remove the orphaned upload when its database record cannot be created.
+            unlink(__SELF__ . $PATH);
             $this->errors = [];
             $this->error('Another file with the same name already exists.', 409);
             $this->output();
@@ -133,146 +126,82 @@ class cFiles extends \app\models\mFiles {
         $this->output();
     }
 
-    // Resizes, caches, and serves an image based on GET parameters.
+    // Validate image work before decoding; stream derivatives without unbounded disk caching.
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__, methods: ['GET'])]
     public function image($request) {
-
-        // Validation & File Setup ---
-        if (empty($request->filename)) {
-            $this->error('Filename is required.');
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+        if (isset($request->filename) == false || is_string($request->filename) == false ||
+            $request->filename === '' || basename($request->filename) !== $request->filename) {
+            return $this->error('A valid filename is required.')->output();
+        }
+        $basePath = realpath(__SELF__ . 'global/files');
+        $originalFilePath = realpath(__SELF__ . 'global/files/' . $request->filename);
+        if ($basePath === false || $originalFilePath === false || is_file($originalFilePath) == false ||
+            strncmp($originalFilePath, $basePath . DIRECTORY_SEPARATOR, strlen($basePath) + 1) !== 0) {
+            return $this->error('Image not found.', 404)->output();
         }
 
-        $basePath = __SELF__ . 'global/files/';
-        $originalFilePath = $basePath . basename($request->filename); // Use basename for security
-
-        if (!file_exists($originalFilePath)) {
-            $this->error('Image not found.', 404);
+        // Reject malformed inputs instead of coercing arrays, fractions or trailing text.
+        $dimensions = [];
+        foreach (['w' => 3840, 'h' => 2160, 'q' => 100] as $key => $maximum) {
+            $dimensions[$key] = null;
+            if (isset($request->$key) == true) {
+                $value = filter_var($request->$key, FILTER_VALIDATE_INT);
+                if ($value === false || $value < 1 || $value > $maximum) {
+                    return $this->error('Invalid image dimensions or quality.')->output();
+                }
+                $dimensions[$key] = $value;
+            }
         }
-
-        // Check if cache is enabled
-        $cacheEnabled = true;
-        if (isset($request->rand) == true) {
-            $cacheEnabled = false;
-        } else {
-            $cacheEnabled = true;
+        if (filesize($originalFilePath) > 16 * 1024 * 1024) {
+            return $this->error('Image is too large.', 413)->output();
         }
-
-        // Validate optional parameters
-        $width = isset($request->w) ? (int) $request->w : null;
-        $height = isset($request->h) ? (int) $request->h : null;
-        $quality = isset($request->q) ? (int) $request->q : null;
-
-        if ($width !== null && ($width <= 0 || $width > 3840)) {
-            $this->error('Width must be a positive integer up to 3840.', 400);
-        }
-        if ($height !== null && ($height <= 0 || $height > 2160)) {
-            $this->error('Height must be a positive integer up to 2160.', 400);
-        }
-        if ($quality !== null && ($quality < 1 || $quality > 100)) {
-            $this->error('Quality must be an integer between 1 and 100.', 400);
-        }
-
-        // No transformations needed
-        if ($width === null && $height === null && $quality === null) {
-            $this->serveImage($originalFilePath);
-            return;
-        }
-
-        // Generate New Filename & Check Cache
-        $path_info = pathinfo($originalFilePath);
-        $original_filename = $path_info['filename'];
-        $extension = $path_info['extension'];
-
-        $suffix = '';
-        if ($width) $suffix .= "_w{$width}";
-        if ($height) $suffix .= "_h{$height}";
-        if ($quality) $suffix .= "_q{$quality}";
-
-        $newFilename = "{$original_filename}{$suffix}.{$extension}";
-        $newFilePath = $basePath . $newFilename;
-
-        if (file_exists($newFilePath) && $cacheEnabled == true) {
-            $this->serveImage($newFilePath);
-            return;
-        }
-
-        // Image Processing
         $imageInfo = @getimagesize($originalFilePath);
         $mime = $imageInfo['mime'] ?? '';
-
-        $sourceImage = null;
-        switch ($mime) {
-            case 'image/jpeg':
-                $sourceImage = imagecreatefromjpeg($originalFilePath);
-                break;
-            case 'image/png':
-                $sourceImage = imagecreatefrompng($originalFilePath);
-                break;
-            case 'image/gif':
-                $sourceImage = imagecreatefromgif($originalFilePath);
-                break;
-             case 'image/webp':
-                $sourceImage = imagecreatefromwebp($originalFilePath);
-                break;
-            default:
-                $this->setOutputType(\ohCRUD\Core::OUTPUT_HTML);
-                $this->error('Unsupported image format.', 415);
-                $this->output();
-                return;
+        $decoders = ['image/jpeg' => 'imagecreatefromjpeg', 'image/png' => 'imagecreatefrompng',
+            'image/gif' => 'imagecreatefromgif', 'image/webp' => 'imagecreatefromwebp'];
+        if ($imageInfo === false || isset($decoders[$mime]) == false) {
+            return $this->error('Unsupported image format.', 415)->output();
+        }
+        [$originalWidth, $originalHeight] = $imageInfo;
+        if ($originalWidth < 1 || $originalHeight < 1 || $originalWidth * $originalHeight > 20000000) {
+            return $this->error('Image has too many pixels.', 413)->output();
+        }
+        $width = $dimensions['w'];
+        $height = $dimensions['h'];
+        $quality = $dimensions['q'];
+        if ($width === null && $height === null && $quality === null) {
+            $this->serveImage($originalFilePath, isset($request->rand) == false);
+            return;
         }
 
-        if (!$sourceImage) {
-            $this->error('Failed to process image.', 500);
+        // Bound the computed dimensions as well as the input dimensions.
+        $newWidth = $width ?? ($height !== null ? max(1, (int) floor($originalWidth * $height / $originalHeight)) : $originalWidth);
+        $newHeight = $height ?? ($width !== null ? max(1, (int) floor($originalHeight * $width / $originalWidth)) : $originalHeight);
+        if ($newWidth > 3840 || $newHeight > 2160) {
+            return $this->error('Calculated image dimensions exceed the limit.')->output();
         }
-
-        list($originalWidth, $originalHeight) = [$imageInfo[0], $imageInfo[1]];
-
-        // Calculate new dimensions
-        if ($width && !$height) { // Width only, maintain aspect ratio
-            $newWidth = $width;
-            $newHeight = floor($originalHeight * ($width / $originalWidth));
-        } elseif (!$width && $height) { // Height only, maintain aspect ratio
-            $newHeight = $height;
-            $newWidth = floor($originalWidth * ($height / $originalHeight));
-        } elseif ($width && $height) { // Exact dimensions
-            $newWidth = $width;
-            $newHeight = $height;
-        } else { // No dimensions, but quality might be set
-            $newWidth = $originalWidth;
-            $newHeight = $originalHeight;
+        $sourceImage = @$decoders[$mime]($originalFilePath);
+        if ($sourceImage === false) {
+            return $this->error('Invalid image data.', 415)->output();
         }
-
         $newImage = imagecreatetruecolor($newWidth, $newHeight);
-
-        // Preserve transparency for PNG and WebP formats
         if ($mime === 'image/png' || $mime === 'image/webp') {
             imagealphablending($newImage, false);
             imagesavealpha($newImage, true);
             $transparentColor = imagecolorallocatealpha($newImage, 0, 0, 0, 127);
             imagefill($newImage, 0, 0, $transparentColor);
         }
-
         imagecopyresampled($newImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
-
-        // Save the new image
+        header('Content-Type: ' . $mime);
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: ' . (isset($request->rand) == true ? 'no-store' : 'public, max-age=86400'));
         switch ($mime) {
-            case 'image/jpeg':
-                // Default quality 75 if not set
-                imagejpeg($newImage, $newFilePath, $quality ?? 75);
-                break;
-            case 'image/webp':
-                // Default quality 80 if not set
-                imagewebp($newImage, $newFilePath, $quality ?? 80);
-                break;
-            case 'image/png':
-                imagepng($newImage, $newFilePath);
-                break;
-            case 'image/gif':
-                imagegif($newImage, $newFilePath);
-                break;
+            case 'image/jpeg': imagejpeg($newImage, null, $quality ?? 75); break;
+            case 'image/webp': imagewebp($newImage, null, $quality ?? 80); break;
+            case 'image/png': imagepng($newImage); break;
+            case 'image/gif': imagegif($newImage); break;
         }
-
-        // Output New Image
-        $this->serveImage($newFilePath, $cacheEnabled);
     }
 
     /**
@@ -286,6 +215,7 @@ class cFiles extends \app\models\mFiles {
         $mime = $imageInfo['mime'];
 
         header("Content-Type: {$mime}");
+        header('X-Content-Type-Options: nosniff');
         header("Content-Length: " . filesize($filePath));
         if ($cache === false) {
             header("Cache-Control: no-cache, no-store, must-revalidate");

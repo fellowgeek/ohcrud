@@ -1,69 +1,59 @@
 # ohCRUD
 
-![ohCRUD Logo](docs/logo.png)
+![ohCRUD logo](docs/logo.png)
 
-> "Ninety percent of everything is crud."
->
-> <footer>Theodore Sturgeon</footer>
+ohCRUD is a lightweight PHP framework for building database-backed websites, internal tools, and APIs. It combines explicit controller routing, PDO CRUD helpers, session authentication, a Markdown CMS, and a database administration interface in a small, readable codebase.
 
-**ohCRUD** is a lightweight, open-source PHP micro-framework designed for developers who need a simple yet powerful toolkit to build web applications and APIs quickly. It's built to be fast, flexible, and easy to learn, allowing you to focus on creating your application without being bogged down by complex configurations.
+## What you can build
 
-## Features
+- JSON endpoints with declared HTTP methods and permission thresholds.
+- SQLite or MySQL/MariaDB applications with custom models and versioned migrations.
+- Websites with database pages, PHP views, reusable components, and HTML themes.
+- Administrative tools for content, tables, users, uploads, and logs.
+- Authenticated applications with passwords, API tokens, and optional TOTP.
 
-- **Simple Routing:** A straightforward routing system that maps URLs to controllers.
-- **Database Abstraction:** A simple database layer for performing CRUD operations.
-- **Built-in CMS:** A basic Content Management System for managing pages and content.
-- **User Authentication:** A simple user management system with permission levels.
-- **Theming Engine:** Easily customize the look and feel of your application.
-- **Composer Ready:** Utilizes Composer for dependency management and autoloading.
-- **CLI Support:** Interact with your application through the command line.
+Models use SQL and fluent helpers; relationships, business validation, and application services stay explicit. There is no generated ORM, middleware pipeline, or plugin registry.
 
-## Requirements
+## Start here
 
-- PHP >= 8.0
-- Composer
-- PDO PHP Extension
-- Mbstring PHP Extension
-- PHP Curl Extension
-- PHP SQLITE 3 (if using SQLite)
+**[Install and configure ohCRUD](docs/getting-started.md)**, then **[build a feature in five minutes](docs/quickstart.md)**. The quickstart adds a public greeting API and a rendered CMS page.
 
-## Installation
+The locked dependencies require **PHP 8.1 or newer**; the included development container uses PHP 8.5. You also need Composer and a supported PDO driver. See the installation guide for the complete extension and filesystem requirements.
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/fellowgeek/ohcrud.git
-    cd ohcrud
-    ```
+After configuration, from the repository root:
 
-2.  **Install dependencies:**
-    ```bash
-    composer install
-    ```
+```sh
+composer --working-dir=public install
+composer --working-dir=public check-platform-reqs
+php private/migrate.php
+```
 
-3.  **Configure your application:**
-    -   Copy `public/settings.sample.php` to `public/settings.php`.
-    -   Update `public/settings.php` with your database credentials and other settings.
-
-4.  **Set up your web server:**
-    -   Point your web server's document root to the `public` directory.
-    -   Ensure URL rewriting is enabled to direct all requests to `index.php`.
-
-## Quick Start
-
-After installation, you can access the built-in CMS and admin panel.
-
--   **Admin Login:** `/login`
--   **Default Username:** `admin`
--   **Default Password:** `admin`
+Open `/login/` after explicitly [creating your first administrator](docs/getting-started.md#create-the-first-administrator). No default account is installed.
 
 ## Documentation
 
-For detailed information on configuration, API, CMS, theming, and more, please refer to our full [documentation](docs/DOCUMENTATION.md).
+| Guide | What you will learn |
+| --- | --- |
+| [Documentation index](docs/DOCUMENTATION.md) | Reading paths, project map, and API references |
+| [Getting started](docs/getting-started.md) | Local PHP, Docker Compose, configuration, and first login |
+| [Five-minute quickstart](docs/quickstart.md) | A working endpoint and page |
+| [Architecture](docs/architecture.md) | Bootstrap, request lifecycle, inheritance, and extension points |
+| [Routing](docs/Router.md) | Endpoint attributes, request bodies, HTTP methods, and access policy |
+| [Models and controllers](docs/models-and-controllers.md) | Schema, CRUD, validation, joins, transactions, and responses |
+| [Database reference](docs/DB.md) | Method signatures and return contracts |
+| [Migrations](docs/Migrations.md) | Provisioning, ordered changes, and recovery |
+| [CMS and admin](docs/cms-and-admin.md) | Publishing, content schemas, media, and administration |
+| [Admin API reference](docs/Admin.md) | Endpoint paths and payload fields |
+| [Components](docs/components.md) | Reusable PHP views, parameters, and assets |
+| [Themes](docs/Themes.md) | Layouts, placeholders, and asset processing |
+| [Authentication](docs/Users.md) | Sessions, permissions, tokens, and authenticator management |
+| [Core reference](docs/Core.md) | Output, errors, logging, sessions, and caching |
+| [Deployment and testing](docs/deployment-and-testing.md) | Release procedure, regression suites, and troubleshooting |
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request or open an issue.
+Read the [repository instructions](AGENTS.md) and [coding style guide](docs/STYLE_GUIDE.md). Keep changes focused, document public behavior, and run the [appropriate validation](docs/deployment-and-testing.md#validation).
 
 ## License
 
-ohCRUD is open-source software licensed under the [MIT license](LICENSE).
+[MIT](LICENSE).

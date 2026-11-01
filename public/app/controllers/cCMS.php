@@ -11,6 +11,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cCMS - CMS controller used by the OhCRUD framework
 class cCMS extends \app\models\mPages {
 
+    const SAFE_IFRAME_PATTERN = '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%';
+
     // The path of the requested content.
     public $path;
     // The content of the page.
@@ -51,20 +53,25 @@ class cCMS extends \app\models\mPages {
     // Allowed CMS actions
     public $allowedActions = ['edit', 'users', 'tables', 'files', 'sql', 'server', 'logs'];
     // Allowed components for instantiation
-    public $allowedComponents = [];
+    public $allowedComponents = null;
 
     public function __construct($request) {
         parent::__construct();
 
         $this->request = $request;
         $this->content = new \app\models\mContent;
-        $this->pages = new \app\models\mPages;
+        // The inherited page model already owns the database connection.
+        $this->pages = $this;
 
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
 
         // Capture and validate action
         $action = $this->request->action ?? '';
+        if ($action === 'users') {
+            $action = 'tables';
+            $this->request->table = 'Users';
+        }
 
         // Check if action is in allowed list AND user has admin permissions
         $this->isAdmin = $this->loggedIn && $_SESSION['User']->PERMISSIONS === 1;
@@ -93,21 +100,37 @@ class cCMS extends \app\models\mPages {
             $this->useCache = false;
         }
 
-        // Setup markdown processor
-        $this->markdownExtra = new MarkdownExtra();
-        $this->markdownExtra->enhanced_ordered_list = true;
-
-        // Setup HTML purifier
+        // Templates also use the purifier, including hard-coded error and admin views.
         $this->purifier = new HTMLPurifier();
         $this->purifier->config->set('HTML.SafeIframe', true);
-        $this->purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
+        $this->purifier->config->set('URI.SafeIframeRegexp', self::SAFE_IFRAME_PATTERN);
+    }
 
-        // Setup minifiers
-        $this->minifierCSS = new Minify\CSS();
-        $this->minifierJS = new Minify\JS();
-
-        // Scan for allowed components to build a whitelist.
-        $this->allowedComponents = $this->scanComponents(__SELF__ . 'app/components');
+    // Cache only purified Markdown; permission checks and component rendering stay live.
+    private function renderMarkdown($text) {
+        $iframePattern = self::SAFE_IFRAME_PATTERN;
+        $cacheKey = 'cCMS:markdown:' . hash('sha256', json_encode([
+            'renderer-v1', MarkdownExtra::MARKDOWNLIB_VERSION, HTMLPurifier::VERSION,
+            $iframePattern, $text,
+        ], JSON_THROW_ON_ERROR));
+        $html = $this->useCache == true ? $this->getCache($cacheKey, __OHCRUD_CMS_CACHE_DURATION__) : false;
+        if (is_string($html) == true) {
+            return $html;
+        }
+        if (isset($this->markdownExtra) == false) {
+            $this->markdownExtra = new MarkdownExtra();
+            $this->markdownExtra->enhanced_ordered_list = true;
+        }
+        if (isset($this->purifier) == false) {
+            $this->purifier = new HTMLPurifier();
+            $this->purifier->config->set('HTML.SafeIframe', true);
+            $this->purifier->config->set('URI.SafeIframeRegexp', $iframePattern);
+        }
+        $html = $this->purifier->purify($this->markdownExtra->transform(preg_replace('/~~(.*?)~~/i', '<del>$1</del>', $text)));
+        if ($this->useCache == true) {
+            $this->setCache($cacheKey, $html);
+        }
+        return $html;
     }
 
     // Handler for all incoming requests
@@ -118,18 +141,8 @@ class cCMS extends \app\models\mPages {
         // Normalize path
         $this->path = \strtolower($path);
 
-        // Get cached response (if any)
-        $cacheKey = 'cCMS:' . $this->path . http_build_query($_GET ?? '');
-        $cachedResponse = $this->getCache($cacheKey, __OHCRUD_CMS_CACHE_DURATION__);
-        if ($this->useCache == true && $cachedResponse !== false) {
-            $this->data = $cachedResponse;
-            // Inject the uncachable content
-            $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
-            $this->data = str_ireplace("{{CMS:UNCACHABLE-JS}}", $this->getUnCachableContentJS(), $this->data);
-            // Output the HTML page
-            $this->output();
-            return;
-        }
+        // Render for each request: pages, embedded content and components can depend
+        // on current permissions or session state. Shared HTML must not bypass them.
 
         // Include application javascript & css files
         $this->includeCSSFile('/global/css/global.css', 1);
@@ -145,13 +158,12 @@ class cCMS extends \app\models\mPages {
         // Process embedded content & components
         $this->content = $this->processContent($this->content);
 
+        //process code blocks for <code class="xxx"> change to <code class="xxx language-xxx"> for better syntax highlighting support
+        $this->content->html = preg_replace('/<code class="(.*?)"/i', '<code class="language-$1 $1"', $this->content->html);
+        $this->content->html = preg_replace('/<pre><code>/i', '<pre><code class="language-plain plain">', $this->content->html);
+
         // Process theme & layout
         $this->processTheme();
-
-        // Set cache
-        if ($this->actionMode == false && $this->content->statusCode == 200) {
-            $this->setCache($cacheKey, $this->data);
-        }
 
         // Inject the uncachable content
         $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
@@ -170,7 +182,7 @@ class cCMS extends \app\models\mPages {
     private function getMetaTags() {
         $this->content->metaTags = '';
         foreach ($this->metaTags as $tag => $value) {
-            $this->content->metaTags .= '<meta name="' . $tag . '" content="' . $value . '">' . "\n";
+            $this->content->metaTags .= '<meta name="' . $this->escapeHTML($tag) . '" content="' . $this->escapeHTML($value) . '">' . "\n";
         }
     }
 
@@ -191,21 +203,42 @@ class cCMS extends \app\models\mPages {
         $basePathMinified = __SELF__ . '/global/minified/';
         if (__OHCRUD_CMS_MINIFY_CSS__ == true) {
             $combinedHash = $this->getCombinedFilesHash($basePath, array_keys($this->cssFiles), 'sha1');
-            if (file_exists($basePathMinified . $combinedHash . '.min.css') == true) {
-                // If the combined minified file already exists, use it
+            if ($combinedHash !== false) {
+                if (file_exists($basePathMinified . $combinedHash . '.min.css') == true) {
+                    // If the combined minified file already exists, use it
+                    $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
+                    return;
+                }
+
+                // Build the minifier only when the versioned bundle is missing.
+                $this->minifierCSS = new Minify\CSS();
+                // If the combined minified file does not exist, create it
+                foreach ($this->cssFiles as $cssFile => $priority) {
+                    $this->minifierCSS->add($basePath . $cssFile);
+                }
+                if (is_dir($basePathMinified) == false) {
+                    mkdir($basePathMinified, 0755, true);
+                }
+                $temporaryPath = tempnam($basePathMinified, '.bundle-');
+                if ($temporaryPath === false) {
+                    throw new \RuntimeException('Unable to create an asset bundle.');
+                }
+                try {
+                    $this->minifierCSS->minify($temporaryPath);
+                    chmod($temporaryPath, 0644);
+                    if (rename($temporaryPath, $basePathMinified . $combinedHash . '.min.css') == false) {
+                        throw new \RuntimeException('Unable to publish an asset bundle.');
+                    }
+                } finally {
+                    if (is_file($temporaryPath) == true) {
+                        unlink($temporaryPath);
+                    }
+                }
+
+                // Use the combined minified file
                 $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
                 return;
             }
-
-            // If the combined minified file does not exist, create it
-            foreach ($this->cssFiles as $cssFile => $priority) {
-                $this->minifierCSS->add($basePath . $cssFile);
-            }
-            $this->minifierCSS->minify($basePathMinified . $combinedHash . '.min.css');
-
-            // Use the combined minified file
-            $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
-            return;
         }
 
         foreach ($this->cssFiles as $cssFile => $priority) {
@@ -230,21 +263,42 @@ class cCMS extends \app\models\mPages {
         $basePathMinified = __SELF__ . '/global/minified/';
         if (__OHCRUD_CMS_MINIFY_JS__ == true) {
             $combinedHash = $this->getCombinedFilesHash($basePath, array_keys($this->jsFiles), 'sha1');
-            if (file_exists($basePathMinified . $combinedHash . '.min.js') == true) {
-                // If the combined minified file already exists, use it
+            if ($combinedHash !== false) {
+                if (file_exists($basePathMinified . $combinedHash . '.min.js') == true) {
+                    // If the combined minified file already exists, use it
+                    $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
+                    return;
+                }
+
+                // Build the minifier only when the versioned bundle is missing.
+                $this->minifierJS = new Minify\JS();
+                // If the combined minified file does not exist, create it
+                foreach ($this->jsFiles as $jsFile => $priority) {
+                    $this->minifierJS->add($basePath . $jsFile);
+                }
+                if (is_dir($basePathMinified) == false) {
+                    mkdir($basePathMinified, 0755, true);
+                }
+                $temporaryPath = tempnam($basePathMinified, '.bundle-');
+                if ($temporaryPath === false) {
+                    throw new \RuntimeException('Unable to create an asset bundle.');
+                }
+                try {
+                    $this->minifierJS->minify($temporaryPath);
+                    chmod($temporaryPath, 0644);
+                    if (rename($temporaryPath, $basePathMinified . $combinedHash . '.min.js') == false) {
+                        throw new \RuntimeException('Unable to publish an asset bundle.');
+                    }
+                } finally {
+                    if (is_file($temporaryPath) == true) {
+                        unlink($temporaryPath);
+                    }
+                }
+
+                // Use the combined minified file
                 $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
                 return;
             }
-
-            // If the combined minified file does not exist, create it
-            foreach ($this->jsFiles as $jsFile => $priority) {
-                $this->minifierJS->add($basePath . $jsFile);
-            }
-            $this->minifierJS->minify($basePathMinified . $combinedHash . '.min.js');
-
-            // Use the combined minified file
-            $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
-            return;
         }
 
         foreach ($this->jsFiles as $jsFile => $priority) {
@@ -252,23 +306,21 @@ class cCMS extends \app\models\mPages {
         }
     }
 
-    // Get combined hash of all files
+    // Version bundles from ordered source paths and file metadata without reading each asset.
     private function getCombinedFilesHash($basePath, $files, $algo = 'sha1') {
-
-        // Initialize the hashing context
-        $ctx = hash_init($algo);
-
-        // Loop through each file and update the hash context
+        $signatures = [defined('__OHCRUD_CMS_ASSET_VERSION__') == true ? __OHCRUD_CMS_ASSET_VERSION__ : ''];
         foreach ($files as $file) {
-            if (is_readable($basePath. $file) == false) {
+            $path = $basePath . $file;
+            if (is_file($path) == false || is_readable($path) == false) {
                 return false;
             }
-            // Stream the file directly into the hash function
-            hash_update_file($ctx, $basePath. $file);
+            $stat = stat($path);
+            if ($stat === false) {
+                return false;
+            }
+            $signatures[] = [$file, $stat['ino'], $stat['size'], $stat['mtime'], $stat['ctime']];
         }
-
-        // Finalize the hash and return it
-        return hash_final($ctx);
+        return hash($algo, json_encode($signatures, JSON_THROW_ON_ERROR));
     }
 
     // Load content
@@ -343,7 +395,7 @@ class cCMS extends \app\models\mPages {
             case $this::PUBLISHED:
                 // Published page
                 $content->text = $page->TEXT;
-                $content->html = $this->purifier->purify($this->markdownExtra->transform(preg_replace('/~~(.*?)~~/i', '<del>$1</del>', $page->TEXT)));
+                $content->html = $this->renderMarkdown($page->TEXT);
                 break;
             case $this::DRAFT:
                 // Allow editing draft pages
@@ -393,7 +445,7 @@ class cCMS extends \app\models\mPages {
         // Mitigate path traversal.
         $baseDir = realpath(__SELF__ . 'app/views/cms');
         $realFullPath = realpath($fullPath);
-        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+        if ($realFullPath === false || ($baseDir === false || strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) !== 0)) {
             $this->log('warn', 'Local File Inclusion (LFI) attempt blocked.', ['path' => $path]);
             $realFullPath = __SELF__ . 'app/views/cms/404.phtml';
             $content->statusCode = 404;
@@ -493,6 +545,11 @@ class cCMS extends \app\models\mPages {
         $componentParameters = $this->parseString($componentString);
         $componentClassFile = str_replace('\\', '/', key($componentParameters));
 
+        // Scan once, and only on requests that actually render components.
+        if ($this->allowedComponents === null) {
+            $this->allowedComponents = $this->scanComponents(__SELF__ . 'app/components');
+        }
+
         // Check if the component is in the whitelist.
         if (in_array($componentClassFile, $this->allowedComponents) == false) {
             $this->log('warn', 'Component not in whitelist blocked.', ['component' => $componentClassFile]);
@@ -577,9 +634,9 @@ class cCMS extends \app\models\mPages {
 
         // Include Javascript constants and assets
         $output .= "<script>\n";
-        $output .= "const __SITE__ = '" . __SITE__ . "';\n";
-        $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
-        $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
+        $output .= "const __SITE__ = " . json_encode(__SITE__, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ";\n";
+        $output .= "const __DOMAIN__ = " . json_encode(__DOMAIN__, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ";\n";
+        $output .= "const __SUB_DOMAIN__ = " . json_encode(__SUB_DOMAIN__, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ";\n";
         $output .= "const __PATH__ = '" . $path . "';\n";
         $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
         $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
@@ -631,7 +688,7 @@ class cCMS extends \app\models\mPages {
         $footer = '';
         $footer .= '<p><a href="/" class="external">HOME</a>';
         $footer .= ' | ';
-        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . __SITE__ ;
+        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . $this->escapeHTML(__SITE__) ;
         $footer .= ' | ';
         $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4) . ' second(s). - PHP ' . PHP_VERSION;
         $footer .= ' | ';
@@ -664,16 +721,13 @@ class cCMS extends \app\models\mPages {
                     break;
                 case 'tables':
                 case 'files':
+                case 'server':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'tables';
                     break;
                 case 'sql':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'sql';
-                    break;
-                case 'sql':
-                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
-                    $this->layout = 'server';
                     break;
                 case 'logs':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
@@ -685,9 +739,21 @@ class cCMS extends \app\models\mPages {
             }
         }
 
-        // Load theme and layout
+        // Resolve the final template beneath themes, including symlink targets.
+        $themeRoot = realpath(__SELF__ . 'themes');
+        $themePath = realpath(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html');
+        if (preg_match('/^[a-zA-Z0-9_-]+$/D', $this->theme) !== 1 ||
+            preg_match('/^[a-zA-Z0-9_-]+$/D', $this->layout) !== 1 ||
+            $themeRoot === false || $themePath === false ||
+            strpos($themePath, $themeRoot . DIRECTORY_SEPARATOR) !== 0) {
+            $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
+            $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+            $themePath = __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
+        }
+
+        // Load theme and layout.
         ob_start();
-        include __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
+        include $themePath;
         $output = ob_get_clean();
 
         // Process embedded content in the theme
@@ -696,8 +762,12 @@ class cCMS extends \app\models\mPages {
         $themeContent->html = $output;
         $themeContent = $this->processContent($themeContent);
 
-        // Set HTML output
+        // Reuse the admin shell without initializing table controls on the server page.
         $output = $themeContent->html;
+        if ($this->actionMode === 'server') {
+            $output = str_replace('data-name="tables"', 'data-name="server"', $output);
+            $output = str_replace('ohCRUD Admin - Tables', 'ohCRUD Admin - Server', $output);
+        }
 
         // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
         $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);
@@ -742,8 +812,8 @@ class cCMS extends \app\models\mPages {
 
         if ($this->actionMode == true) {
             $output = str_ireplace('{{CMS:CONTENT}}', $this->getAdminView($this->actionMode)->html, $output);
-            $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
-            $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
+            $output = str_ireplace('{{CMS:THEME}}', $this->escapeHTML($this->content->theme), $output);
+            $output = str_ireplace('{{CMS:LAYOUT}}', $this->escapeHTML($this->content->layout), $output);
             $output = str_ireplace('{{CMS:STATUS}}', $this->content->status, $output);
             $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
         }
@@ -754,9 +824,9 @@ class cCMS extends \app\models\mPages {
 
         // Replace ohCRUD templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:APP}}", __APP__, $output);
-        $output = str_ireplace("{{CMS:SITE}}", __SITE__, $output);
-        $output = str_ireplace("{{CMS:DOMAIN}}", __DOMAIN__, $output);
-        $output = str_ireplace("{{CMS:SUB_DOMAIN}}", __SUB_DOMAIN__, $output);
+        $output = str_ireplace("{{CMS:SITE}}", $this->escapeHTML(__SITE__), $output);
+        $output = str_ireplace("{{CMS:DOMAIN}}", $this->escapeHTML(__DOMAIN__), $output);
+        $output = str_ireplace("{{CMS:SUB_DOMAIN}}", $this->escapeHTML(__SUB_DOMAIN__), $output);
         $output = str_ireplace("{{CMS:PATH}}", $path, $output);
         $output = str_ireplace("{{CMS:TITLE}}", htmlspecialchars($this->content->title, ENT_QUOTES, 'UTF-8'), $output);
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
@@ -790,7 +860,7 @@ class cCMS extends \app\models\mPages {
         $baseDir = realpath(__SELF__ . 'app/views/admin');
         $realFullPath = realpath($fullPath);
 
-        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+        if ($realFullPath === false || ($baseDir === false || strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) !== 0)) {
             $this->log('warn', 'Admin view Local File Inclusion (LFI) attempt blocked', ['view' => $viewName]);
             $content->html = '<p>Admin view not found.</p>';
             return $content;
@@ -833,7 +903,7 @@ class cCMS extends \app\models\mPages {
         $baseDir = realpath(__SELF__ . 'app/views/cms');
         $realFullPath = realpath($fullPath);
 
-        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+        if ($realFullPath !== false && $baseDir !== false && strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) === 0 && file_exists($realFullPath)) {
             return true;
         }
 

@@ -11,11 +11,12 @@ class mPages extends \ohCRUD\DB {
     const PUBLISHED = 1;
     const DRAFT = 2;
 
-    function __construct() {
+    function __construct($initializeSchema = false) {
         parent::__construct();
 
 
-        if (__OHCRUD_DEBUG_MODE__ == true) {
+        // Explicit CLI provisioning is available with debug mode disabled.
+        if (__OHCRUD_DEBUG_MODE__ == true || ($initializeSchema == true && PHP_SAPI === 'cli')) {
 
             // Check if the 'Pages' table exists in the database, and create it if it doesn't.
             $tableExists = false;

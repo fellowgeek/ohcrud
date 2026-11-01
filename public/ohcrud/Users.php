@@ -9,11 +9,11 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Class Users - Users class for ohCRUD, this class handles creation and authentication of the ohCRUD framework users.
 class Users extends \ohCRUD\DB {
 
-    function __construct() {
+    function __construct($initializeSchema = false) {
         parent::__construct();
 
-        // Initialize the Users table and populate with default admin user if it doesn't exist
-        if (__OHCRUD_DEBUG_MODE__ == true) {
+        // Initialize schema only in debug mode or during explicit CLI provisioning.
+        if (__OHCRUD_DEBUG_MODE__ == true || ($initializeSchema == true && PHP_SAPI === 'cli')) {
 
             // Check if the Users table exists and create it if it doesn't
             $tableExists = false;
@@ -79,21 +79,24 @@ class Users extends \ohCRUD\DB {
                     break;
             }
 
-            // Create a default admin user if the Users table was just created
+            // Authentication counters and replay protection are part of the framework schema.
+            // Run independently of Users table existence so existing installations upgrade too.
+            if ($this->success === true) {
+                $sql = "CREATE TABLE IF NOT EXISTS `AuthState` (
+                    `ID` VARCHAR(128) NOT NULL PRIMARY KEY,
+                    `ATTEMPTS` INTEGER NOT NULL DEFAULT 0,
+                    `WINDOW_START` BIGINT NOT NULL DEFAULT 0,
+                    `LAST_STEP` BIGINT NOT NULL DEFAULT -1
+                )";
+                if ($this->config['DRIVER'] === 'MYSQL') {
+                    $sql .= ' ENGINE=InnoDB';
+                }
+                $this->run($sql);
+            }
+
+            // Account creation is explicit; never install a publicly known password.
             if ($tableExists === false && $this->success === true) {
-                $this->create('Users', [
-                    'USERNAME' => 'admin',
-                    'EMAIL' => 'admin@example.com',
-                    'HASH' => hash('sha1', 'admin@example.com'),
-                    'PASSWORD' => 'admin',
-                    'NAME' => 'ohcrud admin',
-                    'GROUP' => 1,
-                    'PERMISSIONS' => 1,
-                    'STATUS' => $this::ACTIVE,
-                    'TOTP' => $this::INACTIVE
-                    ]
-                );
-                $this->log('info', 'Default admin user created with username "admin" and password "admin". Please change the password after first login.');
+                $this->log('notice', 'Users schema initialized. Provision an administrator through the CLI.');
             }
         }
     }
@@ -132,40 +135,88 @@ class Users extends \ohCRUD\DB {
         return parent::update($table, $data, $where, $bind);
     }
 
-    // Enable or re-generate TOTP for a user
+    // Legacy callers must use the confirmed enrollment flow instead of replacing a live factor.
     public function enableTOTP($id, $activateTOTP = true) {
-        $user = $this->read(
-            'Users',
-            'ID = :ID',
-            [
-                ':ID' => $id
-            ]
-        )->first();
+        return false;
+    }
 
-        if ($user != false) {
-            $totp = TOTP::generate();
-
-            $data = [
-                'TOTP_SECRET' => $this->encryptText($totp->getSecret())
-            ];
-
-            if ($activateTOTP == true) {
-                $data['TOTP'] = $this::ACTIVE;
-            }
-
-            $output = $this->Update(
-                'Users',
-                $data,
-                'ID = :ID',
-                [
-                    ':ID' => $id
-                ]
-            )->success;
-
-            return $output;
-        } else {
+    // Reauthenticate the current user before changing their authenticator.
+    private function reauthenticateForTOTP($password, $code) {
+        $id = $_SESSION['User']->ID ?? null;
+        if ($id === null || is_string($password) == false ||
+            $this->allowAuthenticationAttempt('factor-password:' . $id, 5) == false) {
             return false;
         }
+        $user = $this->read('Users', 'ID = :ID AND STATUS = 1', [':ID' => $id])->first();
+        if ($user === false || password_verify($password . __OHCRUD_SECRET__, $user->PASSWORD) == false) {
+            return false;
+        }
+        if ((int) $user->TOTP === $this::ACTIVE &&
+            ($this->allowAuthenticationAttempt('totp:' . $id, 5) == false || $this->consumeTOTPCode($user, $code) == false)) {
+            return false;
+        }
+        return $user;
+    }
+
+    // Keep a replacement secret pending until its owner proves possession.
+    public function beginTOTP($password, $code = null) {
+        $this->unsetSession('pendingTOTP');
+        $user = $this->reauthenticateForTOTP($password, $code);
+        if ($user === false) {
+            return false;
+        }
+        $totp = TOTP::generate();
+        $totp->setLabel($user->USERNAME);
+        $totp->setIssuer(__APP__);
+        $this->setSession('pendingTOTP', (object) [
+            'ID' => $user->ID, 'created' => $this->authenticationTime(),
+            'fingerprint' => $this->authenticationFingerprint($user),
+            'secret' => $this->encryptText($totp->getSecret()),
+        ]);
+        return (object) ['QR_CODE' => $totp->getProvisioningUri()];
+    }
+
+    // Activate only the pending secret belonging to this authenticated session.
+    public function confirmTOTP($code) {
+        $pending = $_SESSION['pendingTOTP'] ?? null;
+        if (isset($pending->ID, $pending->created, $pending->fingerprint, $pending->secret) == false ||
+            (int) $pending->ID !== (int) ($_SESSION['User']->ID ?? 0) ||
+            $this->authenticationTime() - $pending->created >= 300) {
+            $this->unsetSession('pendingTOTP');
+            return false;
+        }
+        $user = $this->read('Users', 'ID = :ID AND STATUS = 1', [':ID' => $pending->ID])->first();
+        if ($user === false || hash_equals($this->authenticationFingerprint($user), $pending->fingerprint) == false ||
+            $this->allowAuthenticationAttempt('enrollment:' . $pending->ID, 5) == false) {
+            return false;
+        }
+        $replacement = clone $user;
+        $replacement->TOTP_SECRET = $pending->secret;
+        if ($this->consumeTOTPCode($replacement, $code) == false) {
+            return false;
+        }
+        return $this->replaceTOTP($user, $pending->secret, $this::ACTIVE);
+    }
+
+    // Disabling a factor requires the password and the currently enrolled factor.
+    public function disableTOTP($password, $code) {
+        $user = $this->reauthenticateForTOTP($password, $code);
+        return $user !== false ? $this->replaceTOTP($user, '', $this::INACTIVE) : false;
+    }
+
+    // Compare-and-swap prevents concurrent password or factor changes being overwritten.
+    private function replaceTOTP($user, $secret, $status) {
+        $statement = $this->db->prepare("UPDATE Users SET TOTP_SECRET = :secret, TOTP = :status
+            WHERE ID = :id AND STATUS = 1 AND PASSWORD = :password AND COALESCE(TOTP_SECRET, '') = :oldSecret");
+        $statement->execute([':secret' => $secret, ':status' => $status, ':id' => $user->ID,
+            ':password' => $user->PASSWORD, ':oldSecret' => $user->TOTP_SECRET ?? '']);
+        if ($statement->rowCount() !== 1) {
+            return false;
+        }
+        $this->unsetSession('pendingTOTP');
+        $user = $this->read('Users', 'ID = :ID', [':ID' => $user->ID])->first();
+        $this->createUserSession($user);
+        return true;
     }
 
     // Enable or re-generate TOKEN for a user
@@ -201,15 +252,21 @@ class Users extends \ohCRUD\DB {
     // Authenticate and check if the user has TOTP enabled
     public function login($username, $password, $token = null) {
 
+        // A new password attempt supersedes any previous MFA challenge.
+        $this->unsetSession('tempUser');
+        if ($this->allowAuthenticationAttempt('ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'cli'), 100) == false) {
+            return false;
+        }
+
         // Handle API token-based logins
         if (isset($token) == true) {
 
             // Validate the token and extract the token parts
-            if (strlen($token) == 80) {
+            if (is_string($token) == true && preg_match('/^[a-f0-9]{80}$/D', $token) === 1) {
                 $hash = substr($token, 0, 40);
                 $APIToken = substr($token, 40, 40);
             } else {
-                $this->log('warning', 'Invalid token length', [$token]);
+                $this->log('warning', 'Invalid token length', []);
                 // Delay to mitigate brute force and timing attacks
                 usleep(rand(500000, 1000000));
                 return false;
@@ -227,23 +284,19 @@ class Users extends \ohCRUD\DB {
 
             // Return if user was not found
             if ($user === false) {
-                $this->log('warning', 'Invalid token hash', [$token]);
+                $this->log('warning', 'Invalid token hash', []);
                 // Delay to mitigate brute force and timing attacks
                 usleep(rand(500000, 1000000));
                 return false;
             }
 
             // Decrypt and compare user token
-            if ($this->decryptText($user->TOKEN) === $APIToken) {
-                $user->loggedIn = true;
-
-                // Remove sensitive information
-                $this->sanitizeUser($user);
-
-                // Create a user session and log in the user
-                $this->setSession('User', $user);
+            $storedToken = $this->decryptText($user->TOKEN);
+            if (is_string($storedToken) == true && hash_equals($storedToken, $APIToken) == true) {
+                $this->releaseAuthenticationAttempt('ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'cli'));
+                $user = $this->createUserSession($user);
             } else {
-                $this->log('warning', 'Invalid token', [$token]);
+                $this->log('warning', 'Invalid token', []);
                 // Delay to mitigate brute force and timing attacks
                 usleep(rand(500000, 1000000));
                 return false;
@@ -252,9 +305,11 @@ class Users extends \ohCRUD\DB {
             return $user;
         }
 
-        // Delay to mitigate brute force and timing attacks, only in production mode
-        if(__OHCRUD_DEBUG_MODE__ == false) {
-            usleep(rand(500000, 1000000));
+        // Throttle by account as well as source; changing sessions does not reset limits.
+        if (is_string($username) == false || is_string($password) == false ||
+            strlen($username) > 128 || strlen($password) > 4096 ||
+            $this->allowAuthenticationAttempt('password:' . strtolower($username), 10) == false) {
+            return false;
         }
 
         // Get a user based on username and status
@@ -275,18 +330,24 @@ class Users extends \ohCRUD\DB {
                 return false;
             }
 
-            // Remove sensitive information
-            $this->sanitizeUser($user);
+            // A verified password does not consume the source-IP failure allowance.
+            $this->releaseAuthenticationAttempt('ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'cli'));
 
             // Check if the user has TOTP enabled
             if ((int) $user->TOTP == $this::ACTIVE) {
                 $user->TOTPVerified = false;
+                $user->challengeCreated = $this->authenticationTime();
+                $user->challengeFingerprint = $this->authenticationFingerprint($user);
+                $this->sanitizeUser($user);
+                $this->unsetSession('User');
+                $this->unsetSession('authentication');
+                $this->regenerateSession();
                 $this->setSession('tempUser', $user);
             }
 
             // Create the user session and log in the user if TOTP is not enabled for this user
             if ((int) $user->TOTP == $this::INACTIVE) {
-                $this->setSession('User', $user);
+                $user = $this->createUserSession($user);
             }
         }
 
@@ -296,9 +357,18 @@ class Users extends \ohCRUD\DB {
     // Handle TOTP authentication for a given user ID
     public function verify($id, $TOTP_CODE) {
 
-        // Delay to mitigate brute force and timing attacks, only in production mode
-        if(__OHCRUD_DEBUG_MODE__ == false) {
-            usleep(rand(500000, 1000000));
+        // Bind verification to a recent password challenge for this exact account.
+        $challenge = $_SESSION['tempUser'] ?? null;
+        $now = $this->authenticationTime();
+        if (isset($challenge->ID, $challenge->challengeCreated, $challenge->challengeFingerprint) == false ||
+            (int) $challenge->ID !== (int) $id || $now - $challenge->challengeCreated >= 300 ||
+            $now < $challenge->challengeCreated) {
+            $this->unsetSession('tempUser');
+            return false;
+        }
+        if ($this->allowAuthenticationAttempt('totp:' . $id, 5) == false ||
+            is_string($TOTP_CODE) == false || preg_match('/^[0-9]{6}$/D', $TOTP_CODE) !== 1) {
+            return false;
         }
 
         // Get the user
@@ -311,27 +381,145 @@ class Users extends \ohCRUD\DB {
             ]
         )->first();
 
-        if ($user === false) {
-            $this->log('warning', 'TOTP verification failed, User does not exist.', [$id]);
+        if ($user === false || (int) $user->TOTP !== $this::ACTIVE ||
+            hash_equals($this->authenticationFingerprint($user), $challenge->challengeFingerprint) == false) {
+            $this->unsetSession('tempUser');
+            $this->log('warning', 'TOTP challenge is no longer valid.', [$id]);
             return false;
         }
 
-        // Create a TOTP object from the secret and verify the TOTP code
-        $totp = TOTP::createFromSecret($this->decryptText($user->TOTP_SECRET));
+        if ($this->consumeTOTPCode($user, $TOTP_CODE) == false) {
+            return false;
+        }
 
-        if ($totp->verify($TOTP_CODE) == false) {
+        // Rotate the session only after both factors have been verified.
+        return $this->createUserSession($user);
+    }
+
+    // Verify and consume a code once, including during enrollment or factor changes.
+    private function consumeTOTPCode($user, $TOTP_CODE) {
+        if (is_string($TOTP_CODE) == false || preg_match('/^[0-9]{6}$/D', $TOTP_CODE) !== 1) {
+            return false;
+        }
+        $now = $this->authenticationTime();
+        // Create a TOTP object from the secret and verify the TOTP code
+        $secret = $this->decryptText($user->TOTP_SECRET);
+        if (is_string($secret) == false || preg_match('/^[A-Z2-7]+$/D', $secret) !== 1) {
+            return false;
+        }
+        $totp = TOTP::createFromSecret($secret);
+
+        if ($totp->verify($TOTP_CODE, $now) == false) {
             $this->log('warning', 'TOTP verification failed.', [$user->USERNAME]);
             return false;
         }
 
-        // Remove sensitive information
+        // Atomically consume the time step across sessions and concurrent requests.
+        $key = 'replay:' . $user->ID . ':' . hash('sha256', $secret);
+        if ($this->initializeAuthenticationState($key) == false) {
+            return false;
+        }
+        $statement = $this->db->prepare('UPDATE AuthState SET LAST_STEP = :step WHERE ID = :id AND LAST_STEP < :previous');
+        $step = intdiv($now, $totp->getPeriod());
+        $statement->execute([':step' => $step, ':id' => hash('sha256', $key), ':previous' => $step]);
+        return $statement->rowCount() === 1;
+
+    }
+
+    // Keep time-dependent authentication checks testable without waiting or sleeping.
+    protected function authenticationTime() {
+        return time();
+    }
+
+    // Create durable counters using an atomic insert on either supported database.
+    private function initializeAuthenticationState($key) {
+        try {
+            $sql = $this->config['DRIVER'] === 'SQLITE'
+                ? 'INSERT OR IGNORE INTO AuthState (ID) VALUES (:id)'
+                : 'INSERT IGNORE INTO AuthState (ID) VALUES (:id)';
+            return $this->db->prepare($sql)->execute([':id' => hash('sha256', $key)]);
+        } catch (\PDOException $e) {
+            $this->log('error', 'Authentication state unavailable; apply the security migration.');
+            return false;
+        }
+    }
+
+    // Successful credentials release only their own reservation, not other failures.
+    private function releaseAuthenticationAttempt($key) {
+        $statement = $this->db->prepare('UPDATE AuthState SET ATTEMPTS = CASE WHEN ATTEMPTS > 0 THEN ATTEMPTS - 1 ELSE 0 END WHERE ID = :id');
+        $statement->execute([':id' => hash('sha256', $key)]);
+    }
+
+    // Consume an attempt atomically; cookies and parallel workers share these limits.
+    private function allowAuthenticationAttempt($key, $limit) {
+        if ($this->initializeAuthenticationState($key) == false) {
+            return false;
+        }
+        $now = $this->authenticationTime();
+        $statement = $this->db->prepare('UPDATE AuthState SET
+            ATTEMPTS = CASE WHEN WINDOW_START <= :expired THEN 1 ELSE ATTEMPTS + 1 END,
+            WINDOW_START = CASE WHEN WINDOW_START <= :expiredAgain THEN :now ELSE WINDOW_START END
+            WHERE ID = :id AND (WINDOW_START <= :expiredWhere OR ATTEMPTS < :limit)');
+        $statement->execute([
+            ':expired' => $now - 900, ':expiredAgain' => $now - 900,
+            ':now' => $now, ':id' => hash('sha256', $key),
+            ':expiredWhere' => $now - 900, ':limit' => $limit,
+        ]);
+        return $statement->rowCount() === 1;
+    }
+
+    // Bind sessions and pending challenges to the current account security state.
+    private function authenticationFingerprint($user) {
+        return hash_hmac('sha256', json_encode([
+            $user->ID, $user->PASSWORD, $user->TOKEN, $user->TOTP_SECRET,
+            $user->STATUS, $user->PERMISSIONS, $user->TOTP, $user->USERNAME,
+        ]), __OHCRUD_SECRET__);
+    }
+
+    // Complete authentication consistently for passwords, TOTP and API tokens.
+    private function createUserSession($user) {
+        $statement = $this->db->prepare('UPDATE AuthState SET ATTEMPTS = 0 WHERE ID = :password OR ID = :totp');
+        $statement->execute([
+            ':password' => hash('sha256', 'password:' . strtolower($user->USERNAME)),
+            ':totp' => hash('sha256', 'totp:' . $user->ID),
+        ]);
+        $authentication = (object) [
+            'fingerprint' => $this->authenticationFingerprint($user),
+            'created' => time(),
+            'lastUsed' => time(),
+        ];
+        $user->loggedIn = true;
         $this->sanitizeUser($user);
-
-        // Create the user session and log in the user
-        $this->setSession('User', $user);
+        $this->regenerateSession();
         $this->unsetSession('tempUser');
-
+        $this->unsetSession('pendingTOTP');
+        $this->setSession('authentication', $authentication);
+        $this->setSession('User', $user);
         return $user;
+    }
+
+    // Revalidate authorization and credentials before API or CMS session use.
+    public function validateSession() {
+        if (isset($_SESSION['User']->ID) == false) {
+            return false;
+        }
+        $user = $this->read('Users', 'ID = :ID', [':ID' => $_SESSION['User']->ID])->first();
+        $authentication = $_SESSION['authentication'] ?? null;
+        if ($user === false || (int) $user->STATUS !== $this::ACTIVE ||
+            isset($authentication->fingerprint, $authentication->created, $authentication->lastUsed) == false ||
+            time() - $authentication->created >= __OHCRUD_SESSION_LIFETIME__ ||
+            time() - $authentication->lastUsed >= __OHCRUD_SESSION_LIFETIME__ ||
+            hash_equals($this->authenticationFingerprint($user), $authentication->fingerprint) == false) {
+            $this->unsetSession('User');
+            $this->unsetSession('authentication');
+            $this->unsetSession('tempUser');
+            $this->unsetSession('pendingTOTP');
+            $this->regenerateSession();
+            return false;
+        }
+        $authentication->lastUsed = time();
+        $this->setSession('authentication', $authentication);
+        return true;
     }
 
     // Helper to clean user object

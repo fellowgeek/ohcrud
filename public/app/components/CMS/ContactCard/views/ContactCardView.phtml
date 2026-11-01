@@ -1,5 +1,5 @@
-<div class="contact-card group-<?php print($group); ?>">
-    <h4><?php print($title); ?></h4>
-    <a href="<?php print($link); ?>"><?php print($contact); ?></a>
-    <p style="margin-top: 8px; font-size: 0.9rem; color: var(--muted);"><?php print($meta); ?></p>
+<div class="contact-card group-<?php print($this->escapeHTML($group)); ?>">
+    <h4><?php print($this->escapeHTML($title)); ?></h4>
+    <a href="<?php print($this->escapeHTML($this->safeURL($link))); ?>"><?php print($this->escapeHTML($contact)); ?></a>
+    <p style="margin-top: 8px; font-size: 0.9rem; color: var(--muted);"><?php print($this->escapeHTML($meta)); ?></p>
 </div>

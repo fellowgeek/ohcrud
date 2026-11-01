@@ -2,7 +2,7 @@ services:
   web:
     image: nginx:latest
     environment:
-      - NGINX_HOST=ohcrud.local
+      - NGINX_HOST=ohcrud.test
     ports:
       - "80:80"
       - "443:443"

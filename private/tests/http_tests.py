@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""Run Hurl against a temporary application copy and disposable SQLite database."""
+import os
+import base64
+import hashlib
+import hmac
+import struct
+from pathlib import Path
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+
+repo = Path(__file__).resolve().parents[2]
+with tempfile.TemporaryDirectory(prefix='ohcrud-http-') as directory:
+    root = Path(directory)
+    for name in ('app', 'ohcrud', 'themes'):
+        shutil.copytree(repo / 'public' / name, root / name)
+    (root / 'global' / 'files').mkdir(parents=True)
+    (root / 'sessions').mkdir()
+    for name in ('index.php', 'routes.php'):
+        shutil.copy(repo / 'public' / name, root / name)
+    index = (root / 'index.php').read_text().replace("__DIR__ . '/vendor/autoload.php'", repr(str(repo / 'private/tests/autoload.php')))
+    (root / 'index.php').write_text(index)
+    settings = (repo / 'public/settings.sample.php').read_text()
+    settings = settings.replace("define('__OHCRUD_DEBUG_MODE__', true)", "define('__OHCRUD_DEBUG_MODE__', false)")
+    settings = settings.replace("'/logs/'", repr(str(root) + '/'))
+    settings = settings.replace("define('__OHCRUD_SESSION_SECURE_COOKIE__', true)", "define('__OHCRUD_SESSION_SECURE_COOKIE__', false)")
+    settings = settings.replace("$_SERVER['HTTP_HOST'] ?? ''", "'127.0.0.1'")
+    settings = settings.replace("define('__OHCRUD_CACHE_ENABLED__', false)", "define('__OHCRUD_CACHE_ENABLED__', true)")
+    settings = settings.replace("'/ramdisk/'", repr(str(root / 'cache') + '/'))
+    settings = settings.replace('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', 'isolated-test-secret-at-least-32-characters')
+    settings = settings.replace("'DRIVER' => 'MYSQL'", "'DRIVER' => 'SQLITE'")
+    settings = settings.replace("'database_filename.db'", repr(str(root / 'test.sqlite')))
+    (root / 'settings.php').write_text(settings)
+    env = dict(os.environ, OHCRUD_TEST_ROOT=str(root))
+    subprocess.run(['php', str(repo / 'private/tests/seed.php')], env=env, check=True)
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        port = sock.getsockname()[1]
+    with (root / 'server.log').open('w+') as log:
+        server = subprocess.Popen(['php', '-d', 'session.save_path=' + str(root / 'sessions'), '-S', f'127.0.0.1:{port}', '-t', str(root), str(root / 'index.php')], cwd=root, env=env, stdout=log, stderr=log)
+        try:
+            for _ in range(100):
+                try:
+                    with socket.create_connection(('127.0.0.1', port), timeout=0.1):
+                        break
+                except OSError:
+                    time.sleep(0.05)
+            files = sys.argv[1:] or [str(repo / 'private/hurl/security/security_login.hurl')]
+            for test in [f for f in files if f.endswith('.php')]:
+                subprocess.run(['php', str(Path(test).resolve())], env=env, check=True)
+            files = [f for f in files if not f.endswith('.php')]
+            if not files:
+                files = [str(repo / 'private/hurl/security/security_login.hurl')]
+            if time.time() % 30 > 27:
+                time.sleep(30 - time.time() % 30)
+            digest = hmac.new(base64.b32decode('JBSWY3DPEHPK3PXP'), struct.pack('>Q', int(time.time()) // 30), hashlib.sha1).digest()
+            offset = digest[-1] & 15
+            code = f'{(struct.unpack(">I", digest[offset:offset + 4])[0] & 0x7fffffff) % 1000000:06d}'
+            subprocess.run(['hurl', '--test', '--file-root', str(repo / 'private/hurl'), '--variable', f'totp={code}', '--variable', f'base=http://127.0.0.1:{port}', *files], check=True)
+            if any('security_sessions.hurl' in f for f in files):
+                subprocess.run([sys.executable, str(repo / 'private/tests/sessions.py'), str(port)], check=True)
+        except Exception:
+            log.seek(0)
+            print(log.read(), file=sys.stderr)
+            if (root / 'app.log').exists():
+                print((root / 'app.log').read_text(), file=sys.stderr)
+            raise
+        finally:
+            server.terminate()
+            server.wait(timeout=10)

@@ -6,31 +6,13 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cAdmin - admin controller used by the CMS admin interface.
 
+#[\ohCRUD\Permission(1)]
 class cAdmin extends \ohCRUD\DB {
-
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'getTableList' => 1,
-        'getTableDetails' => 1,
-        'getTableData' => 1,
-        'createTableRow' => 1,
-        'readTableRow' => 1,
-        'updateTableRow' => 1,
-        'deleteTableRow' => 1,
-        'createUserRow' => 1,
-        'updateUserRow' => 1,
-        'getUserSecrets' => 1,
-        'refreshUserSecrets' => 1,
-        'getLogList' => 1,
-        'getLogData' => 1,
-        'clearLog' => 1,
-        'runSQLQuery' => 1,
-    ];
 
     public ?array $pagination = null;
 
     // This function returns a list of all the tables in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getTableList($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -47,12 +29,14 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         $this->data = $this->details();
+        unset($this->data->AuthState);
         unset($this->pagination);
 
         $this->output();
     }
 
     // This function returns information about the table(s) in the database and their columns.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getTableDetails($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -71,6 +55,9 @@ class cAdmin extends \ohCRUD\DB {
         if (isset($request->payload) == true && isset($request->payload->TABLE) == true) {
             // Cleanup the input data
             $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+            if (strtolower($table) === 'authstate') {
+                return $this->error('This table requires its dedicated security operations.', 403)->output();
+            }
             // Get column details for the given table
             $this->data = $this->details($table, isset($request->payload->COLUMNS) ? true : false);
         } else {
@@ -78,6 +65,8 @@ class cAdmin extends \ohCRUD\DB {
             $this->data = $this->details('', isset($request->payload->COLUMNS) ? true : false);
         }
         unset($this->pagination);
+
+        unset($this->data->AuthState);
 
         // Update the COLUMNS details and add ICON based on detected data types.
         foreach($this->data as $outerIndex => $outerValue) {
@@ -99,6 +88,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the data for a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getTableData($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -124,6 +114,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
 
         // Whitelist validation for ORDER and ORDER_BY clauses
         $tableColumns = [];
@@ -142,7 +135,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Default values for optional parameters.
         $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
-        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : min(100, (int) $request->payload->LIMIT);
 
         $order = $request->payload->ORDER ??  'DESC';
         if (strtoupper($order) !== 'ASC' && strtoupper($order) !== 'DESC') {
@@ -158,10 +151,8 @@ class cAdmin extends \ohCRUD\DB {
         $totalRecords = $this->run("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;
         $totalPages = ceil($totalRecords / $limit);
 
-        // Clamp the variable ranges
-        if ($limit > 100) $limit = 100;
-        if ($limit > $totalRecords) $limit = $totalRecords;
-        if ($page > $totalPages) $page = $totalPages;
+        // Clamp the page after calculating totals with the effective limit.
+        if ($page > $totalPages) $page = max(1, (int) $totalPages);
         $offset = ($page - 1) * $limit;
         if ($offset <= 0) $offset = 0;
 
@@ -183,7 +174,7 @@ class cAdmin extends \ohCRUD\DB {
         foreach ($this->data as $index => $value) {
 
             // Obfuscate secrets
-            if ($table === 'Users') {
+            if (strtolower($table) === 'users') {
                 $this->data[$index]->PASSWORD = '**********';
                 $this->data[$index]->TOKEN = '**********';
                 $this->data[$index]->TOTP_SECRET = '**********';
@@ -199,7 +190,7 @@ class cAdmin extends \ohCRUD\DB {
         // Get pagination meta data
         $hasNextPage = $page < $totalPages;
         $hasPreviousPage = $page > 1;
-        $showingRangeFrom = ($offset + 1);
+        $showingRangeFrom = $totalRecords > 0 ? ($offset + 1) : 0;
         $showingRangeTo = ($offset + $limit);
         if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
 
@@ -219,6 +210,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function inserts a new row into a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function createTableRow($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -242,6 +234,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate' || strtolower($table) === 'users') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
 
         // Remove unwanted data from the payload
         unset($request->payload->CSRF);
@@ -264,6 +259,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the data for a given table row in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function readTableRow($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -289,6 +285,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
         $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
 
         // Read the row from the database
@@ -301,7 +300,7 @@ class cAdmin extends \ohCRUD\DB {
         )->first();
 
         // Obfuscate secrets
-        if ($table === 'Users') {
+        if (strtolower($table) === 'users') {
             $this->data->PASSWORD = '**********';
             $this->data->TOKEN = '**********';
             $this->data->TOTP_SECRET = '**********';
@@ -311,6 +310,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function updates a row in a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function updateTableRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -335,6 +335,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate' || strtolower($table) === 'users') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
         $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
         $keyValue = $request->payload->KEY_VALUE;
 
@@ -366,6 +369,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function creates a new user row in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function createUserRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -485,6 +489,12 @@ class cAdmin extends \ohCRUD\DB {
             }
         }
 
+        // Factor state can only change through proof-of-possession endpoints.
+        $existingTOTP = 0;
+        if (isset($request->payload->TOTP) == true && (int) $request->payload->TOTP !== $existingTOTP) {
+            return $this->error('Use the account security page to change TOTP.', 403)->output();
+        }
+
         // Prepare the data : TOTP
         if (isset($request->payload->TOTP) == true) {
             $request->payload->TOTP = (int) $request->payload->TOTP;
@@ -509,6 +519,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function update a user row in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function updateUserRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -629,6 +640,12 @@ class cAdmin extends \ohCRUD\DB {
             unset($request->payload->PASSWORD);
         }
 
+        // Factor state can only change through proof-of-possession endpoints.
+        $existingTOTP = (int) ((new \ohCRUD\Users)->read('Users', 'ID = :ID', [':ID' => $id])->first()->TOTP ?? 0);
+        if (isset($request->payload->TOTP) == true && (int) $request->payload->TOTP !== $existingTOTP) {
+            return $this->error('Use the account security page to change TOTP.', 403)->output();
+        }
+
         // Prepare the data : TOTP
         if (isset($request->payload->TOTP) == true) {
             $request->payload->TOTP = (int) $request->payload->TOTP;
@@ -657,6 +674,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function deletes a row from a given table in the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function deleteTableRow($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -681,10 +699,13 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
         $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
 
         // Check for super admins if we are deleting records from the Users table
-        if ($table === 'Users') {
+        if (strtolower($table) === 'users') {
             $user = $this->read(
                 $table,
                 $keyColumn . " = :KEY_VALUE",
@@ -719,7 +740,7 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         // Delete the file if we are deleting records from the Files table
-        if ($table === 'Files') {
+        if (strtolower($table) === 'files') {
             $file = $this->read(
                 $table,
                 $keyColumn . " = :KEY_VALUE",
@@ -729,16 +750,26 @@ class cAdmin extends \ohCRUD\DB {
             )->first();
 
             if ($file != false) {
+                // Resolve stored paths before unlinking: database edits cannot escape uploads.
+                $uploadRoot = realpath(__SELF__ . 'global/files');
+                $filePath = realpath(__SELF__ . $file->PATH);
+                if ($filePath !== false && ($uploadRoot === false ||
+                    strpos($filePath, $uploadRoot . DIRECTORY_SEPARATOR) !== 0)) {
+                    return $this->error('Invalid upload path.', 403)->output();
+                }
                 $fileInfo = pathinfo($file->PATH);
-                $filesFound = glob('global/files/' . $fileInfo['filename'] . '_*.' . $fileInfo['extension']);
-                // Delete the main file
-                if (file_exists(__SELF__ . $file->PATH) == true) {
-                    unlink(__SELF__ . $file->PATH);
+                $filesFound = [];
+                if ($uploadRoot !== false && preg_match('/^[a-f0-9]{32}$/D', $fileInfo['filename']) === 1 &&
+                    preg_match('/^[a-z0-9]+$/D', $fileInfo['extension'] ?? '') === 1) {
+                    $filesFound = glob($uploadRoot . '/' . $fileInfo['filename'] . '_*.' . $fileInfo['extension']);
+                }
+                if ($filePath !== false && is_file($filePath) == true) {
+                    unlink($filePath);
                 }
                 // Delete all resized versions of the file
                 if (is_array($filesFound) == true) {
                     foreach ($filesFound as $foundFile) {
-                        $absoluteFilePath = __SELF__ . $foundFile;
+                        $absoluteFilePath = $foundFile;
                         if (file_exists($absoluteFilePath) == true) {
                             unlink($absoluteFilePath);
                         }
@@ -761,6 +792,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the secrets for a given user.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getUserSecrets($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -814,19 +846,15 @@ class cAdmin extends \ohCRUD\DB {
             $this->data->TOKEN = $user->HASH . $this->decryptText($user->TOKEN);
         }
 
-        // Process TOTP_SECRET
-        if (empty($user->TOTP_SECRET) == true) {
-            $this->data->TOTP_SECRET = false;
-            $this->data->QR_CODE = false;
-        } else {
-            $this->data->TOTP_SECRET = $this->decryptText($user->TOTP_SECRET);
-            $this->data->QR_CODE = 'otpauth://totp/' . $user->USERNAME . '@' . __SITE__ . '?secret=' . $user->TOTP_SECRET;
-        }
+        // Enrolled authenticators are never redisplayed or returned through admin APIs.
+        $this->data->TOTP_SECRET = false;
+        $this->data->QR_CODE = false;
 
         $this->output();
     }
 
     // This function re-generates secrets for a given user.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function refreshUserSecrets($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -885,7 +913,7 @@ class cAdmin extends \ohCRUD\DB {
                 break;
 
             case 'TOTP_SECRET':
-                $User->enableTOTP($id, false);
+                $this->error('Use your account security page to enroll or replace an authenticator.', 403);
                 break;
         }
 
@@ -893,6 +921,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns a list of all available log files.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getLogList($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -926,6 +955,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function returns the data from a given log file with pagination support.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function getLogData($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -968,7 +998,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Default values for optional parameters.
         $page = (int) $request->payload->PAGE <= 0 ? 1 : (int) $request->payload->PAGE;
-        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : min(100, (int) $request->payload->LIMIT);
 
         // Get total records
         $totalRecords = $this->countLogRecords($filename);
@@ -981,10 +1011,8 @@ class cAdmin extends \ohCRUD\DB {
         // Calculate total pages
         $totalPages = ceil($totalRecords / $limit);
 
-        // Clamp the variable ranges
-        if ($limit > 100) $limit = 100;
-        if ($limit > $totalRecords) $limit = $totalRecords;
-        if ($page > $totalPages) $page = $totalPages;
+        // Clamp the page after calculating totals with the effective limit.
+        if ($page > $totalPages) $page = max(1, (int) $totalPages);
         $offset = ($page - 1) * $limit;
         if ($offset < 0) $offset = 0;
 
@@ -1021,7 +1049,9 @@ class cAdmin extends \ohCRUD\DB {
                 $trimmed = trim($line);
                 $trimmed = str_replace('"file":"' . __SELF__, '"file":".../', $trimmed);
                 if ($trimmed !== '') {
-                    $lines[] = $trimmed;
+                    if ($foundLines >= $offset) {
+                        $lines[] = $trimmed;
+                    }
                     $foundLines++;
                     if ($foundLines >= ($limit + $offset)) {
                         break;
@@ -1036,7 +1066,9 @@ class cAdmin extends \ohCRUD\DB {
                 $trimmed = trim($line);
                 $trimmed = str_replace('"file":"' . __SELF__, '"file":".../', $trimmed);
                 if ($trimmed !== '') {
-                    $lines[] = $trimmed;
+                    if ($foundLines >= $offset) {
+                        $lines[] = $trimmed;
+                    }
                     $foundLines++;
                     if ($foundLines >= ($limit + $offset)) {
                         break;
@@ -1047,14 +1079,14 @@ class cAdmin extends \ohCRUD\DB {
 
         fclose($fp);
 
-        // Apply offset and limit, and parse JSON
-        $result = array_slice($lines, $offset, $limit);
+        // Parse only the requested page; skipped records were not retained.
+        $result = $lines;
         $this->data = array_values(array_filter(array_map('json_decode', $result)));
 
         // Get pagination meta data
         $hasNextPage = $page < $totalPages;
         $hasPreviousPage = $page > 1;
-        $showingRangeFrom = ($offset + 1);
+        $showingRangeFrom = $totalRecords > 0 ? ($offset + 1) : 0;
         $showingRangeTo = ($offset + $limit);
         if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
 
@@ -1074,6 +1106,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function clears the contents of a given log file.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function clearLog($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -1113,6 +1146,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Clear the log file
         file_put_contents($filepath, '');
+        $this->unsetCache('cAdmin:logCount:' . __OHCRUD_LOG_PATH__ . $filename);
         $this->log('info', 'Log file truncated.');
         $this->success = true;
 
@@ -1120,6 +1154,7 @@ class cAdmin extends \ohCRUD\DB {
     }
 
     // This function runs a raw SQL query against the database.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function runSQLQuery($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -1169,16 +1204,14 @@ class cAdmin extends \ohCRUD\DB {
             if (isset($request->payload->PAGE) == false) $request->payload->PAGE = 1;
             if (isset($request->payload->LIMIT) == false) $request->payload->LIMIT = 10;
             $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
-            $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+            $limit = (int) $request->payload->LIMIT <= 0 ? 10 : min(100, (int) $request->payload->LIMIT);
 
             // Get total records
             $totalRecords = $this->run("SELECT COUNT(*) AS `COUNT` FROM ( {$sql} ) AS _total_records_query;", [], false)->first()->COUNT ?? 0;
             $totalPages = ceil($totalRecords / $limit);
 
-            // Clamp the variable ranges
-            if ($limit > 100) $limit = 100;
-            if ($limit > $totalRecords) $limit = $totalRecords;
-            if ($page > $totalPages) $page = $totalPages;
+            // Clamp the page after calculating totals with the effective limit.
+            if ($page > $totalPages) $page = max(1, (int) $totalPages);
             $offset = ($page - 1) * $limit;
             if ($offset <= 0) $offset = 0;
 
@@ -1194,7 +1227,7 @@ class cAdmin extends \ohCRUD\DB {
             // Get pagination meta data
             $hasNextPage = $page < $totalPages;
             $hasPreviousPage = $page > 1;
-            $showingRangeFrom = ($offset + 1);
+            $showingRangeFrom = $totalRecords > 0 ? ($offset + 1) : 0;
             $showingRangeTo = ($offset + $limit);
             if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
 
@@ -1425,28 +1458,44 @@ class cAdmin extends \ohCRUD\DB {
         return $output;
     }
 
-    // This function counts the number of log records in a given log file.
-    private function countLogRecords($logFile)  {
-
-        if (file_exists(__OHCRUD_LOG_PATH__ . $logFile) == false) {
+    // Reuse counts for unchanged logs; keep exact page totals and close every handle.
+    private function countLogRecords($logFile) {
+        $path = __OHCRUD_LOG_PATH__ . $logFile;
+        if (is_file($path) == false) {
             return false;
         }
-
-        $fp = fopen(__OHCRUD_LOG_PATH__ . $logFile, 'r');
-        if (!$fp) {
+        clearstatcache(true, $path);
+        $stat = stat($path);
+        if ($stat === false) {
             return false;
         }
-
-       // A simple way to count lines
+        $signature = [$stat['ino'], $stat['size'], $stat['mtime'], $stat['ctime']];
+        $cacheKey = 'cAdmin:logCount:' . $path;
+        $cached = $this->getCache($cacheKey);
+        if (is_object($cached) == true && ($cached->signature ?? null) === $signature &&
+            is_int($cached->count ?? null) == true) {
+            return $cached->count;
+        }
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            return false;
+        }
         $lineCount = 0;
-        $handle = fopen(__OHCRUD_LOG_PATH__ . $logFile, "r");
-        while(!feof($handle)) {
-            $line = fgets($handle);
-            if (trim($line) !== '') {
-                $lineCount++;
+        try {
+            while (($line = fgets($handle)) !== false) {
+                if (trim($line) !== '') {
+                    $lineCount++;
+                }
             }
+        } finally {
+            fclose($handle);
         }
-        fclose($handle);
+        // A changed log is counted again on the next request.
+        clearstatcache(true, $path);
+        $after = stat($path);
+        if ($after !== false && [$after['ino'], $after['size'], $after['mtime'], $after['ctime']] === $signature) {
+            $this->setCache($cacheKey, ['signature' => $signature, 'count' => $lineCount]);
+        }
         return $lineCount;
     }
 

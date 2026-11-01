@@ -1,73 +1,69 @@
-# Admin Panel
+# Admin API reference
 
-ohCRUD includes a powerful, built-in admin panel for managing your application's data, users, and content. To access the admin panel, you must be logged in as a user with sufficient permissions (by default, permission level `1`).
+[Documentation](DOCUMENTATION.md) · [CMS/admin workflow](cms-and-admin.md) · [Authentication](Users.md)
 
-## Accessing Admin Features
+Source: [cAdmin.php](../public/app/controllers/cAdmin.php). All paths below use the default `/ohcrud` prefix. All `cAdmin` endpoints are POST, require permission level 1 or lower, and require `CSRF` in the JSON object body—even reads. The CMS admin UI itself requires permission exactly 1. Class and endpoint restrictions are cumulative.
 
-Admin features are typically accessed by adding `?action=<feature>` to a URL. For example, to edit the content of the home page, you would go to `/?action=edit`.
+## Tables
 
-The main admin sections are:
-- **Content Editor** (`?action=edit`)
-- **Database Tables** (`?action=tables`)
-- **File Manager** (`?action=files`)
-- **Log Viewer** (`?action=logs`)
+| Endpoint suffix under `/ohcrud/admin/` | Body fields in addition to `CSRF` |
+| --- | --- |
+| `getTableList/` | None |
+| `getTableDetails/` | Optional `TABLE`; presence of `COLUMNS` requests column details |
+| `getTableData/` | `TABLE`, `PAGE`, `LIMIT`; optional `ORDER`, `ORDER_BY` |
+| `createTableRow/` | `TABLE` plus writable column values |
+| `readTableRow/` | `TABLE`, `KEY_COLUMN`, `KEY_VALUE` |
+| `updateTableRow/` | `TABLE`, `KEY_COLUMN`, `KEY_VALUE`, plus changed columns |
+| `deleteTableRow/` | `TABLE`, `KEY_COLUMN`, `KEY_VALUE` |
 
-## Content Editor
+```javascript
+const response = await fetch('/ohcrud/admin/getTableData/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+        CSRF: __CSRF__, TABLE: 'Pages', PAGE: 1, LIMIT: 20,
+        ORDER: 'DESC', ORDER_BY: 'ID'
+    })
+});
+const result = await response.json();
+```
 
-The content editor provides a user-friendly interface for editing page content.
+`data` contains rows; `pagination` includes `totalRecords`, `totalPages`, `currentPage`, effective `limit`, next/previous flags, and `showing`. Limits are capped at 100, and requested pages are clamped to available results. Table-list display values may be shortened to 100 characters; use `readTableRow` for editing. `ORDER_BY` is checked against schema columns.
 
-### Features
-- **Markdown Editor**: Uses SimpleMDE for a rich markdown editing experience with a toolbar and preview mode.
-- **File & Image Uploads**: Directly upload images and files from the editor. They will be stored in `public/global/files` and the corresponding markdown will be inserted into the editor.
-- **Theme & Layout**: Change the theme and layout for the page you are editing.
-- **Save, Cancel, Delete/Restore**: Full control over the page's lifecycle.
+`AuthState` is excluded. Generic user creation/update is blocked in favor of dedicated operations. Generic table editing is a broad administrative capability, not an application validation layer. Audit fields are removed from generic write payloads. Generic delete physically removes rows; Files deletion also handles the upload, and Users deletion guards against deleting the last active level-1 administrator. This is not a comprehensive guarantee against every way to remove admin access: account status/permission changes need operational care.
 
-## Database Table Manager
+## Users and secrets
 
-The table manager provides a generic UI for viewing and manipulating data in any table in your database.
+| Endpoint suffix | Body fields/behavior |
+| --- | --- |
+| `createUserRow/` | `USERNAME`, `EMAIL`, `NAME`, `GROUP`, `PERMISSIONS`, `PASSWORD`; supply `STATUS: 1`, `TOTP: 0` for an active non-MFA account |
+| `updateUserRow/` | `ID` plus changed fields; omit unchanged password |
+| `getUserSecrets/` | `ID`; can return the API token; enrolled TOTP secret and QR fields are false |
+| `refreshUserSecrets/` | `ID`, `SECRET_TYPE: 'TOKEN'` rotates token; `TOTP_SECRET` requests are rejected |
 
-### Features
-- **CRUD Operations**: Create, Read, Update, and Delete rows in any table.
-- **Data Grid**: Displays table data in a paginated grid.
-- **Customizable View**: Show or hide columns to customize the view for each table.
-- **Specialized User Management**: When viewing the `Users` table, a specialized interface is provided for managing users, including:
-    - Creating and updating users.
-    - Changing passwords.
-    - Viewing and refreshing API tokens and TOTP secrets.
-- **Page Management**: The `Pages` table links to the content editor for each page.
+Usernames normalize to lowercase alphanumeric, length 3–32. Names accept letters, digits, and spaces up to 32 characters. Group/permission values must be positive. The admin password validator requires at least eight characters and uppercase, lowercase, and digit characters; choose stronger passwords for real accounts. The provisioning CLI separately requires at least 15 characters. Dedicated user endpoints hash supplied passwords; do not prehash them.
 
-## File Manager
+These admin user endpoints use their own validation/hashing rather than `Users::create()`. If an account lacks an API token, explicitly generate it through the token operation. TOTP enrollment/replacement/removal belongs to the authenticated owner's [account security flow](Users.md), not generic table fields. Changing security state invalidates affected sessions.
 
-The file manager provides a view of all uploaded files.
+## Logs and SQL
 
-### Features
-- **Card and Table Views**: View files as cards with image previews or in a table.
-- **Easy Linking**: Copy the markdown for an image or a link to a file with a single click.
-- **File Upload**: Upload new files directly.
+| Endpoint suffix | Body fields/behavior |
+| --- | --- |
+| `getLogList/` | Lists configured log files |
+| `getLogData/` | `LOG`, `PAGE`, `LIMIT`; paginated records, limit capped at 100 |
+| `clearLog/` | `LOG`; clears the selected log |
+| `runSQLQuery/` | `SQL`, optional `PAGE`, `LIMIT`; disabled unless the configuration switch is true |
 
-## Log Viewer
+Raw SQL is database-administrator access and can bypass application safeguards. Keep `__OHCRUD_ADMIN_ENABLE_SQL_EXECUTION__` false in production unless there is an explicitly controlled operational need. It is not a safe query sandbox.
 
-The log viewer allows you to inspect application logs directly from the admin panel.
+## Related controllers
 
-### Features
-- **Log File Selection**: View a list of all available log files.
-- **Paginated View**: Log entries are paginated for easy navigation.
-- **Context Viewer**: View the full context of a log entry in a popup.
-- **Clear Logs**: Clear the contents of a log file.
+| Endpoint | Verb and contract |
+| --- | --- |
+| `/ohcrud/pages/save/` | POST; `CSRF`, `URL`, `TITLE`, `TEXT`, `STATUS`, optional `THEME`, `LAYOUT` |
+| `/ohcrud/pages/restoreDeletePage/` | POST; `CSRF`, `URL`; toggles status |
+| `/ohcrud/themes/getThemes/` | GET or POST; level 1; returns theme-to-layout map; no handler CSRF check |
+| `/ohcrud/files/upload/` | POST multipart; level 1; top-level `CSRF`, file `0` |
+| `/ohcrud/files/image/` | Public GET; `filename`, optional `w`, `h`, `q`, `rand` |
 
-## Admin APIs
-
-The admin panel is powered by a set of APIs handled by the `cAdmin` controller. These APIs perform the backend operations for all the features listed above. All admin API endpoints require the user to be authenticated and have a permission level of `1` or lower.
-
-### Main Endpoints
-- `/admin/getTableList/`: Get a list of database tables.
-- `/admin/getTableData/`: Get data for a specific table.
-- `/admin/createTableRow/`: Create a new row in a table.
-- `/admin/updateTableRow/`: Update a row.
-- `/admin/deleteTableRow/`: Delete a row.
-- `/admin/createUserRow/`: Create a user.
-- `/admin/updateUserRow/`: Update a user.
-- `/admin/getUserSecrets/`: Get user's API token or TOTP secret.
-- `/admin/refreshUserSecrets/`: Refresh a user's secrets.
-- `/admin/getLogData/`: Get log file content.
-- `/admin/clearLog/`: Clear a log file.
+See [media limits](cms-and-admin.md#media-handling), [login endpoints](Users.md), and [Core response fields](Core.md).

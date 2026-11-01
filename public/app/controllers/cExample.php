@@ -1,23 +1,14 @@
 <?php
 namespace app\controllers;
 
-use OTPHP\TOTP;
-
 // Prevent direct access to this class.
 if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 
 // Controller cExample - a sample controller provided by OhCRUD framework with a public and protected endpoint
 class cExample extends \ohCRUD\DB {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'whoami' => __OHCRUD_PERMISSION_ALL__,
-        'protectedEndPoint' => 1,
-        'publicEndPoint' => __OHCRUD_PERMISSION_ALL__,
-    ];
-
-    // This function returns information about the current user of the API
+    // Public endpoint: omitting methods allows every HTTP verb.
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__)]
     public function whoami($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -26,7 +17,8 @@ class cExample extends \ohCRUD\DB {
         $this->output();
     }
 
-    // This function handles the protected endpoint.
+    // Protected endpoint: only administrators using GET may call this method.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['GET'])]
     public function protectedEndPoint($request) {
 
         // Set the output type to JSON.
@@ -39,14 +31,15 @@ class cExample extends \ohCRUD\DB {
             [
                 ':ID' => 1
             ],
-            'ID, USERNAME, NAME, EMAIL, STATUS, CDATE, MDATE, CUSER, MUSER',
+            'ID, USERNAME, NAME, EMAIL, STATUS',
         );
 
         // Output the result.
         $this->output();
     }
 
-    // This function handles the public endpoint.
+    // Public endpoint with an explicit HTTP method restriction.
+    #[\ohCRUD\Endpoint(permission: __OHCRUD_PERMISSION_ALL__, methods: ['GET'])]
     public function publicEndPoint($request) {
 
         // Set the output type to HTML.

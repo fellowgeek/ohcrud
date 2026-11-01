@@ -1,4 +1,4 @@
 <div class="use-case">
-    <h3><?php print($caption); ?></h3>
-    <p><?php print($details); ?></p>
+    <h3><?php print($this->escapeHTML($caption)); ?></h3>
+    <p><?php print($this->escapeHTML($details)); ?></p>
 </div>

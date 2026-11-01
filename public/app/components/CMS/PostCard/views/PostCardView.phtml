@@ -1,7 +1,7 @@
-<article class="post-card group-<?php print($group); ?>">
-    <a href="<?php print($link); ?>"><img src="<?php print($image); ?>?w=640" class="image" alt="<?php print($alt); ?>"></a>
+<article class="post-card group-<?php print($this->escapeHTML($group)); ?>">
+    <a href="<?php print($this->escapeHTML($this->safeURL($link))); ?>"><img src="<?php print($this->escapeHTML($this->safeURL($image))); ?>?w=640" class="image" alt="<?php print($this->escapeHTML($alt)); ?>"></a>
     <div class="body">
-        <a class="title" href="<?php print($link); ?>"><?php print($caption); ?></a>
-        <p class="meta"><?php print($meta); ?></p>
+        <a class="title" href="<?php print($this->escapeHTML($this->safeURL($link))); ?>"><?php print($this->escapeHTML($caption)); ?></a>
+        <p class="meta"><?php print($this->escapeHTML($meta)); ?></p>
     </div>
 </article>

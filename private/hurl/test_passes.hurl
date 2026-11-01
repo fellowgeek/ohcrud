@@ -12,7 +12,7 @@ PHPSESSID: cookie "PHPSESSID"
 body contains "ohCRUD!"
 cookie "PHPSESSID" exists
 
-## Perform a good login (default initial setup admin user)
+## Perform a good login (admin fixture provisioned by the isolated test runner)
 POST https://{{host}}/ohcrud/users/login/
 [Options]
 verbose: true
@@ -205,6 +205,7 @@ Content-Type: application/json
 verbose: true
 very-verbose: true
 delay: 1s
+{}
 HTTP 200
 [Asserts]
 header "Access-Control-Allow-Origin" == "https://example.com"

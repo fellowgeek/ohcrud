@@ -8,6 +8,12 @@
     // Include the Composer autoloader to load dependencies.
     require_once __DIR__ . '/vendor/autoload.php';
 
+    // Refuse an unconfigured secret instead of serving an insecure installation.
+    if (__OHCRUD_DEBUG_MODE__ == false && (strlen(__OHCRUD_SECRET__) < 32 || __OHCRUD_SECRET__ === 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')) {
+        http_response_code(503);
+        exit('Application configuration is incomplete.');
+    }
+
     // Register the Whoops error handling library if in debug mode.
     if (__OHCRUD_DEBUG_MODE__ === true && PHP_SAPI != 'cli') {
         $GLOBALS['coreErrorHandlersRegistered'] = true;
@@ -17,7 +23,15 @@
     }
 
     // Start a PHP session and configure session parameters.
-    session_set_cookie_params(__OHCRUD_SESSION_LIFETIME__, '/', __SITE__, __OHCRUD_SESSION_SECURE_COOKIE__);
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    session_set_cookie_params([
+        'lifetime' => __OHCRUD_SESSION_LIFETIME__,
+        'path' => '/',
+        'secure' => __OHCRUD_SESSION_SECURE_COOKIE__,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     ini_set('session.gc_maxlifetime', __OHCRUD_SESSION_LIFETIME__);
     session_start();
     session_write_close();

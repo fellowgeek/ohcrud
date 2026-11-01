@@ -9,14 +9,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cPages - pages controller used by the CMS
 class cPages extends \app\models\mPages {
 
-    // Define permissions for the controller.
-    public $permissions = [
-        'object' => __OHCRUD_PERMISSION_ALL__,
-        'save' => 1,
-        'restoreDeletePage' => 1,
-    ];
-
     // Method to save or edit a page.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function save($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
 
@@ -29,7 +23,7 @@ class cPages extends \app\models\mPages {
             empty($request->payload->URL) == true ||
             empty($request->payload->TITLE) == true ||
             empty($request->payload->TEXT) == true ||
-            empty($request->payload->STATUS) == true)
+            isset($request->payload->STATUS) == false)
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
@@ -55,6 +49,13 @@ class cPages extends \app\models\mPages {
         }
         if (isset($request->payload->LAYOUT) == false) {
             $request->payload->LAYOUT = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
+        // Theme selections are names, never filesystem paths or HTML attributes.
+        foreach (['THEME', 'LAYOUT'] as $field) {
+            if (is_string($request->payload->$field) == false || preg_match('/^[a-zA-Z0-9_-]+$/D', $request->payload->$field) !== 1) {
+                return $this->error('Invalid theme or layout.')->output();
+            }
         }
 
         // Set default value for STATUS if missing or invalid in the payload.
@@ -106,14 +107,11 @@ class cPages extends \app\models\mPages {
             );
         }
 
-        // Invalidate the cache
-        $cacheKey = 'cCMS:' . $request->payload->URL;
-        $this->unsetCache($cacheKey);
-
         $this->output();
     }
 
     // Method to restore or delete a page.
+    #[\ohCRUD\Endpoint(permission: 1, methods: ['POST'])]
     public function restoreDeletePage($request) {
 
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
@@ -162,10 +160,6 @@ class cPages extends \app\models\mPages {
             );
         }
 
-        // Invalidate the cache
-        $cacheKey = 'cCMS:' . $request->payload->URL;
-        $this->unsetCache($cacheKey);
-
         $this->output();
     }
 
@@ -179,7 +173,7 @@ class cPages extends \app\models\mPages {
         $baseDir = realpath(__SELF__ . 'app/views/cms');
         $realFullPath = realpath($fullPath);
 
-        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+        if ($realFullPath !== false && $baseDir !== false && strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) === 0 && file_exists($realFullPath)) {
             return true;
         }
 
