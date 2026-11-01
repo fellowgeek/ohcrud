@@ -1,3 +1,14 @@
+// Cancel superseded read requests so older responses cannot replace current results.
+const adminReadRequests = {};
+function startAdminRead(key) {
+    if (adminReadRequests[key]) {
+        adminReadRequests[key].abort();
+    }
+    const request = new AbortController();
+    adminReadRequests[key] = request;
+    return request;
+}
+
 // Framework7 app instance
 var app = null;
 // Assign Dom7 to $$ for easier DOM manipulation
@@ -1031,7 +1042,7 @@ function loadTableDetails(table) {
         async function (response) {
             const json = await response.json();
 
-            if (typeof json.data[table] != undefined) {
+            if (typeof json.data[table] !== 'undefined') {
                 let tableHeader = `
                 <tr>
                     <th class="checkbox-cell">
@@ -1130,6 +1141,7 @@ function loadTableColumnToggles(table) {
 
 // Load table data
 function loadTableData(table, page) {
+    const request = startAdminRead('table');
 
     if (page === false) {
         page = 1;
@@ -1144,6 +1156,7 @@ function loadTableData(table, page) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
         {
             method: 'POST',
+            signal: request.signal,
             cache: 'no-cache',
             credentials: 'same-origin',
             headers: new Headers(
@@ -1159,7 +1172,8 @@ function loadTableData(table, page) {
         },
         async function (response) {
             const json = await response.json();
-            if (typeof json.data != undefined) {
+            if (request.signal.aborted === true) return;
+            if (typeof json.data !== 'undefined') {
                 let tableBody = '';
                 let tableBodyTD = '';
                 let columnValue = '';
@@ -1363,7 +1377,8 @@ function loadTableData(table, page) {
                 });
 
                 // Update the pagination buttons and text
-                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                page = json.pagination.currentPage;
+                $$('#PAGE_CURRENT').val(page);
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');
@@ -2004,6 +2019,7 @@ function refreshUserSecrets(id, type = 'TOKEN') {
 
 // Load files data
 function loadFilesData(page) {
+    const request = startAdminRead('files');
 
     if (page === false) {
         page = 1;
@@ -2019,6 +2035,7 @@ function loadFilesData(page) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getTableData/',
         {
             method: 'POST',
+            signal: request.signal,
             cache: 'no-cache',
             credentials: 'same-origin',
             headers: new Headers(
@@ -2034,7 +2051,8 @@ function loadFilesData(page) {
         },
         async function (response) {
             const json = await response.json();
-            if (typeof json.data != undefined) {
+            if (request.signal.aborted === true) return;
+            if (typeof json.data !== 'undefined') {
 
                 let fileType = '';
                 let fileCards = '';
@@ -2108,7 +2126,8 @@ function loadFilesData(page) {
                 });
 
                 // Update the pagination buttons and text
-                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                page = json.pagination.currentPage;
+                $$('#PAGE_CURRENT').val(page);
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');
@@ -2469,6 +2488,7 @@ function loadLogList() {
 
 // Load log data
 function loadLogData(log, page) {
+    const request = startAdminRead('logs');
     if (page === false) {
         page = 1;
     } else {
@@ -2481,6 +2501,7 @@ function loadLogData(log, page) {
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getLogData/',
         {
             method: 'POST',
+            signal: request.signal,
             cache: 'no-cache',
             credentials: 'same-origin',
             headers: new Headers(
@@ -2496,7 +2517,8 @@ function loadLogData(log, page) {
         },
         async function (response) {
             const json = await response.json();
-            if (typeof json.data != undefined) {
+            if (request.signal.aborted === true) return;
+            if (typeof json.data !== 'undefined') {
                 let tableBody = '';
                 let level = '';
                 let extra = '';
@@ -2623,7 +2645,8 @@ function loadLogData(log, page) {
                 });
 
                 // Update the pagination buttons and text
-                if (page > json.pagination.totalPages) page = json.pagination.totalPages;
+                page = json.pagination.currentPage;
+                $$('#PAGE_CURRENT').val(page);
                 $$('#RECORDS_DISPLAYED').text(json.pagination.showing);
                 if (json.pagination.hasNextPage === true) {
                     $$('#btnPageNext').removeClass('disabled');

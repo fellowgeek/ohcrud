@@ -9,6 +9,7 @@ for name in ('component', 'login', 'csrf', 'bootstrap', 'output', 'router', 'cac
     subprocess.run(['php', f'private/tests/{name}.php'], cwd=repo, check=True)
 subprocess.run(['php', 'private/tests/bootstrap.php', 'production'], cwd=repo, check=True)
 subprocess.run(['node', 'private/tests/admin-output.js'], cwd=repo, check=True)
+subprocess.run(['node', 'private/tests/http-request.js'], cwd=repo, check=True)
 subprocess.run([sys.executable, 'private/tests/http_tests.py', 'private/tests/totp.php'], cwd=repo, check=True)
 subprocess.run([sys.executable, 'private/tests/http_tests.py', 'private/tests/cms-cache.php'], cwd=repo, check=True)
 subprocess.run([sys.executable, 'private/tests/http_tests.py', 'private/tests/admin-pagination.php'], cwd=repo, check=True)
