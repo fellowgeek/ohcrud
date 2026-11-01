@@ -11,3 +11,11 @@ $db->exec("INSERT INTO Pages (URL, TITLE, TEXT, THEME, LAYOUT, STATUS) VALUES ('
 // Include restricted content to exercise both direct and embedded authorization.
 $db->exec("INSERT INTO Pages (URL, TITLE, TEXT, PERMISSIONS, THEME, LAYOUT, STATUS) VALUES ('/restricted/', 'Restricted', 'PRIVATE_MARKER', 1, 'focus', 'index', 1)");
 $db->exec("INSERT INTO Pages (URL, TITLE, TEXT, PERMISSIONS, THEME, LAYOUT, STATUS) VALUES ('/embedded/', 'Embedded', '{{restricted}}', -1, 'focus', 'index', 1)");
+
+// Seed a second account for MFA routing and token compatibility checks.
+$stmt = $db->prepare('INSERT INTO Users (ID, USERNAME, PASSWORD, PERMISSIONS, STATUS, TOTP, TOTP_SECRET, HASH, TOKEN) VALUES (2, ?, ?, 1, 1, 1, ?, ?, ?)');
+$encrypt = function ($text) {
+    $iv = random_bytes(16);
+    return base64_encode($iv . openssl_encrypt($text, 'aes-256-cbc', hash('sha256', 'isolated-test-secret', true), 0, $iv));
+};
+$stmt->execute(['testmfa', password_hash('Test-password-42!' . 'isolated-test-secret', PASSWORD_BCRYPT, ['cost' => 4]), $encrypt('JBSWY3DPEHPK3PXP'), str_repeat('a', 40), $encrypt(str_repeat('b', 40))]);

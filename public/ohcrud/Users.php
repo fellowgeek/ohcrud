@@ -209,7 +209,7 @@ class Users extends \ohCRUD\DB {
                 $hash = substr($token, 0, 40);
                 $APIToken = substr($token, 40, 40);
             } else {
-                $this->log('warning', 'Invalid token length', [$token]);
+                $this->log('warning', 'Invalid token length', []);
                 // Delay to mitigate brute force and timing attacks
                 usleep(rand(500000, 1000000));
                 return false;
@@ -227,7 +227,7 @@ class Users extends \ohCRUD\DB {
 
             // Return if user was not found
             if ($user === false) {
-                $this->log('warning', 'Invalid token hash', [$token]);
+                $this->log('warning', 'Invalid token hash', []);
                 // Delay to mitigate brute force and timing attacks
                 usleep(rand(500000, 1000000));
                 return false;
@@ -235,15 +235,9 @@ class Users extends \ohCRUD\DB {
 
             // Decrypt and compare user token
             if ($this->decryptText($user->TOKEN) === $APIToken) {
-                $user->loggedIn = true;
-
-                // Remove sensitive information
-                $this->sanitizeUser($user);
-
-                // Create a user session and log in the user
-                $this->setSession('User', $user);
+                $user = $this->createUserSession($user);
             } else {
-                $this->log('warning', 'Invalid token', [$token]);
+                $this->log('warning', 'Invalid token', []);
                 // Delay to mitigate brute force and timing attacks
                 usleep(rand(500000, 1000000));
                 return false;
@@ -275,18 +269,19 @@ class Users extends \ohCRUD\DB {
                 return false;
             }
 
-            // Remove sensitive information
-            $this->sanitizeUser($user);
-
             // Check if the user has TOTP enabled
             if ((int) $user->TOTP == $this::ACTIVE) {
                 $user->TOTPVerified = false;
+                $this->sanitizeUser($user);
+                $this->unsetSession('User');
+                $this->unsetSession('authentication');
+                $this->regenerateSession();
                 $this->setSession('tempUser', $user);
             }
 
             // Create the user session and log in the user if TOTP is not enabled for this user
             if ((int) $user->TOTP == $this::INACTIVE) {
-                $this->setSession('User', $user);
+                $user = $this->createUserSession($user);
             }
         }
 
@@ -324,14 +319,55 @@ class Users extends \ohCRUD\DB {
             return false;
         }
 
-        // Remove sensitive information
+        // Rotate the session only after both factors have been verified.
+        return $this->createUserSession($user);
+    }
+
+    // Bind sessions and pending challenges to the current account security state.
+    private function authenticationFingerprint($user) {
+        return hash_hmac('sha256', json_encode([
+            $user->ID, $user->PASSWORD, $user->TOKEN, $user->TOTP_SECRET,
+            $user->STATUS, $user->PERMISSIONS, $user->TOTP, $user->USERNAME,
+        ]), __OHCRUD_SECRET__);
+    }
+
+    // Complete authentication consistently for passwords, TOTP and API tokens.
+    private function createUserSession($user) {
+        $authentication = (object) [
+            'fingerprint' => $this->authenticationFingerprint($user),
+            'created' => time(),
+            'lastUsed' => time(),
+        ];
+        $user->loggedIn = true;
         $this->sanitizeUser($user);
-
-        // Create the user session and log in the user
-        $this->setSession('User', $user);
+        $this->regenerateSession();
         $this->unsetSession('tempUser');
-
+        $this->setSession('authentication', $authentication);
+        $this->setSession('User', $user);
         return $user;
+    }
+
+    // Revalidate authorization and credentials before API or CMS session use.
+    public function validateSession() {
+        if (isset($_SESSION['User']->ID) == false) {
+            return false;
+        }
+        $user = $this->read('Users', 'ID = :ID', [':ID' => $_SESSION['User']->ID])->first();
+        $authentication = $_SESSION['authentication'] ?? null;
+        if ($user === false || (int) $user->STATUS !== $this::ACTIVE ||
+            isset($authentication->fingerprint, $authentication->created, $authentication->lastUsed) == false ||
+            time() - $authentication->created >= __OHCRUD_SESSION_LIFETIME__ ||
+            time() - $authentication->lastUsed >= __OHCRUD_SESSION_LIFETIME__ ||
+            hash_equals($this->authenticationFingerprint($user), $authentication->fingerprint) == false) {
+            $this->unsetSession('User');
+            $this->unsetSession('authentication');
+            $this->unsetSession('tempUser');
+            $this->regenerateSession();
+            return false;
+        }
+        $authentication->lastUsed = time();
+        $this->setSession('authentication', $authentication);
+        return true;
     }
 
     // Helper to clean user object

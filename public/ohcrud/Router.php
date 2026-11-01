@@ -20,6 +20,11 @@ class Router extends \ohCRUD\Core {
         // Register the core error handlers.
         $this->registerCoreErrorHandlers();
 
+        // Expire stale accounts and permissions before any API or CMS handling.
+        if (isset($_SESSION['User']) == true) {
+            (new \ohCRUD\Users)->validateSession();
+        }
+
         // Call the route method to process the request.
         $this->route($rawPath);
     }
@@ -77,26 +82,29 @@ class Router extends \ohCRUD\Core {
             // Instantiate Object
             $object = new $matchedObject;
 
-            // Check Class-level Permissions
-            if (isset($object->permissions) == false || $this->checkPermissions($object->permissions) == false) {
-                $this->handleAuthFailure();
-                return $this;
+            // Authenticate once, then recheck both permission levels without routing recursively.
+            if (isset($object->permissions) == false ||
+                $this->checkPermissions($object->permissions, $matchedMethod) == false) {
+                if (isset($_SESSION['User']) == true) {
+                    $this->forbidden();
+                    return $this;
+                }
+                if ($this->authorize() == false) {
+                    return $this;
+                }
+                if (isset($object->permissions) == false ||
+                    $this->checkPermissions($object->permissions, $matchedMethod) == false) {
+                    $this->forbidden();
+                    return $this;
+                }
             }
 
             if (isset($matchedMethod) == true) {
-                // Strategy B (Method Target)
                 if (is_callable([$object, $matchedMethod]) == true) {
-                    // Check Method-level Permissions
-                    if ($this->checkPermissions($object->permissions, $matchedMethod) == true) {
-                        $object->$matchedMethod($this->request);
-                        return $this;
-                    } else {
-                        $this->handleAuthFailure();
-                        return $this;
-                    }
+                    $object->$matchedMethod($this->request);
+                    return $this;
                 }
             } else {
-                // Strategy A (Object Context)
                 return $this;
             }
         }
@@ -266,17 +274,17 @@ class Router extends \ohCRUD\Core {
 
         // Variables
         $users = new \ohCRUD\Users;
-        $httpHeaders = getallheaders();
+        $httpHeaders = array_change_key_case(getallheaders(), CASE_LOWER);
         $userHasLoggedIn = false;
 
         // Authenticate the user using basic authentication or a token.
-        if (isset($_SERVER['PHP_AUTH_USER']) == true || isset($_SERVER['PHP_AUTH_PW']) == true || isset($httpHeaders['Token']) == true) {
-            $userHasLoggedIn = $users->login($_SERVER['PHP_AUTH_USER'] ?? null, $_SERVER['PHP_AUTH_PW'] ?? null, $httpHeaders['Token'] ?? null);
+        if (isset($_SERVER['PHP_AUTH_USER']) == true || isset($_SERVER['PHP_AUTH_PW']) == true || isset($httpHeaders['token']) == true) {
+            $userHasLoggedIn = $users->login($_SERVER['PHP_AUTH_USER'] ?? null, $_SERVER['PHP_AUTH_PW'] ?? null, $httpHeaders['token'] ?? null);
         }
-        if ($userHasLoggedIn == true) {
-            $this->route();
+        if ($userHasLoggedIn !== false && isset($_SESSION['User']) == true) {
+            return true;
         } else {
-            if (isset($httpHeaders['Token']) == true) {
+            if (isset($httpHeaders['token']) == true) {
                 $this->forbidden();
             } else {
                 // Unauthorized access - Send HTTP headers for basic authentication.
@@ -286,6 +294,7 @@ class Router extends \ohCRUD\Core {
                 $this->output();
             }
         }
+        return false;
     }
 
     // Handle forbidden access and return a 403 error response.

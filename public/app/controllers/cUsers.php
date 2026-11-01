@@ -49,9 +49,6 @@ class cUsers extends \ohCRUD\DB {
             return $this;
         }
 
-        // Regenerate session ID
-        $this->regenerateSession();
-
         // Populate data object with response data
         $this->data->TOTP = $response->TOTP;
         $this->data->TOTPVerified = $response->TOTPVerified ?? false;
@@ -100,9 +97,6 @@ class cUsers extends \ohCRUD\DB {
             return $this;
         }
 
-        // Regenerate session ID
-        $this->regenerateSession();
-
         // Set user as logged in and set the REDIRECT property in the data object
         $this->data->loggedIn = true;
         $this->data->REDIRECT = $this->localRedirect($request->payload->REDIRECT ?? '/');
@@ -119,8 +113,7 @@ class cUsers extends \ohCRUD\DB {
         // Unset the User and tempUser sessions (user logout)
         $this->unsetSession('User');
         $this->unsetSession('tempUser');
-
-        // Regenerate session ID
+        $this->unsetSession('authentication');
         $this->regenerateSession();
 
         $this->output();
