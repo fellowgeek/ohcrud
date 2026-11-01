@@ -20,7 +20,7 @@ define('__OHCRUD_ALLOWED_ORIGINS_ENABLED__', false);
 // List of allowed remote origins for Cross-Origin Resource Sharing (CORS).
 define('__OHCRUD_ALLOWED_ORIGINS__', [
     'http://localhost',
-    'http://ohcrud.local',
+    'http://ohcrud.test',
 ]);
 
 // Define API endpoints and their corresponding controller classes.

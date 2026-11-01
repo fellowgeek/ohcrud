@@ -28,3 +28,7 @@ public/global/files
 # TODO markers
 private/@TODO
 GEMINI.md
+
+# Memory
+memory/
+.mcp_memory

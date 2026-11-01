@@ -4,13 +4,13 @@
 
 ```language-bash
 brew install mkcert
-mkcert -install -key-file key.pem -cert-file cert.pem ohcrud.local "*.ohcrud.local" localhost 127.0.0.1 ::1
+mkcert -install -key-file key.pem -cert-file cert.pem ohcrud.test "*.ohcrud.test" localhost 127.0.0.1 ::1
 ```
 
-2. Update your hosts file to point `ohcrud.local` to `127.0.0.1`:
+2. Update your hosts file to point `ohcrud.test` to `127.0.0.1`:
 
 ```language-bash
-sudo sh -c 'echo "127.0.0.1 ohcrud.local" >> /etc/hosts'
+sudo sh -c 'echo "127.0.0.1 ohcrud.test" >> /etc/hosts'
 ```
 
 ### Run the Hurl Tests

@@ -147,7 +147,7 @@ This project includes a `docker-compose.yml` file to make it easy to set up a lo
     The Nginx service is configured to use SSL. You'll need to generate a self-signed certificate and key. You can use OpenSSL for this. If you don't have it, you will need to install it. Run the following command from the root of the project:
 
     ```bash
-    openssl req -x509 -newkey rsa:4096 -keyout private/key.pem -out private/cert.pem -sha256 -days 365 -nodes -subj "/C=XX/ST=State/L=City/O=Organization/OU=Department/CN=ohcrud.local"
+    openssl req -x509 -newkey rsa:4096 -keyout private/key.pem -out private/cert.pem -sha256 -days 365 -nodes -subj "/C=XX/ST=State/L=City/O=Organization/OU=Department/CN=ohcrud.test"
     ```
     This will create `key.pem` and `cert.pem` in the `private` directory.
 
