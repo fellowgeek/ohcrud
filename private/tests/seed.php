@@ -20,3 +20,8 @@ $encrypt = function ($text) {
     return base64_encode($iv . openssl_encrypt($text, 'aes-256-cbc', hash('sha256', 'isolated-test-secret', true), 0, $iv));
 };
 $stmt->execute(['testmfa', password_hash('Test-password-42!' . 'isolated-test-secret', PASSWORD_BCRYPT, ['cost' => 4]), $encrypt('JBSWY3DPEHPK3PXP'), str_repeat('a', 40), $encrypt(str_repeat('b', 40))]);
+
+// Small fixtures exercise image limits without allocating large images.
+$image = imagecreatetruecolor(2, 10);
+imagepng($image, getenv('OHCRUD_TEST_ROOT') . '/global/files/test.png');
+file_put_contents(getenv('OHCRUD_TEST_ROOT') . '/global/files/bad.png', 'not an image');
