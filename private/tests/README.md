@@ -24,6 +24,30 @@ state separately; `security_auth.hurl` deliberately disables its test MFA accoun
 TOTP expiry and attempt-window tests use a fixed clock; Hurl uses a freshly generated
 code for the disposable account.
 
+## Full Hurl suite over HTTPS
+
+Run every Hurl file, including the legacy success/failure suites, from the repository root:
+
+```sh
+python3 private/tests/full_hurl.py
+```
+
+This runner also requires Docker, OpenSSL, the built `ohcrud-php` image
+(`docker compose build php`), and the Nginx image used by Compose. It starts separate
+Nginx/PHP containers with the repository's Nginx configuration, a temporary TLS
+certificate, and a loopback-only random HTTPS port. Hurl skips certificate verification
+for that disposable certificate; cookies still use HTTPS and their Secure setting.
+Each suite gets fresh SQLite, session, cache, log and upload fixtures. Containers,
+the temporary network and fixture files are removed afterward.
+
+The legacy suites receive an `admin/admin` account and an allowed
+`https://example.com` origin in this test fixture only. Application settings and
+databases are never loaded or changed. To run just the legacy suites:
+
+```sh
+python3 private/tests/full_hurl.py private/hurl/test_passes.hurl private/hurl/test_fails.hurl
+```
+
 ## Deployment migration
 
 `Users` automatically creates a missing `AuthState` table when debug mode is on,
