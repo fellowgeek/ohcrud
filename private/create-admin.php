@@ -11,7 +11,7 @@ if (is_string($username) == false || preg_match('/^[a-z0-9]{3,32}$/D', $username
     fwrite(STDERR, "Set OHCRUD_ADMIN_USERNAME, OHCRUD_ADMIN_EMAIL and a password of at least 15 characters in OHCRUD_ADMIN_PASSWORD.\n");
     exit(1);
 }
-if (strlen(__OHCRUD_SECRET__) < 32 || __OHCRUD_SECRET__ === 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX') {
+if (__OHCRUD_DEBUG_MODE__ == false && (strlen(__OHCRUD_SECRET__) < 32 || __OHCRUD_SECRET__ === 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')) {
     fwrite(STDERR, "Configure a unique application secret first.\n");
     exit(1);
 }
