@@ -132,40 +132,88 @@ class Users extends \ohCRUD\DB {
         return parent::update($table, $data, $where, $bind);
     }
 
-    // Enable or re-generate TOTP for a user
+    // Legacy callers must use the confirmed enrollment flow instead of replacing a live factor.
     public function enableTOTP($id, $activateTOTP = true) {
-        $user = $this->read(
-            'Users',
-            'ID = :ID',
-            [
-                ':ID' => $id
-            ]
-        )->first();
+        return false;
+    }
 
-        if ($user != false) {
-            $totp = TOTP::generate();
-
-            $data = [
-                'TOTP_SECRET' => $this->encryptText($totp->getSecret())
-            ];
-
-            if ($activateTOTP == true) {
-                $data['TOTP'] = $this::ACTIVE;
-            }
-
-            $output = $this->Update(
-                'Users',
-                $data,
-                'ID = :ID',
-                [
-                    ':ID' => $id
-                ]
-            )->success;
-
-            return $output;
-        } else {
+    // Reauthenticate the current user before changing their authenticator.
+    private function reauthenticateForTOTP($password, $code) {
+        $id = $_SESSION['User']->ID ?? null;
+        if ($id === null || is_string($password) == false ||
+            $this->allowAuthenticationAttempt('factor-password:' . $id, 5) == false) {
             return false;
         }
+        $user = $this->read('Users', 'ID = :ID AND STATUS = 1', [':ID' => $id])->first();
+        if ($user === false || password_verify($password . __OHCRUD_SECRET__, $user->PASSWORD) == false) {
+            return false;
+        }
+        if ((int) $user->TOTP === $this::ACTIVE &&
+            ($this->allowAuthenticationAttempt('totp:' . $id, 5) == false || $this->consumeTOTPCode($user, $code) == false)) {
+            return false;
+        }
+        return $user;
+    }
+
+    // Keep a replacement secret pending until its owner proves possession.
+    public function beginTOTP($password, $code = null) {
+        $this->unsetSession('pendingTOTP');
+        $user = $this->reauthenticateForTOTP($password, $code);
+        if ($user === false) {
+            return false;
+        }
+        $totp = TOTP::generate();
+        $totp->setLabel($user->USERNAME);
+        $totp->setIssuer(__APP__);
+        $this->setSession('pendingTOTP', (object) [
+            'ID' => $user->ID, 'created' => $this->authenticationTime(),
+            'fingerprint' => $this->authenticationFingerprint($user),
+            'secret' => $this->encryptText($totp->getSecret()),
+        ]);
+        return (object) ['QR_CODE' => $totp->getProvisioningUri()];
+    }
+
+    // Activate only the pending secret belonging to this authenticated session.
+    public function confirmTOTP($code) {
+        $pending = $_SESSION['pendingTOTP'] ?? null;
+        if (isset($pending->ID, $pending->created, $pending->fingerprint, $pending->secret) == false ||
+            (int) $pending->ID !== (int) ($_SESSION['User']->ID ?? 0) ||
+            $this->authenticationTime() - $pending->created >= 300) {
+            $this->unsetSession('pendingTOTP');
+            return false;
+        }
+        $user = $this->read('Users', 'ID = :ID AND STATUS = 1', [':ID' => $pending->ID])->first();
+        if ($user === false || hash_equals($this->authenticationFingerprint($user), $pending->fingerprint) == false ||
+            $this->allowAuthenticationAttempt('enrollment:' . $pending->ID, 5) == false) {
+            return false;
+        }
+        $replacement = clone $user;
+        $replacement->TOTP_SECRET = $pending->secret;
+        if ($this->consumeTOTPCode($replacement, $code) == false) {
+            return false;
+        }
+        return $this->replaceTOTP($user, $pending->secret, $this::ACTIVE);
+    }
+
+    // Disabling a factor requires the password and the currently enrolled factor.
+    public function disableTOTP($password, $code) {
+        $user = $this->reauthenticateForTOTP($password, $code);
+        return $user !== false ? $this->replaceTOTP($user, '', $this::INACTIVE) : false;
+    }
+
+    // Compare-and-swap prevents concurrent password or factor changes being overwritten.
+    private function replaceTOTP($user, $secret, $status) {
+        $statement = $this->db->prepare("UPDATE Users SET TOTP_SECRET = :secret, TOTP = :status
+            WHERE ID = :id AND STATUS = 1 AND PASSWORD = :password AND COALESCE(TOTP_SECRET, '') = :oldSecret");
+        $statement->execute([':secret' => $secret, ':status' => $status, ':id' => $user->ID,
+            ':password' => $user->PASSWORD, ':oldSecret' => $user->TOTP_SECRET ?? '']);
+        if ($statement->rowCount() !== 1) {
+            return false;
+        }
+        $this->unsetSession('pendingTOTP');
+        $user = $this->read('Users', 'ID = :ID', [':ID' => $user->ID])->first();
+        $this->createUserSession($user);
+        return true;
     }
 
     // Enable or re-generate TOKEN for a user
@@ -333,6 +381,20 @@ class Users extends \ohCRUD\DB {
             return false;
         }
 
+        if ($this->consumeTOTPCode($user, $TOTP_CODE) == false) {
+            return false;
+        }
+
+        // Rotate the session only after both factors have been verified.
+        return $this->createUserSession($user);
+    }
+
+    // Verify and consume a code once, including during enrollment or factor changes.
+    private function consumeTOTPCode($user, $TOTP_CODE) {
+        if (is_string($TOTP_CODE) == false || preg_match('/^[0-9]{6}$/D', $TOTP_CODE) !== 1) {
+            return false;
+        }
+        $now = $this->authenticationTime();
         // Create a TOTP object from the secret and verify the TOTP code
         $secret = $this->decryptText($user->TOTP_SECRET);
         if (is_string($secret) == false || preg_match('/^[A-Z2-7]+$/D', $secret) !== 1) {
@@ -346,19 +408,15 @@ class Users extends \ohCRUD\DB {
         }
 
         // Atomically consume the time step across sessions and concurrent requests.
-        $key = 'replay:' . $id;
+        $key = 'replay:' . $user->ID . ':' . hash('sha256', $secret);
         if ($this->initializeAuthenticationState($key) == false) {
             return false;
         }
         $statement = $this->db->prepare('UPDATE AuthState SET LAST_STEP = :step WHERE ID = :id AND LAST_STEP < :previous');
         $step = intdiv($now, $totp->getPeriod());
         $statement->execute([':step' => $step, ':id' => hash('sha256', $key), ':previous' => $step]);
-        if ($statement->rowCount() !== 1) {
-            return false;
-        }
+        return $statement->rowCount() === 1;
 
-        // Rotate the session only after both factors have been verified.
-        return $this->createUserSession($user);
     }
 
     // Keep time-dependent authentication checks testable without waiting or sleeping.
@@ -421,6 +479,7 @@ class Users extends \ohCRUD\DB {
         $this->sanitizeUser($user);
         $this->regenerateSession();
         $this->unsetSession('tempUser');
+        $this->unsetSession('pendingTOTP');
         $this->setSession('authentication', $authentication);
         $this->setSession('User', $user);
         return $user;
@@ -441,6 +500,7 @@ class Users extends \ohCRUD\DB {
             $this->unsetSession('User');
             $this->unsetSession('authentication');
             $this->unsetSession('tempUser');
+            $this->unsetSession('pendingTOTP');
             $this->regenerateSession();
             return false;
         }

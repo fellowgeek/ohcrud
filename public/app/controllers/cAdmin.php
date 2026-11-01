@@ -90,6 +90,9 @@ class cAdmin extends \ohCRUD\DB {
         if (isset($request->payload) == true && isset($request->payload->TABLE) == true) {
             // Cleanup the input data
             $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
             // Get column details for the given table
             $this->data = $this->details($table, isset($request->payload->COLUMNS) ? true : false);
         } else {
@@ -143,6 +146,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
 
         // Whitelist validation for ORDER and ORDER_BY clauses
         $tableColumns = [];
@@ -202,7 +208,7 @@ class cAdmin extends \ohCRUD\DB {
         foreach ($this->data as $index => $value) {
 
             // Obfuscate secrets
-            if ($table === 'Users') {
+            if (strtolower($table) === 'users') {
                 $this->data[$index]->PASSWORD = '**********';
                 $this->data[$index]->TOKEN = '**********';
                 $this->data[$index]->TOTP_SECRET = '**********';
@@ -261,6 +267,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate' || strtolower($table) === 'users') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
 
         // Remove unwanted data from the payload
         unset($request->payload->CSRF);
@@ -308,6 +317,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
         $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
 
         // Read the row from the database
@@ -320,7 +332,7 @@ class cAdmin extends \ohCRUD\DB {
         )->first();
 
         // Obfuscate secrets
-        if ($table === 'Users') {
+        if (strtolower($table) === 'users') {
             $this->data->PASSWORD = '**********';
             $this->data->TOKEN = '**********';
             $this->data->TOTP_SECRET = '**********';
@@ -354,6 +366,9 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate' || strtolower($table) === 'users') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
         $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
         $keyValue = $request->payload->KEY_VALUE;
 
@@ -504,6 +519,12 @@ class cAdmin extends \ohCRUD\DB {
             }
         }
 
+        // Factor state can only change through proof-of-possession endpoints.
+        $existingTOTP = 0;
+        if (isset($request->payload->TOTP) == true && (int) $request->payload->TOTP !== $existingTOTP) {
+            return $this->error('Use the account security page to change TOTP.', 403)->output();
+        }
+
         // Prepare the data : TOTP
         if (isset($request->payload->TOTP) == true) {
             $request->payload->TOTP = (int) $request->payload->TOTP;
@@ -648,6 +669,12 @@ class cAdmin extends \ohCRUD\DB {
             unset($request->payload->PASSWORD);
         }
 
+        // Factor state can only change through proof-of-possession endpoints.
+        $existingTOTP = (int) ((new \ohCRUD\Users)->read('Users', 'ID = :ID', [':ID' => $id])->first()->TOTP ?? 0);
+        if (isset($request->payload->TOTP) == true && (int) $request->payload->TOTP !== $existingTOTP) {
+            return $this->error('Use the account security page to change TOTP.', 403)->output();
+        }
+
         // Prepare the data : TOTP
         if (isset($request->payload->TOTP) == true) {
             $request->payload->TOTP = (int) $request->payload->TOTP;
@@ -700,10 +727,13 @@ class cAdmin extends \ohCRUD\DB {
 
         // Cleanup the input data
         $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
+        if (strtolower($table) === 'authstate') {
+            return $this->error('This table requires its dedicated security operations.', 403)->output();
+        }
         $keyColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->KEY_COLUMN);
 
         // Check for super admins if we are deleting records from the Users table
-        if ($table === 'Users') {
+        if (strtolower($table) === 'users') {
             $user = $this->read(
                 $table,
                 $keyColumn . " = :KEY_VALUE",
@@ -738,7 +768,7 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         // Delete the file if we are deleting records from the Files table
-        if ($table === 'Files') {
+        if (strtolower($table) === 'files') {
             $file = $this->read(
                 $table,
                 $keyColumn . " = :KEY_VALUE",
@@ -833,14 +863,9 @@ class cAdmin extends \ohCRUD\DB {
             $this->data->TOKEN = $user->HASH . $this->decryptText($user->TOKEN);
         }
 
-        // Process TOTP_SECRET
-        if (empty($user->TOTP_SECRET) == true) {
-            $this->data->TOTP_SECRET = false;
-            $this->data->QR_CODE = false;
-        } else {
-            $this->data->TOTP_SECRET = $this->decryptText($user->TOTP_SECRET);
-            $this->data->QR_CODE = 'otpauth://totp/' . $user->USERNAME . '@' . __SITE__ . '?secret=' . $user->TOTP_SECRET;
-        }
+        // Enrolled authenticators are never redisplayed or returned through admin APIs.
+        $this->data->TOTP_SECRET = false;
+        $this->data->QR_CODE = false;
 
         $this->output();
     }
@@ -904,7 +929,7 @@ class cAdmin extends \ohCRUD\DB {
                 break;
 
             case 'TOTP_SECRET':
-                $User->enableTOTP($id, false);
+                $this->error('Use your account security page to enroll or replace an authenticator.', 403);
                 break;
         }
 

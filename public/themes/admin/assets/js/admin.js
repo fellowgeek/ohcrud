@@ -1842,6 +1842,10 @@ function buildFormFromData(table, columns, elementId, rowData = {}) {
 
 // This function gets user secrets from API and displays to the admins
 function showUserSecrets(id, type = 'TOKEN') {
+    if (type === 'TOTP_SECRET') {
+        window.location.href = '/security/';
+        return;
+    }
 
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/getUserSecrets/',
         {
@@ -1944,6 +1948,10 @@ function showUserSecrets(id, type = 'TOKEN') {
 
 // This function refreshes the user secrets
 function refreshUserSecrets(id, type = 'TOKEN') {
+    if (type === 'TOTP_SECRET') {
+        window.location.href = '/security/';
+        return;
+    }
     httpRequest(__OHCRUD_BASE_API_ROUTE__ + '/admin/refreshUserSecrets/',
         {
             method: 'POST',

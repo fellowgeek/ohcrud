@@ -41,3 +41,18 @@ tokens intentionally authenticate without TOTP.
 CMS rendered HTML is no longer shared through the application cache: components and
 embedded pages may depend on the viewer's current authorization. Core cache helpers
 remain available for application data that is safe to share.
+
+## Authenticator management
+
+Signed-in users manage their own authenticator at `/security/`. Enrollment and
+replacement require the current password and, if enabled, a fresh code from the
+existing authenticator. The replacement remains pending for five minutes and is
+activated only after a correct code from it. Factor removal requires the same
+credentials. Existing secrets are not redisplayed; old admin QR/reset buttons now
+open the account security page. Generic user-table writes cannot bypass this flow.
+
+The legacy `Users::enableTOTP()` helper now returns false; use `beginTOTP()` and
+`confirmTOTP()` in an authenticated session. Administrative lost-factor recovery
+requires a separately controlled operational process, rather than an unrestricted
+secret-read/reset endpoint. Raw SQL remains a database-administrator capability
+when explicitly enabled and must not be granted to untrusted application editors.

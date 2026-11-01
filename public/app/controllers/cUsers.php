@@ -13,6 +13,9 @@ class cUsers extends \ohCRUD\DB {
         'login' => __OHCRUD_PERMISSION_ALL__,
         'verify' => __OHCRUD_PERMISSION_ALL__,
         'logout' => __OHCRUD_PERMISSION_ALL__,
+        'beginTOTP' => PHP_INT_MAX,
+        'confirmTOTP' => PHP_INT_MAX,
+        'disableTOTP' => PHP_INT_MAX,
     ];
 
     // Declare HTTP methods independently of authorization.
@@ -20,6 +23,9 @@ class cUsers extends \ohCRUD\DB {
         'login' => ['POST'],
         'verify' => ['POST'],
         'logout' => ['POST'],
+        'beginTOTP' => ['POST'],
+        'confirmTOTP' => ['POST'],
+        'disableTOTP' => ['POST'],
     ];
 
     // This method, handles user login functionality
@@ -111,6 +117,38 @@ class cUsers extends \ohCRUD\DB {
         return $this;
     }
 
+    // Begin a self-service enrollment after verifying the existing credentials.
+    public function beginTOTP($request) {
+        return $this->changeTOTP($request, 'beginTOTP');
+    }
+
+    // Prove possession of the pending authenticator before enabling it.
+    public function confirmTOTP($request) {
+        return $this->changeTOTP($request, 'confirmTOTP');
+    }
+
+    // Require the existing credentials before removing a factor.
+    public function disableTOTP($request) {
+        return $this->changeTOTP($request, 'disableTOTP');
+    }
+
+    // Share validation and output for the explicit factor-management endpoints.
+    private function changeTOTP($request, $method) {
+        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false) {
+            return $this->error('Missing or invalid CSRF token.')->output();
+        }
+        $users = new \ohCRUD\Users;
+        $result = $method === 'confirmTOTP'
+            ? $users->confirmTOTP($request->payload->TOTP ?? null)
+            : $users->$method($request->payload->PASSWORD ?? null, $request->payload->TOTP ?? null);
+        if ($result === false) {
+            return $this->error('Unable to change authenticator. Check credentials, code and challenge expiry.', 403)->output();
+        }
+        $this->data = $result;
+        return $this->output();
+    }
+
     // Handles user logout
     public function logout($request) {
 
@@ -125,6 +163,7 @@ class cUsers extends \ohCRUD\DB {
         $this->unsetSession('User');
         $this->unsetSession('tempUser');
         $this->unsetSession('authentication');
+        $this->unsetSession('pendingTOTP');
         $this->regenerateSession();
 
         $this->output();

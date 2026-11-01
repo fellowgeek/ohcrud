@@ -1,0 +1,29 @@
+<?php
+// Factor management is restricted to the authenticated account owner.
+if (isset($GLOBALS['OHCRUD']) == false) { die(); }
+if (isset($_SESSION['User']) == false) {
+    $this->redirect('/login/?redirect=/security/');
+    return;
+}
+$this->includeJSFile('/themes/admin/assets/js/qrcode.min.js', 2);
+$this->includeJSFile('/global/js/security.js', 3);
+?>
+<h1>Account security</h1>
+<p>To enable or replace your authenticator, enter your current password and, if already enabled, a fresh authenticator code. Your existing authenticator remains active until you confirm the replacement.</p>
+<form id="securityForm">
+    <p><label>Current password <input id="securityPassword" type="password" autocomplete="current-password" required></label></p>
+    <p><label>Current authenticator code <input id="securityCurrentCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}"></label></p>
+    <button type="submit">Set up authenticator</button>
+    <button id="securityDisable" type="button">Disable authenticator</button>
+</form>
+<section id="securityEnrollment" hidden>
+    <h2>Confirm your authenticator</h2>
+    <p>Scan this code or enter the setup key in your authenticator, then enter its six-digit code below. Setup expires after five minutes.</p>
+    <div id="securityQR"></div>
+    <p><label>Setup key <input id="securityKey" readonly></label></p>
+    <form id="securityConfirmForm">
+        <label>New authenticator code <input id="securityNewCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required></label>
+        <button type="submit">Confirm authenticator</button>
+    </form>
+</section>
+<p id="securityMessage" role="status" aria-live="polite"></p>
