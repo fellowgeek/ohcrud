@@ -278,6 +278,7 @@ class Users extends \ohCRUD\DB {
             // Decrypt and compare user token
             $storedToken = $this->decryptText($user->TOKEN);
             if (is_string($storedToken) == true && hash_equals($storedToken, $APIToken) == true) {
+                $this->releaseAuthenticationAttempt('ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'cli'));
                 $user = $this->createUserSession($user);
             } else {
                 $this->log('warning', 'Invalid token', []);
@@ -313,6 +314,9 @@ class Users extends \ohCRUD\DB {
                 $this->log('warning', 'Login attempt was not successful', [$username]);
                 return false;
             }
+
+            // A verified password does not consume the source-IP failure allowance.
+            $this->releaseAuthenticationAttempt('ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'cli'));
 
             // Check if the user has TOTP enabled
             if ((int) $user->TOTP == $this::ACTIVE) {
@@ -423,6 +427,12 @@ class Users extends \ohCRUD\DB {
             $this->log('error', 'Authentication state unavailable; apply the security migration.');
             return false;
         }
+    }
+
+    // Successful credentials release only their own reservation, not other failures.
+    private function releaseAuthenticationAttempt($key) {
+        $statement = $this->db->prepare('UPDATE AuthState SET ATTEMPTS = CASE WHEN ATTEMPTS > 0 THEN ATTEMPTS - 1 ELSE 0 END WHERE ID = :id');
+        $statement->execute([':id' => hash('sha256', $key)]);
     }
 
     // Consume an attempt atomically; cookies and parallel workers share these limits.

@@ -33,8 +33,8 @@ sessions and pending challenges. Sessions have an absolute and idle limit equal 
 `__OHCRUD_SESSION_LIFETIME__`; TOTP challenges last five minutes.
 
 Password attempts are limited to ten per account per fifteen minutes, TOTP attempts
-to five, and authentication attempts to one hundred per source IP. Successful full
-authentication clears the account counters, but not the source-IP counter. Replay
+to five, and failed authentication attempts to one hundred per source IP. Successful full
+authentication clears the account counters, but not unrelated source-IP failures. Successful credentials release their own source-IP attempt reservation. Replay
 protection atomically consumes each accepted TOTP time step across sessions. API
 tokens intentionally authenticate without TOTP.
 

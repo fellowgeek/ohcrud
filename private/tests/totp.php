@@ -57,6 +57,11 @@ for ($attempt = 0; $attempt < 10; $attempt++) { $users->login('testmfa', 'wrong'
 check($login() === false, 'Password attempts not limited.');
 $reset();
 check($users->login(null, null, str_repeat('a', 40) . str_repeat('b', 40)) !== false, 'API token unexpectedly requires TOTP.');
+// Stateless API clients may authenticate frequently without exhausting failure limits.
+for ($attempt = 0; $attempt < 110; $attempt++) {
+    $_SESSION = [];
+    check($users->login(null, null, str_repeat('a', 40) . str_repeat('b', 40)) !== false, 'Valid token traffic exhausted the IP failure allowance.');
+}
 check($users->validateSession() === true, 'Fresh token session invalid.');
 $users->db->exec('UPDATE Users SET PERMISSIONS = 2 WHERE ID = 2');
 check($users->validateSession() === false, 'Demoted account retained its session.');
