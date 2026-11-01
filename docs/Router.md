@@ -1,58 +1,88 @@
-# Router Object
+# Routing reference
 
-The router maps API prefixes in `__OHCRUD_ENDPOINTS__` to controller classes. The
-last path segment selects an explicitly annotated method. Paths outside those
-prefixes use `__OHCRUD_DEFAULT_PATH_HANDLER__` for CMS rendering.
+[Documentation](DOCUMENTATION.md) · [Architecture](architecture.md) · [Authentication](Users.md)
 
-## Endpoint access
+Source: [Router.php](../public/ohcrud/Router.php), [Endpoint.php](../public/ohcrud/Endpoint.php), [Permission.php](../public/ohcrud/Permission.php), [routes.php](../public/routes.php).
+
+## Mapping a URL
+
+Add a prefix to the existing endpoint map:
 
 ```php
-// Optional class restriction, applied in addition to each endpoint permission.
-#[\ohCRUD\Permission(2)]
-class Example extends \ohCRUD\DB {
+'/reports/' => 'app\controllers\cReports',
+```
 
-    // Only permission levels 1 and 2 may save, and only using POST.
-    #[\ohCRUD\Endpoint(permission: 2, methods: ['POST'])]
-    public function save($request) {
-        // Validate CSRF and input before changing data.
-    }
+Then declare a method in that controller:
+
+```php
+// Return a report only to users at permission level 5 or lower.
+#[\ohCRUD\Endpoint(permission: 5, methods: ['GET'])]
+public function summary($request) {
+    $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+    $this->data = ['year' => date('Y')];
+    return $this->output();
 }
 ```
 
-`Endpoint` requires an integer permission. `__OHCRUD_PERMISSION_ALL__` permits
-anonymous access; otherwise a signed-in user's numeric `PERMISSIONS` must be less
-than or equal to the declared level. Class restrictions, including those declared
-on parent classes, must also pass. A class attribute alone never exposes a method.
+`GET /reports/summary/` selects `cReports::summary()`. Paths normalize to a trailing slash. The map is literal: no named parameters, regex routes, or wildcard resource binding. Use query/body fields for identifiers. An exact prefix request such as `/reports/` has no selected method and returns 404; there is no implicit `index()` action. Keep route keys and class filenames case-correct.
 
-Omitting `methods` permits every HTTP verb. An explicit nonempty array restricts
-verbs and must contain uppercase names, such as `['GET', 'POST']`. Unsupported
-verbs receive **405** with an `Allow` header. `HEAD` is not implicitly added to
-`GET`; declare it when supported. Allowed cross-origin preflights use the selected
-endpoint's verbs without requiring authentication; a disallowed requested verb
-receives 405. Origin, IP and Fetch Metadata policies remain in force.
+## Endpoint and class policy
 
-Missing attributes, nonexistent methods, nonpublic/static methods, magic methods,
-and bare API prefixes receive **404**, without constructing the controller or
-falling through to the CMS. Annotated inherited methods remain exposed; overriding
-one requires an attribute on the override. Invalid attribute arguments are
-configuration errors and fail closed.
+`Endpoint($permission, $methods = null)` accepts an integer permission of `-1` or at least `1` and must appear exactly once on a public, non-static method. Magic methods and methods without the attribute cannot be dispatched. Omitting `methods` allows all HTTP verbs; declare verbs for new handlers. The constructor requires a nonempty array of uppercase verbs when provided.
 
-Anonymous callers of protected endpoints may authenticate using Basic Auth or a
-`Token` header. Failed/missing authentication receives 401 or 403 according to the
-existing authentication flow; an authenticated user lacking permission receives
-403. Endpoint declarations do not replace CSRF validation in mutation handlers.
+A controller can add a class restriction:
 
-CLI routing also requires the endpoint attribute but bypasses HTTP verb and user
-permission checks. CMS page permissions remain separate from API attributes.
+```php
+#[\ohCRUD\Permission(1)]
+class cReports extends \ohCRUD\DB {
+    // Add annotated methods here.
+}
+```
 
-## Migration from controller maps
+Every class restriction, including those inherited from parent controllers, and the selected endpoint restriction must pass. A public method attribute does not override a protected class. Numeric permissions admit authenticated users whose `PERMISSIONS <= required level`. `__OHCRUD_PERMISSION_ALL__` (`-1`) means public; `PHP_INT_MAX` is used for authenticated-account operations.
 
-Replace each `$permissions` method entry and corresponding `$methods` entry with
-an `Endpoint` attribute directly above that method. Convert any restrictive
-`'object'` permission into a class-level `Permission` attribute. The old maps are
-no longer consulted: retaining them without attributes does not expose endpoints.
-See `public/app/controllers/cExample.php` for public, protected and unrestricted-verb
-examples. This is an intentional access-policy migration for custom controllers.
+Legacy `$permissions` arrays are not the router's authorization mechanism. Endpoint attributes are still required on CLI calls.
 
-The router reflects only the selected method and its controller ancestry. It does
-not scan every controller or build a filesystem policy cache on each request.
+## Request parsing
+
+| Input | Controller access |
+| --- | --- |
+| `?id=42` or ordinary form field | `$request->id` |
+| JSON object body with JSON Content-Type | `$request->payload->ID` |
+| Other API body | `$request->payload` is the raw body string |
+| Multipart upload | `$_FILES`; ordinary fields on `$request` |
+| CLI path query | Top-level properties parsed with `parse_str()` |
+
+Malformed JSON, JSON arrays, and scalar JSON bodies return HTTP 400 before the handler. Validate each field's type; query parameters can be arrays. `$request` starts from PHP's `$_REQUEST`, so its merged sources also depend on PHP configuration. Do not assume it contains only query parameters.
+
+## HTTP access checks
+
+For matched API endpoints, the router checks Fetch Metadata, optional IP filtering, origin policy, declared verbs, and permissions before construction. Cookie-bearing requests with `Sec-Fetch-Site: cross-site` are rejected. Missing Origin/Referer is accepted for non-browser use; origin checks are not authentication.
+
+Same-origin calls are accepted using the detected request scheme and configured host. Otherwise `__OHCRUD_ALLOWED_ORIGINS__` contains exact origin strings, including scheme and port. Allowed cross-origin responses echo the origin and set `Vary: Origin`; credentials are enabled only for explicitly listed origins. Disabling origin filtering permits arbitrary origins but does not automatically enable credentials for them. Cross-origin preflight checks the endpoint verb declaration. The allowed headers include `Content-Type`, `Authorization`, and `Token`.
+
+CSRF token generation occurs here, but **validation belongs in the handler**. Use [the write-endpoint pattern](models-and-controllers.md#controller-validation-and-writes). Debug mode does not bypass `checkCSRF()`.
+
+## Authentication and errors
+
+A valid session is checked first. When a protected route lacks one, the router can authenticate HTTP Basic credentials or a `Token` header. It then rechecks permission thresholds. Existing insufficient sessions are denied rather than silently replaced with header credentials. Public routes do not trigger header authentication just because a token was supplied.
+
+| Status | Common cause |
+| --- | --- |
+| 400 | JSON body is not an object or handler validation fails |
+| 401 | Protected request lacks successful Basic/session authentication |
+| 403 | Access policy, insufficient permissions, or invalid token |
+| 404 | Unknown/unannotated method or missing CMS page |
+| 405 | Verb not declared; response includes `Allow` |
+
+Earlier policy checks can reject a request before a verb error is reached. Not every router error has the same body shape; inspect the HTTP status first.
+
+## CLI
+
+```sh
+php public/index.php '/greeting/hello/?name=Ada'
+```
+
+CLI dispatch bypasses user permission, HTTP method, IP, origin, and Fetch Metadata restrictions. It does not bypass the endpoint attribute requirement or validations written inside the handler. In particular, a JSON/CSRF-oriented web handler does not automatically become a useful CLI command. Use dedicated CLI scripts for provisioning, and never expose arbitrary CLI route execution to untrusted input.
+
+Continue with [controller patterns](models-and-controllers.md) or [CMS fallback rendering](cms-and-admin.md).

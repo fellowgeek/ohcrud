@@ -1,5 +1,7 @@
 # Database setup and migrations
 
+[Documentation](DOCUMENTATION.md) · [Getting started](getting-started.md) · [Models and controllers](models-and-controllers.md) · [Deployment](deployment-and-testing.md)
+
 Configure `public/settings.php`, install dependencies, then run from the repository root:
 
 ```sh
@@ -86,3 +88,7 @@ python3 private/tests/migrations.py --mysql
 The default test uses a disposable SQLite database. The MySQL variant uses the
 running Compose MariaDB service, creates a uniquely named test database, and drops
 only that database afterward. Neither test loads local application settings.
+
+## Source and next steps
+
+The command is [private/migrate.php](../private/migrate.php); ordering, checksums, and locks are implemented in [Migrations.php](../public/ohcrud/Migrations.php). Add application tables using the [Notes migration example](models-and-controllers.md#create-the-schema), then follow the [deployment procedure](deployment-and-testing.md#production-deployment).

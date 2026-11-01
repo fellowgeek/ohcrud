@@ -1,7 +1,9 @@
 # Security regression tests
 
+[Documentation](../../docs/DOCUMENTATION.md) · [Deployment and testing](../../docs/deployment-and-testing.md)
+
 These tests require PHP with PDO SQLite, GD and the installed Composer dependencies,
-Python 3, and Hurl. They never load local application settings or use the application database.
+Python 3, Node.js, and Hurl. They never load local application settings or use the application database.
 
 Run all security regressions from the repository root with `python3 private/tests/run.py`.
 Each HTTP suite receives its own disposable database. The security Hurl files live in
@@ -56,8 +58,9 @@ including when the `Users` table already exists. Explicit CLI schema provisionin
 initialization preserves existing counters and replay state on SQLite and MySQL.
 
 With debug mode off, ordinary requests do not create tables. For installations
-provisioned directly in production, apply `private/migrations/001-auth-state.sql`
-through the normal migration process before deploying. Missing authentication state
+provisioned directly in production, run `php private/migrate.php` in the configured
+application environment before deploying; it provisions framework tables and applies
+`private/migrations/001-auth-state.sql` through tracked migration history. Missing authentication state
 fails authentication closed. Do not grant the runtime account additional schema
 privileges just for this migration.
 

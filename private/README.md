@@ -1,23 +1,11 @@
-### Generate a Self-Signed SSL Certificate
+# Development infrastructure
 
-1. Install **mkcert** and generate the certificate files in this directory:
+[Project home](../README.md) · [Documentation](../docs/DOCUMENTATION.md)
 
-```language-bash
-brew install mkcert
-mkcert -install -key-file key.pem -cert-file cert.pem ohcrud.test "*.ohcrud.test" localhost 127.0.0.1 ::1
-```
+Use [Getting started](../docs/getting-started.md#https-development-with-compose) for the complete HTTPS Compose setup, certificate generation, mounts, database configuration, and administrator provisioning. The development hostname is `ohcrud.test`.
 
-2. Update your hosts file to point `ohcrud.test` to `127.0.0.1`:
+- [Migrations](../docs/Migrations.md): schema provisioning and upgrade commands.
+- [Deployment and testing](../docs/deployment-and-testing.md): production boundaries and test commands.
+- [Test runner README](tests/README.md): disposable HTTP/HTTPS fixtures and focused checks.
 
-```language-bash
-sudo sh -c 'echo "127.0.0.1 ohcrud.test" >> /etc/hosts'
-```
-
-### Run the Hurl Tests
-
-Make the test script executable and run it:
-
-```language-bash
-chmod +x test.sh
-./test.sh
-```
+Prefer `python3 private/tests/full_hurl.py` from the repository root for the full HTTPS suite. The legacy `hurl/test.sh` uses `ohcrud.loc` and requires a separately configured disposable database; it is not the Compose setup command.
