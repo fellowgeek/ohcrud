@@ -14,24 +14,15 @@ class cFiles extends \app\models\mFiles {
         'upload' => 1,
     ];
 
-    // Define an array of file extensions allowed for uploading.
-    private $filesAllowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'csv', 'txt', 'pdf', 'xml', 'xlsx', 'json', 'zip', 'mp3'];
-
-    // Allowed MIME types
+    // Match extensions to content types; active SVG documents are not accepted.
     private $mimeTypesAllowed = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/svg+xml',
-        'text/csv',
-        'text/plain',
-        'application/pdf',
-        'application/xml',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/json',
-        'application/zip',
-        'audio/mpeg',
+        'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'],
+        'gif' => ['image/gif'], 'webp' => ['image/webp'],
+        'csv' => ['text/csv', 'text/plain'], 'txt' => ['text/plain'],
+        'pdf' => ['application/pdf'], 'xml' => ['application/xml', 'text/xml'],
+        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+        'json' => ['application/json', 'text/plain'], 'zip' => ['application/zip'],
+        'mp3' => ['audio/mpeg'],
     ];
 
     // Define the 'upload' method for this controller.
@@ -55,15 +46,26 @@ class cFiles extends \app\models\mFiles {
             return $this;
         }
 
+        // Validate upload completion and application size limits before inspecting content.
+        if (($_FILES[0]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK ||
+            is_string($_FILES[0]['name'] ?? null) == false ||
+            is_string($_FILES[0]['tmp_name'] ?? null) == false ||
+            is_uploaded_file($_FILES[0]['tmp_name']) == false) {
+            return $this->error('Incomplete upload.')->output();
+        }
+        if (filesize($_FILES[0]['tmp_name']) > 16 * 1024 * 1024) {
+            return $this->error('Upload exceeds 16 MiB.', 413)->output();
+        }
+
         // Get file information such as name, extension, and generate a unique path.
         $BASENAME = basename($_FILES[0]['name']);
         $NAME = pathinfo($BASENAME, PATHINFO_FILENAME);
         $TYPE = strtolower(pathinfo($BASENAME, PATHINFO_EXTENSION));
-        $PATH = 'global/files/' . md5($BASENAME . microtime()) . '.' . $TYPE;
+        $PATH = 'global/files/' . bin2hex(random_bytes(16)) . '.' . $TYPE;
         $TEMP = $_FILES[0]['tmp_name'];
 
         // Check allowed file extension
-        if (in_array($TYPE, $this->filesAllowed) == false) {
+        if (isset($this->mimeTypesAllowed[$TYPE]) == false) {
             // If not allowed, generate an error message and respond with status code 415 ( Unsupported Media Type )
             $this->error('This file type is not allowed.', 415);
             $this->output();
@@ -75,29 +77,25 @@ class cFiles extends \app\models\mFiles {
         $detectedMime = finfo_file($finfo, $TEMP);
 
         // Check allowed MIME type, if not allowed, generate an error message and respond with status code 415 ( Unsupported Media Type )
-        if (!in_array($detectedMime, $this->mimeTypesAllowed)) {
+        if (in_array($detectedMime, $this->mimeTypesAllowed[$TYPE], true) == false) {
             $this->error('Unsupported file type detected.', 415);
             $this->output();
             return $this;
         }
 
-        // Move the uploaded file to a designated path.
-        if (move_uploaded_file($TEMP, __SELF__ . $PATH) == false) {
-            $this->error('Unable to move uploaded file.', 500);
-            $this->output();
-            return $this;
+        // Reject malformed raster images and excessive source dimensions before moving.
+        if (in_array($TYPE, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) == true) {
+            $dimensions = $this->getImageDimensions($TEMP);
+            if ($dimensions === false || $dimensions['width'] * $dimensions['height'] > 20000000) {
+                return $this->error('Invalid or oversized image.', 415)->output();
+            }
+            $WIDTH = $dimensions['width'];
+            $HEIGHT = $dimensions['height'];
         }
 
-        // If the file is an image, get its dimensions.
-        if (in_array($TYPE, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
-            $dimensions = $this->getImageDimensions(__SELF__ . $PATH);
-            if ($dimensions === false) {
-                $WIDTH = null;
-                $HEIGHT = null;
-            } else {
-                $WIDTH = $dimensions['width'];
-                $HEIGHT = $dimensions['height'];
-            }
+        // Move the uploaded file only after all content checks have passed.
+        if (move_uploaded_file($TEMP, __SELF__ . $PATH) == false) {
+            return $this->error('Unable to move uploaded file.', 500)->output();
         }
 
         // Prepare parameters for file insertion into the database.
@@ -116,7 +114,8 @@ class cFiles extends \app\models\mFiles {
         // Create a new file entry in the database using the 'create' method.
         $filesOutput = $this->create('Files', $filesParameters);
         if ($this->success == false) {
-            // If the creation fails, generate an error message.
+            // Remove the orphaned upload when its database record cannot be created.
+            unlink(__SELF__ . $PATH);
             $this->errors = [];
             $this->error('Another file with the same name already exists.', 409);
             $this->output();
