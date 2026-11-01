@@ -64,6 +64,9 @@ For detailed information on configuration, API, CMS, theming, and more, please r
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue.
 
+Before changing code, read the [agent instructions](AGENTS.md) and
+[coding style guide](docs/STYLE_GUIDE.md) for project conventions and validation steps.
+
 ## License
 
 ohCRUD is open-source software licensed under the [MIT license](LICENSE).
