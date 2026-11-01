@@ -118,18 +118,8 @@ class cCMS extends \app\models\mPages {
         // Normalize path
         $this->path = \strtolower($path);
 
-        // Get cached response (if any)
-        $cacheKey = 'cCMS:' . $this->path . http_build_query($_GET ?? '');
-        $cachedResponse = $this->getCache($cacheKey, __OHCRUD_CMS_CACHE_DURATION__);
-        if ($this->useCache == true && $cachedResponse !== false) {
-            $this->data = $cachedResponse;
-            // Inject the uncachable content
-            $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);
-            $this->data = str_ireplace("{{CMS:UNCACHABLE-JS}}", $this->getUnCachableContentJS(), $this->data);
-            // Output the HTML page
-            $this->output();
-            return;
-        }
+        // Render for each request: pages, embedded content and components can depend
+        // on current permissions or session state. Shared HTML must not bypass them.
 
         // Include application javascript & css files
         $this->includeCSSFile('/global/css/global.css', 1);
@@ -151,11 +141,6 @@ class cCMS extends \app\models\mPages {
 
         // Process theme & layout
         $this->processTheme();
-
-        // Set cache
-        if ($this->actionMode == false && $this->content->statusCode == 200) {
-            $this->setCache($cacheKey, $this->data);
-        }
 
         // Inject the uncachable content
         $this->data = str_ireplace("{{CMS:UNCACHABLE-HTML}}", $this->getUnCachableContentHTML(), $this->data);

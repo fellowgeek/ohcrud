@@ -25,6 +25,8 @@ with tempfile.TemporaryDirectory(prefix='ohcrud-http-') as directory:
     settings = settings.replace("'/logs/'", repr(str(root) + '/'))
     settings = settings.replace("define('__OHCRUD_SESSION_SECURE_COOKIE__', true)", "define('__OHCRUD_SESSION_SECURE_COOKIE__', false)")
     settings = settings.replace("$_SERVER['HTTP_HOST'] ?? ''", "'127.0.0.1'")
+    settings = settings.replace("define('__OHCRUD_CACHE_ENABLED__', false)", "define('__OHCRUD_CACHE_ENABLED__', true)")
+    settings = settings.replace("'/ramdisk/'", repr(str(root / 'cache') + '/'))
     settings = settings.replace('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', 'isolated-test-secret')
     settings = settings.replace("'DRIVER' => 'MYSQL'", "'DRIVER' => 'SQLITE'")
     settings = settings.replace("'database_filename.db'", repr(str(root / 'test.sqlite')))
