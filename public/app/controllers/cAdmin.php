@@ -135,7 +135,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Default values for optional parameters.
         $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
-        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : min(100, (int) $request->payload->LIMIT);
 
         $order = $request->payload->ORDER ??  'DESC';
         if (strtoupper($order) !== 'ASC' && strtoupper($order) !== 'DESC') {
@@ -151,10 +151,8 @@ class cAdmin extends \ohCRUD\DB {
         $totalRecords = $this->run("SELECT COUNT(*) AS `COUNT` FROM " . $table, [], false)->first()->COUNT;
         $totalPages = ceil($totalRecords / $limit);
 
-        // Clamp the variable ranges
-        if ($limit > 100) $limit = 100;
-        if ($limit > $totalRecords) $limit = $totalRecords;
-        if ($page > $totalPages) $page = $totalPages;
+        // Clamp the page after calculating totals with the effective limit.
+        if ($page > $totalPages) $page = max(1, (int) $totalPages);
         $offset = ($page - 1) * $limit;
         if ($offset <= 0) $offset = 0;
 
@@ -192,7 +190,7 @@ class cAdmin extends \ohCRUD\DB {
         // Get pagination meta data
         $hasNextPage = $page < $totalPages;
         $hasPreviousPage = $page > 1;
-        $showingRangeFrom = ($offset + 1);
+        $showingRangeFrom = $totalRecords > 0 ? ($offset + 1) : 0;
         $showingRangeTo = ($offset + $limit);
         if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
 
@@ -1000,7 +998,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Default values for optional parameters.
         $page = (int) $request->payload->PAGE <= 0 ? 1 : (int) $request->payload->PAGE;
-        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+        $limit = (int) $request->payload->LIMIT <= 0 ? 10 : min(100, (int) $request->payload->LIMIT);
 
         // Get total records
         $totalRecords = $this->countLogRecords($filename);
@@ -1013,10 +1011,8 @@ class cAdmin extends \ohCRUD\DB {
         // Calculate total pages
         $totalPages = ceil($totalRecords / $limit);
 
-        // Clamp the variable ranges
-        if ($limit > 100) $limit = 100;
-        if ($limit > $totalRecords) $limit = $totalRecords;
-        if ($page > $totalPages) $page = $totalPages;
+        // Clamp the page after calculating totals with the effective limit.
+        if ($page > $totalPages) $page = max(1, (int) $totalPages);
         $offset = ($page - 1) * $limit;
         if ($offset < 0) $offset = 0;
 
@@ -1053,7 +1049,9 @@ class cAdmin extends \ohCRUD\DB {
                 $trimmed = trim($line);
                 $trimmed = str_replace('"file":"' . __SELF__, '"file":".../', $trimmed);
                 if ($trimmed !== '') {
-                    $lines[] = $trimmed;
+                    if ($foundLines >= $offset) {
+                        $lines[] = $trimmed;
+                    }
                     $foundLines++;
                     if ($foundLines >= ($limit + $offset)) {
                         break;
@@ -1068,7 +1066,9 @@ class cAdmin extends \ohCRUD\DB {
                 $trimmed = trim($line);
                 $trimmed = str_replace('"file":"' . __SELF__, '"file":".../', $trimmed);
                 if ($trimmed !== '') {
-                    $lines[] = $trimmed;
+                    if ($foundLines >= $offset) {
+                        $lines[] = $trimmed;
+                    }
                     $foundLines++;
                     if ($foundLines >= ($limit + $offset)) {
                         break;
@@ -1079,14 +1079,14 @@ class cAdmin extends \ohCRUD\DB {
 
         fclose($fp);
 
-        // Apply offset and limit, and parse JSON
-        $result = array_slice($lines, $offset, $limit);
+        // Parse only the requested page; skipped records were not retained.
+        $result = $lines;
         $this->data = array_values(array_filter(array_map('json_decode', $result)));
 
         // Get pagination meta data
         $hasNextPage = $page < $totalPages;
         $hasPreviousPage = $page > 1;
-        $showingRangeFrom = ($offset + 1);
+        $showingRangeFrom = $totalRecords > 0 ? ($offset + 1) : 0;
         $showingRangeTo = ($offset + $limit);
         if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
 
@@ -1146,6 +1146,7 @@ class cAdmin extends \ohCRUD\DB {
 
         // Clear the log file
         file_put_contents($filepath, '');
+        $this->unsetCache('cAdmin:logCount:' . __OHCRUD_LOG_PATH__ . $filename);
         $this->log('info', 'Log file truncated.');
         $this->success = true;
 
@@ -1203,16 +1204,14 @@ class cAdmin extends \ohCRUD\DB {
             if (isset($request->payload->PAGE) == false) $request->payload->PAGE = 1;
             if (isset($request->payload->LIMIT) == false) $request->payload->LIMIT = 10;
             $page = (int) $request->payload->PAGE<= 0 ? 1 : (int) $request->payload->PAGE;
-            $limit = (int) $request->payload->LIMIT <= 0 ? 10 : (int) $request->payload->LIMIT;
+            $limit = (int) $request->payload->LIMIT <= 0 ? 10 : min(100, (int) $request->payload->LIMIT);
 
             // Get total records
             $totalRecords = $this->run("SELECT COUNT(*) AS `COUNT` FROM ( {$sql} ) AS _total_records_query;", [], false)->first()->COUNT ?? 0;
             $totalPages = ceil($totalRecords / $limit);
 
-            // Clamp the variable ranges
-            if ($limit > 100) $limit = 100;
-            if ($limit > $totalRecords) $limit = $totalRecords;
-            if ($page > $totalPages) $page = $totalPages;
+            // Clamp the page after calculating totals with the effective limit.
+            if ($page > $totalPages) $page = max(1, (int) $totalPages);
             $offset = ($page - 1) * $limit;
             if ($offset <= 0) $offset = 0;
 
@@ -1228,7 +1227,7 @@ class cAdmin extends \ohCRUD\DB {
             // Get pagination meta data
             $hasNextPage = $page < $totalPages;
             $hasPreviousPage = $page > 1;
-            $showingRangeFrom = ($offset + 1);
+            $showingRangeFrom = $totalRecords > 0 ? ($offset + 1) : 0;
             $showingRangeTo = ($offset + $limit);
             if ($showingRangeTo > $totalRecords) $showingRangeTo = $totalRecords;
 
@@ -1459,28 +1458,44 @@ class cAdmin extends \ohCRUD\DB {
         return $output;
     }
 
-    // This function counts the number of log records in a given log file.
-    private function countLogRecords($logFile)  {
-
-        if (file_exists(__OHCRUD_LOG_PATH__ . $logFile) == false) {
+    // Reuse counts for unchanged logs; keep exact page totals and close every handle.
+    private function countLogRecords($logFile) {
+        $path = __OHCRUD_LOG_PATH__ . $logFile;
+        if (is_file($path) == false) {
             return false;
         }
-
-        $fp = fopen(__OHCRUD_LOG_PATH__ . $logFile, 'r');
-        if (!$fp) {
+        clearstatcache(true, $path);
+        $stat = stat($path);
+        if ($stat === false) {
             return false;
         }
-
-       // A simple way to count lines
+        $signature = [$stat['ino'], $stat['size'], $stat['mtime'], $stat['ctime']];
+        $cacheKey = 'cAdmin:logCount:' . $path;
+        $cached = $this->getCache($cacheKey);
+        if (is_object($cached) == true && ($cached->signature ?? null) === $signature &&
+            is_int($cached->count ?? null) == true) {
+            return $cached->count;
+        }
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            return false;
+        }
         $lineCount = 0;
-        $handle = fopen(__OHCRUD_LOG_PATH__ . $logFile, "r");
-        while(!feof($handle)) {
-            $line = fgets($handle);
-            if (trim($line) !== '') {
-                $lineCount++;
+        try {
+            while (($line = fgets($handle)) !== false) {
+                if (trim($line) !== '') {
+                    $lineCount++;
+                }
             }
+        } finally {
+            fclose($handle);
         }
-        fclose($handle);
+        // A changed log is counted again on the next request.
+        clearstatcache(true, $path);
+        $after = stat($path);
+        if ($after !== false && [$after['ino'], $after['size'], $after['mtime'], $after['ctime']] === $signature) {
+            $this->setCache($cacheKey, ['signature' => $signature, 'count' => $lineCount]);
+        }
         return $lineCount;
     }
 
