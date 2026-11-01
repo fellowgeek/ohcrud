@@ -56,7 +56,7 @@ class cUsers extends \ohCRUD\DB {
         $this->data->TOTP = $response->TOTP;
         $this->data->TOTPVerified = $response->TOTPVerified ?? false;
         $this->data->loggedIn = $response->loggedIn ?? false;
-        $this->data->REDIRECT = $request->payload->REDIRECT ?? '';
+        $this->data->REDIRECT = $this->localRedirect($request->payload->REDIRECT ?? '/');
 
         $this->output();
         return $this;
@@ -105,7 +105,7 @@ class cUsers extends \ohCRUD\DB {
 
         // Set user as logged in and set the REDIRECT property in the data object
         $this->data->loggedIn = true;
-        $this->data->REDIRECT = $request->payload->REDIRECT ?? '';
+        $this->data->REDIRECT = $this->localRedirect($request->payload->REDIRECT ?? '/');
         $this->output();
         return $this;
     }

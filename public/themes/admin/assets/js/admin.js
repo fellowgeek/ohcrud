@@ -151,8 +151,8 @@ $$(document).on('page:init', function (e, pageObject) {
                             $$('#TOTP').focus();
                         }
                     } else {
-                        if (data.REDIRECT != '') {
-                            window.location.href = data.REDIRECT;
+                        if (json.data.REDIRECT != '') {
+                            window.location.href = json.data.REDIRECT;
                         } else {
                             window.location.href = '/';
                         }
@@ -209,8 +209,8 @@ $$(document).on('page:init', function (e, pageObject) {
                 },
                 async function (response) {
                     const json = await response.json();
-                    if (data.REDIRECT != '') {
-                        window.location.href = data.REDIRECT;
+                    if (json.data.REDIRECT != '') {
+                        window.location.href = json.data.REDIRECT;
                     } else {
                         window.location.href = '/';
                     }

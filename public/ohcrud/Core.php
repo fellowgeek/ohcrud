@@ -74,6 +74,20 @@ class Core {
         return false;
     }
 
+    // Accept only local absolute paths for browser return destinations.
+    public function localRedirect($url) {
+        if (is_string($url) == false || $url === '' || $url[0] !== '/' ||
+            substr($url, 0, 2) === '//' || preg_match('/[\\x00-\\x20\\x7f\\\\]/', $url) === 1) {
+            return '/';
+        }
+        // Reject encoded slashes, backslashes and control characters as well.
+        $decoded = rawurldecode($url);
+        if (substr($decoded, 0, 2) === '//' || preg_match('/[\\x00-\\x20\\x7f\\\\]/', $decoded) === 1) {
+            return '/';
+        }
+        return $url;
+    }
+
     // Set the output type for the response.
     public function setOutputType($outputType) {
         $this->outputType = $outputType;
