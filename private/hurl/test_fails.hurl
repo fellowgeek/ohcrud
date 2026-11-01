@@ -74,7 +74,7 @@ jsonpath "$.success" == false
 jsonpath "$.errors" exists
 
 ## Call the API to validate the user with bad ohCRUD token (should fail)
-POST https://{{host}}/example/protectedEndPoint/
+GET https://{{host}}/example/protectedEndPoint/
 Token: bad_ohcrud_token_spt0q7fsb4vp9vusa67u
 [Options]
 verbose: true
@@ -90,7 +90,7 @@ jsonpath "$.success" == false
 jsonpath "$.errors" exists
 
 ## Call public API (should pass)
-POST https://{{host}}/example/publicEndPoint/
+GET https://{{host}}/example/publicEndPoint/
 [Options]
 verbose: true
 delay: 1s
