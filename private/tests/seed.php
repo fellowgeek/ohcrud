@@ -25,3 +25,7 @@ $stmt->execute(['testmfa', password_hash('Test-password-42!' . 'isolated-test-se
 $image = imagecreatetruecolor(2, 10);
 imagepng($image, getenv('OHCRUD_TEST_ROOT') . '/global/files/test.png');
 file_put_contents(getenv('OHCRUD_TEST_ROOT') . '/global/files/bad.png', 'not an image');
+
+// Lower-privilege account for authorization checks after cache warming.
+$stmt = $db->prepare('INSERT INTO Users (ID, USERNAME, PASSWORD, PERMISSIONS, STATUS, TOTP) VALUES (3, ?, ?, 2, 1, 0)');
+$stmt->execute(['testreader', password_hash('Test-password-42!' . 'isolated-test-secret-at-least-32-characters', PASSWORD_BCRYPT, ['cost' => 4])]);

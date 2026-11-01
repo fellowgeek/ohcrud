@@ -1,4 +1,4 @@
-# Run with python3 private/tests/http.py; never uses the developer database.
+# Run with python3 private/tests/http_tests.py; never uses the developer database.
 GET {{base}}/login/?redirect=/%22%3E%3Cscript%3Ewindow.audit=1%3C/script%3E
 HTTP 200
 [Captures]

@@ -49,18 +49,20 @@ with tempfile.TemporaryDirectory(prefix='ohcrud-http-') as directory:
                         break
                 except OSError:
                     time.sleep(0.05)
-            files = sys.argv[1:] or [str(repo / 'private/hurl/security_login.hurl')]
+            files = sys.argv[1:] or [str(repo / 'private/hurl/security/security_login.hurl')]
             for test in [f for f in files if f.endswith('.php')]:
                 subprocess.run(['php', str(Path(test).resolve())], env=env, check=True)
             files = [f for f in files if not f.endswith('.php')]
             if not files:
-                files = [str(repo / 'private/hurl/security_login.hurl')]
+                files = [str(repo / 'private/hurl/security/security_login.hurl')]
             if time.time() % 30 > 27:
                 time.sleep(30 - time.time() % 30)
             digest = hmac.new(base64.b32decode('JBSWY3DPEHPK3PXP'), struct.pack('>Q', int(time.time()) // 30), hashlib.sha1).digest()
             offset = digest[-1] & 15
             code = f'{(struct.unpack(">I", digest[offset:offset + 4])[0] & 0x7fffffff) % 1000000:06d}'
-            subprocess.run(['hurl', '--test', '--variable', f'totp={code}', '--variable', f'base=http://127.0.0.1:{port}', *files], check=True)
+            subprocess.run(['hurl', '--test', '--file-root', str(repo / 'private/hurl'), '--variable', f'totp={code}', '--variable', f'base=http://127.0.0.1:{port}', *files], check=True)
+            if any('security_sessions.hurl' in f for f in files):
+                subprocess.run([sys.executable, str(repo / 'private/tests/sessions.py'), str(port)], check=True)
         except Exception:
             log.seek(0)
             print(log.read(), file=sys.stderr)

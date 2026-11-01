@@ -3,14 +3,18 @@
 These tests require PHP with PDO SQLite, GD and the installed Composer dependencies,
 Python 3, and Hurl. They never load local application settings or use the application database.
 
-Run from the repository root:
+Run all security regressions from the repository root with `python3 private/tests/run.py`.
+Each HTTP suite receives its own disposable database. The security Hurl files live in
+`private/hurl/security/` so the legacy `private/hurl/*.hurl` command is unchanged.
+
+To run individual checks:
 
 ```sh
 php private/tests/component.php
 php private/tests/login.php
-python3 private/tests/http.py private/tests/totp.php private/hurl/security_totp.hurl
-python3 private/tests/http.py private/hurl/security_auth.hurl
-python3 private/tests/http.py private/hurl/security_login.hurl private/hurl/security_cache.hurl
+python3 private/tests/http_tests.py private/tests/totp.php private/hurl/security/security_totp.hurl
+python3 private/tests/http_tests.py private/hurl/security/security_auth.hurl
+python3 private/tests/http_tests.py private/hurl/security/security_login.hurl private/hurl/security/security_cache.hurl
 ```
 
 The HTTP runner creates and removes a temporary application copy, SQLite database,

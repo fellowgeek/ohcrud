@@ -63,6 +63,14 @@ for ($attempt = 0; $attempt < 110; $attempt++) {
     check($users->login(null, null, str_repeat('a', 40) . str_repeat('b', 40)) !== false, 'Valid token traffic exhausted the IP failure allowance.');
 }
 check($users->validateSession() === true, 'Fresh token session invalid.');
+$savedPassword = $users->read('Users', 'ID = 2')->first()->PASSWORD;
+$users->db->exec("UPDATE Users SET PASSWORD = 'changed' WHERE ID = 2");
+check($users->validateSession() === false, 'Password change retained an existing session.');
+$users->db->prepare('UPDATE Users SET PASSWORD = ? WHERE ID = 2')->execute([$savedPassword]);
+$users->login(null, null, str_repeat('a', 40) . str_repeat('b', 40));
+$_SESSION['authentication']->created = time() - __OHCRUD_SESSION_LIFETIME__;
+check($users->validateSession() === false, 'Expired session was accepted.');
+$users->login(null, null, str_repeat('a', 40) . str_repeat('b', 40));
 $users->db->exec('UPDATE Users SET PERMISSIONS = 2 WHERE ID = 2');
 check($users->validateSession() === false, 'Demoted account retained its session.');
 $users->db->exec('UPDATE Users SET PERMISSIONS = 1 WHERE ID = 2');
