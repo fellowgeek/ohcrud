@@ -1,4 +1,5 @@
--- Apply before deploying authentication hardening. Compatible with SQLite and MySQL.
+-- Optional production provisioning; Users creates this table automatically in debug mode.
+-- Compatible with SQLite and MySQL.
 CREATE TABLE IF NOT EXISTS AuthState (
     ID VARCHAR(128) NOT NULL PRIMARY KEY,
     ATTEMPTS INTEGER NOT NULL DEFAULT 0,

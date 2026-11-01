@@ -26,10 +26,16 @@ code for the disposable account.
 
 ## Deployment migration
 
-Apply `private/migrations/001-auth-state.sql` before deploying the authentication
-changes, using the database's normal migration process. The SQL supports SQLite and
-MySQL. Missing authentication state fails authentication closed. Do not grant the
-runtime account additional schema privileges just for this migration.
+`Users` automatically creates a missing `AuthState` table when debug mode is on,
+including when the `Users` table already exists. Explicit CLI schema provisioning
+(`new Users(true)`, used by `private/create-admin.php`) also creates it. Repeated
+initialization preserves existing counters and replay state on SQLite and MySQL.
+
+With debug mode off, ordinary requests do not create tables. For installations
+provisioned directly in production, apply `private/migrations/001-auth-state.sql`
+through the normal migration process before deploying. Missing authentication state
+fails authentication closed. Do not grant the runtime account additional schema
+privileges just for this migration.
 
 Existing sessions are invalidated on deployment because they lack the new security
 fingerprint. Password, status, permissions, username, token or TOTP changes invalidate
@@ -74,5 +80,5 @@ Debug schema initialization no longer creates `admin/admin`. For an initial admi
 run `php private/create-admin.php` in the configured application environment with
 `OHCRUD_ADMIN_USERNAME`, `OHCRUD_ADMIN_EMAIL`, and `OHCRUD_ADMIN_PASSWORD` supplied
 securely through the environment; unset the password afterward. Existing accounts
-are preserved. This command does not replace the application's other schema setup
-or the required authentication-state migration.
+are preserved. This command provisions both `Users` and `AuthState`; it does not replace the
+application's other schema setup.
