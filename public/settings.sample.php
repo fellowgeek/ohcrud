@@ -113,3 +113,6 @@ define('__OHCRUD_CMS_MINIFY_CSS__', false);
 
 // Enable or disable minification of JavaScript files
 define('__OHCRUD_CMS_MINIFY_JS__', false);
+
+// Change this release identifier when deploying assets with preserved file metadata.
+define('__OHCRUD_CMS_ASSET_VERSION__', '');

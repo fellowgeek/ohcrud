@@ -49,8 +49,10 @@ protection atomically consumes each accepted TOTP time step across sessions. API
 tokens intentionally authenticate without TOTP.
 
 CMS rendered HTML is no longer shared through the application cache: components and
-embedded pages may depend on the viewer's current authorization. Core cache helpers
-remain available for application data that is safe to share.
+embedded pages may depend on the viewer's current authorization. Purified Markdown fragments may be cached by content and renderer version after
+checking current page permissions and status. Components, embedded content and
+session output are still rendered on each request. Core cache helpers remain
+available for application data that is safe to share.
 
 ## Authenticator management
 
@@ -82,3 +84,8 @@ run `php private/create-admin.php` in the configured application environment wit
 securely through the environment; unset the password afterward. Existing accounts
 are preserved. This command provisions both `Users` and `AuthState`; it does not replace the
 application's other schema setup.
+
+CMS asset bundles use ordered source paths, size, inode and modification metadata
+for versioning. Set `__OHCRUD_CMS_ASSET_VERSION__` to a new release identifier when
+deploying assets with preserved metadata (or clear `public/global/minified/`).
+In-place edits with identical size and timestamps require the same invalidation.

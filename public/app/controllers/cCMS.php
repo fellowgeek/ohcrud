@@ -11,6 +11,8 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Controller cCMS - CMS controller used by the OhCRUD framework
 class cCMS extends \app\models\mPages {
 
+    const SAFE_IFRAME_PATTERN = '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%';
+
     // The path of the requested content.
     public $path;
     // The content of the page.
@@ -51,14 +53,15 @@ class cCMS extends \app\models\mPages {
     // Allowed CMS actions
     public $allowedActions = ['edit', 'users', 'tables', 'files', 'sql', 'server', 'logs'];
     // Allowed components for instantiation
-    public $allowedComponents = [];
+    public $allowedComponents = null;
 
     public function __construct($request) {
         parent::__construct();
 
         $this->request = $request;
         $this->content = new \app\models\mContent;
-        $this->pages = new \app\models\mPages;
+        // The inherited page model already owns the database connection.
+        $this->pages = $this;
 
         // Set login status
         $this->loggedIn = isset($_SESSION['User']);
@@ -93,21 +96,37 @@ class cCMS extends \app\models\mPages {
             $this->useCache = false;
         }
 
-        // Setup markdown processor
-        $this->markdownExtra = new MarkdownExtra();
-        $this->markdownExtra->enhanced_ordered_list = true;
-
-        // Setup HTML purifier
+        // Templates also use the purifier, including hard-coded error and admin views.
         $this->purifier = new HTMLPurifier();
         $this->purifier->config->set('HTML.SafeIframe', true);
-        $this->purifier->config->set('URI.SafeIframeRegexp', '%^(https?:)?//(www\.youtube(?:-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%');
+        $this->purifier->config->set('URI.SafeIframeRegexp', self::SAFE_IFRAME_PATTERN);
+    }
 
-        // Setup minifiers
-        $this->minifierCSS = new Minify\CSS();
-        $this->minifierJS = new Minify\JS();
-
-        // Scan for allowed components to build a whitelist.
-        $this->allowedComponents = $this->scanComponents(__SELF__ . 'app/components');
+    // Cache only purified Markdown; permission checks and component rendering stay live.
+    private function renderMarkdown($text) {
+        $iframePattern = self::SAFE_IFRAME_PATTERN;
+        $cacheKey = 'cCMS:markdown:' . hash('sha256', json_encode([
+            'renderer-v1', MarkdownExtra::MARKDOWNLIB_VERSION, HTMLPurifier::VERSION,
+            $iframePattern, $text,
+        ], JSON_THROW_ON_ERROR));
+        $html = $this->useCache == true ? $this->getCache($cacheKey, __OHCRUD_CMS_CACHE_DURATION__) : false;
+        if (is_string($html) == true) {
+            return $html;
+        }
+        if (isset($this->markdownExtra) == false) {
+            $this->markdownExtra = new MarkdownExtra();
+            $this->markdownExtra->enhanced_ordered_list = true;
+        }
+        if (isset($this->purifier) == false) {
+            $this->purifier = new HTMLPurifier();
+            $this->purifier->config->set('HTML.SafeIframe', true);
+            $this->purifier->config->set('URI.SafeIframeRegexp', $iframePattern);
+        }
+        $html = $this->purifier->purify($this->markdownExtra->transform(preg_replace('/~~(.*?)~~/i', '<del>$1</del>', $text)));
+        if ($this->useCache == true) {
+            $this->setCache($cacheKey, $html);
+        }
+        return $html;
     }
 
     // Handler for all incoming requests
@@ -180,21 +199,42 @@ class cCMS extends \app\models\mPages {
         $basePathMinified = __SELF__ . '/global/minified/';
         if (__OHCRUD_CMS_MINIFY_CSS__ == true) {
             $combinedHash = $this->getCombinedFilesHash($basePath, array_keys($this->cssFiles), 'sha1');
-            if (file_exists($basePathMinified . $combinedHash . '.min.css') == true) {
-                // If the combined minified file already exists, use it
+            if ($combinedHash !== false) {
+                if (file_exists($basePathMinified . $combinedHash . '.min.css') == true) {
+                    // If the combined minified file already exists, use it
+                    $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
+                    return;
+                }
+
+                // Build the minifier only when the versioned bundle is missing.
+                $this->minifierCSS = new Minify\CSS();
+                // If the combined minified file does not exist, create it
+                foreach ($this->cssFiles as $cssFile => $priority) {
+                    $this->minifierCSS->add($basePath . $cssFile);
+                }
+                if (is_dir($basePathMinified) == false) {
+                    mkdir($basePathMinified, 0755, true);
+                }
+                $temporaryPath = tempnam($basePathMinified, '.bundle-');
+                if ($temporaryPath === false) {
+                    throw new \RuntimeException('Unable to create an asset bundle.');
+                }
+                try {
+                    $this->minifierCSS->minify($temporaryPath);
+                    chmod($temporaryPath, 0644);
+                    if (rename($temporaryPath, $basePathMinified . $combinedHash . '.min.css') == false) {
+                        throw new \RuntimeException('Unable to publish an asset bundle.');
+                    }
+                } finally {
+                    if (is_file($temporaryPath) == true) {
+                        unlink($temporaryPath);
+                    }
+                }
+
+                // Use the combined minified file
                 $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
                 return;
             }
-
-            // If the combined minified file does not exist, create it
-            foreach ($this->cssFiles as $cssFile => $priority) {
-                $this->minifierCSS->add($basePath . $cssFile);
-            }
-            $this->minifierCSS->minify($basePathMinified . $combinedHash . '.min.css');
-
-            // Use the combined minified file
-            $this->content->stylesheet .= '<link rel="stylesheet" href="/global/minified/' . $combinedHash . '.min.css" media="all" />' . "\n";
-            return;
         }
 
         foreach ($this->cssFiles as $cssFile => $priority) {
@@ -219,21 +259,42 @@ class cCMS extends \app\models\mPages {
         $basePathMinified = __SELF__ . '/global/minified/';
         if (__OHCRUD_CMS_MINIFY_JS__ == true) {
             $combinedHash = $this->getCombinedFilesHash($basePath, array_keys($this->jsFiles), 'sha1');
-            if (file_exists($basePathMinified . $combinedHash . '.min.js') == true) {
-                // If the combined minified file already exists, use it
+            if ($combinedHash !== false) {
+                if (file_exists($basePathMinified . $combinedHash . '.min.js') == true) {
+                    // If the combined minified file already exists, use it
+                    $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
+                    return;
+                }
+
+                // Build the minifier only when the versioned bundle is missing.
+                $this->minifierJS = new Minify\JS();
+                // If the combined minified file does not exist, create it
+                foreach ($this->jsFiles as $jsFile => $priority) {
+                    $this->minifierJS->add($basePath . $jsFile);
+                }
+                if (is_dir($basePathMinified) == false) {
+                    mkdir($basePathMinified, 0755, true);
+                }
+                $temporaryPath = tempnam($basePathMinified, '.bundle-');
+                if ($temporaryPath === false) {
+                    throw new \RuntimeException('Unable to create an asset bundle.');
+                }
+                try {
+                    $this->minifierJS->minify($temporaryPath);
+                    chmod($temporaryPath, 0644);
+                    if (rename($temporaryPath, $basePathMinified . $combinedHash . '.min.js') == false) {
+                        throw new \RuntimeException('Unable to publish an asset bundle.');
+                    }
+                } finally {
+                    if (is_file($temporaryPath) == true) {
+                        unlink($temporaryPath);
+                    }
+                }
+
+                // Use the combined minified file
                 $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
                 return;
             }
-
-            // If the combined minified file does not exist, create it
-            foreach ($this->jsFiles as $jsFile => $priority) {
-                $this->minifierJS->add($basePath . $jsFile);
-            }
-            $this->minifierJS->minify($basePathMinified . $combinedHash . '.min.js');
-
-            // Use the combined minified file
-            $this->content->javascript .= '<script src="/global/minified/' . $combinedHash . '.min.js"></script>' . "\n";
-            return;
         }
 
         foreach ($this->jsFiles as $jsFile => $priority) {
@@ -241,23 +302,21 @@ class cCMS extends \app\models\mPages {
         }
     }
 
-    // Get combined hash of all files
+    // Version bundles from ordered source paths and file metadata without reading each asset.
     private function getCombinedFilesHash($basePath, $files, $algo = 'sha1') {
-
-        // Initialize the hashing context
-        $ctx = hash_init($algo);
-
-        // Loop through each file and update the hash context
+        $signatures = [defined('__OHCRUD_CMS_ASSET_VERSION__') == true ? __OHCRUD_CMS_ASSET_VERSION__ : ''];
         foreach ($files as $file) {
-            if (is_readable($basePath. $file) == false) {
+            $path = $basePath . $file;
+            if (is_file($path) == false || is_readable($path) == false) {
                 return false;
             }
-            // Stream the file directly into the hash function
-            hash_update_file($ctx, $basePath. $file);
+            $stat = stat($path);
+            if ($stat === false) {
+                return false;
+            }
+            $signatures[] = [$file, $stat['ino'], $stat['size'], $stat['mtime'], $stat['ctime']];
         }
-
-        // Finalize the hash and return it
-        return hash_final($ctx);
+        return hash($algo, json_encode($signatures, JSON_THROW_ON_ERROR));
     }
 
     // Load content
@@ -332,7 +391,7 @@ class cCMS extends \app\models\mPages {
             case $this::PUBLISHED:
                 // Published page
                 $content->text = $page->TEXT;
-                $content->html = $this->purifier->purify($this->markdownExtra->transform(preg_replace('/~~(.*?)~~/i', '<del>$1</del>', $page->TEXT)));
+                $content->html = $this->renderMarkdown($page->TEXT);
                 break;
             case $this::DRAFT:
                 // Allow editing draft pages
@@ -481,6 +540,11 @@ class cCMS extends \app\models\mPages {
         $content = new \app\models\mContent;
         $componentParameters = $this->parseString($componentString);
         $componentClassFile = str_replace('\\', '/', key($componentParameters));
+
+        // Scan once, and only on requests that actually render components.
+        if ($this->allowedComponents === null) {
+            $this->allowedComponents = $this->scanComponents(__SELF__ . 'app/components');
+        }
 
         // Check if the component is in the whitelist.
         if (in_array($componentClassFile, $this->allowedComponents) == false) {

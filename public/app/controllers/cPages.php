@@ -107,10 +107,6 @@ class cPages extends \app\models\mPages {
             );
         }
 
-        // Invalidate the cache
-        $cacheKey = 'cCMS:' . $request->payload->URL;
-        $this->unsetCache($cacheKey);
-
         $this->output();
     }
 
@@ -163,10 +159,6 @@ class cPages extends \app\models\mPages {
                 ]
             );
         }
-
-        // Invalidate the cache
-        $cacheKey = 'cCMS:' . $request->payload->URL;
-        $this->unsetCache($cacheKey);
 
         $this->output();
     }
