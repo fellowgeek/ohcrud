@@ -121,7 +121,7 @@ Here's an overview of the key folders and files in the ohCRUD project:
 
 The ohCRUD framework has a few system requirements. You will need to make sure your server meets the following requirements:
 
-*   PHP >= 8.0
+*   PHP >= 8.1 (required by the current Composer dependencies)
 *   PDO PHP Extension
 *   Mbstring PHP Extension
 *   PHP Curl Extension

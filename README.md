@@ -20,7 +20,7 @@
 
 ## Requirements
 
-- PHP >= 8.0
+- PHP >= 8.1 (required by the current Composer dependencies)
 - Composer
 - PDO PHP Extension
 - Mbstring PHP Extension
