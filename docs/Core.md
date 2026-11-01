@@ -40,7 +40,7 @@ $this->log('info', 'This is a test log.')->debug($_SERVER)->output();
 | `headers()` | Sends the HTTP headers. | `Core` Object |
 | `redirect($url)` | Performs an HTTP redirect. | boolean |
 | `getCache($key, $duration = 3600)` | Retrieves data from the cache. | mixed |
-| `setCache($key, $data)` | Stores data in the cache. | boolean |
+| `setCache($key, $data)` | Atomically stores JSON data in the cache. | Bytes written, or `false` on failure |
 | `unsetCache($key)` | Removes data from the cache. | boolean |
 | `encryptText($text, $password = '')` | Encrypts a string. | string |
 | `decryptText($encryptedText, $password = '')` | Decrypts a string. | string |
@@ -53,3 +53,8 @@ $this->log('info', 'This is a test log.')->debug($_SERVER)->output();
 | `background($command, $wait = 0)` | Executes a CLI command in the background. | void |
 | `console($message, $color, ...)` | Outputs a colored message to the console (CLI only). | boolean |
 | `debug($expression, $label, ...)` | A wrapper for `php-ref` to debug variables. | `Core` Object |
+
+Cache reads return `false` for missing, expired or malformed entries. Valid JSON
+values retain their decoded types (objects decode to objects). A stored boolean
+`false` is therefore indistinguishable from a miss. Failed serialization preserves
+the previous entry; complete replacement files are published atomically.

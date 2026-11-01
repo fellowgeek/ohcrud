@@ -245,42 +245,55 @@ class Core {
 
         $hash = md5(__APP__ . $key) . '.cache';
         $path = __OHCRUD_CACHE_PATH__ . $hash;
+        clearstatcache(true, $path);
 
         if (file_exists($path) == false) {
             return false;
         }
 
-        $age = time() - filemtime($path);
-        if ($age >= $duration) {
-            return false;
-        }
-
         try {
-            $data = json_decode(file_get_contents($path));
+            if (time() - filemtime($path) >= $duration) {
+                return false;
+            }
+            $json = file_get_contents($path);
+            if ($json === false) {
+                return false;
+            }
+            return json_decode($json, false, 512, JSON_THROW_ON_ERROR);
         } catch (\Exception $e) {
             return false;
         }
-        return $data;
     }
 
-    // Store data in cache.
+    // Atomically publish complete JSON so concurrent readers never see a partial write.
     public function setCache($key, $data) {
-
         if (__OHCRUD_CACHE_ENABLED__ == false) {
             return false;
         }
 
-        $hash = md5(__APP__ . $key) . '.cache';
-        $path = __OHCRUD_CACHE_PATH__ . $hash;
-
+        $path = __OHCRUD_CACHE_PATH__ . md5(__APP__ . $key) . '.cache';
+        $temporaryPath = false;
         try {
+            // Validate serialization before replacing an existing cache entry.
+            $json = json_encode($data, JSON_THROW_ON_ERROR);
             if (is_dir(__OHCRUD_CACHE_PATH__) == false) {
                 mkdir(__OHCRUD_CACHE_PATH__, 0755, true);
             }
-            $data = json_encode($data);
-            return file_put_contents($path, $data, LOCK_EX);
+            $temporaryPath = tempnam(__OHCRUD_CACHE_PATH__, '.cache-');
+            if ($temporaryPath === false) {
+                return false;
+            }
+            $bytes = file_put_contents($temporaryPath, $json);
+            if ($bytes !== strlen($json) || rename($temporaryPath, $path) == false) {
+                return false;
+            }
+            return $bytes;
         } catch (\Exception $e) {
             return false;
+        } finally {
+            if ($temporaryPath !== false && is_file($temporaryPath) == true) {
+                unlink($temporaryPath);
+            }
         }
     }
 
