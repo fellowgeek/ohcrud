@@ -56,3 +56,19 @@ The legacy `Users::enableTOTP()` helper now returns false; use `beginTOTP()` and
 requires a separately controlled operational process, rather than an unrestricted
 secret-read/reset endpoint. Raw SQL remains a database-administrator capability
 when explicitly enabled and must not be granted to untrusted application editors.
+
+## Production configuration
+
+The sample configuration disables debug output and raw SQL execution. Existing
+local settings are not rewritten: apply those values deliberately when deploying.
+The web bootstrap rejects an unset/short/placeholder application secret. PHP logs
+errors privately; the Nginx configuration blocks template/dependency files and
+serves non-raster uploads as sandboxed attachments. Reload Nginx and restart PHP
+through the deployment process to apply server configuration changes.
+
+Debug schema initialization no longer creates `admin/admin`. For an initial admin,
+run `php private/create-admin.php` in the configured application environment with
+`OHCRUD_ADMIN_USERNAME`, `OHCRUD_ADMIN_EMAIL`, and `OHCRUD_ADMIN_PASSWORD` supplied
+securely through the environment; unset the password afterward. Existing accounts
+are preserved. This command does not replace the application's other schema setup
+or the required authentication-state migration.

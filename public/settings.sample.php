@@ -24,7 +24,7 @@ define('__APP__', 'ohCRUD!');
 define('__OHCRUD_BASE_API_ROUTE__', '/ohcrud');
 
 // Enable or disable debug mode (set to false for production use).
-define('__OHCRUD_DEBUG_MODE__', true);
+define('__OHCRUD_DEBUG_MODE__', false);
 
 // Enable SQL query in the API responses (set to false for production use, depends on __OHCRUD_DEBUG_MODE__).
 define('__OHCRUD_DEBUG_MODE_SHOW_SQL__', false);
@@ -33,7 +33,7 @@ define('__OHCRUD_DEBUG_MODE_SHOW_SQL__', false);
 define('__OHCRUD_DEBUG_EXPANDED_LEVEL__', 3);
 
 // Enable raw SQL execution in the admin panel (set to false for production use).
-define('__OHCRUD_ADMIN_ENABLE_SQL_EXECUTION__', true);
+define('__OHCRUD_ADMIN_ENABLE_SQL_EXECUTION__', false);
 
 // Configure logging settings.
 define('__OHCRUD_LOG_ENABLED__', true);

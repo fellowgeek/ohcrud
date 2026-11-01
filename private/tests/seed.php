@@ -6,7 +6,7 @@ $db->exec('CREATE TABLE Users (ID INTEGER PRIMARY KEY, USERNAME TEXT UNIQUE, EMA
 $db->exec('CREATE TABLE Pages (ID INTEGER PRIMARY KEY, URL TEXT UNIQUE, TITLE TEXT, TEXT TEXT, "GROUP" INTEGER, PERMISSIONS INTEGER DEFAULT -1, THEME TEXT, LAYOUT TEXT, STATUS INTEGER)');
 $db->exec('CREATE TABLE Files (ID INTEGER PRIMARY KEY, NAME TEXT, PATH TEXT, SIZE INTEGER, TYPE TEXT, W INTEGER, H INTEGER, IP TEXT, STATUS INTEGER)');
 $stmt = $db->prepare('INSERT INTO Users (ID, USERNAME, PASSWORD, PERMISSIONS, STATUS, TOTP) VALUES (1, ?, ?, 1, 1, 0)');
-$stmt->execute(['testadmin', password_hash('Test-password-42!' . 'isolated-test-secret', PASSWORD_BCRYPT, ['cost' => 4])]);
+$stmt->execute(['testadmin', password_hash('Test-password-42!' . 'isolated-test-secret-at-least-32-characters', PASSWORD_BCRYPT, ['cost' => 4])]);
 $db->exec("INSERT INTO Pages (URL, TITLE, TEXT, THEME, LAYOUT, STATUS) VALUES ('/', 'Test home', 'Disposable security test site.', 'focus', 'index', 1)");
 
 // Include restricted content to exercise both direct and embedded authorization.
@@ -17,9 +17,9 @@ $db->exec("INSERT INTO Pages (URL, TITLE, TEXT, PERMISSIONS, THEME, LAYOUT, STAT
 $stmt = $db->prepare('INSERT INTO Users (ID, USERNAME, PASSWORD, PERMISSIONS, STATUS, TOTP, TOTP_SECRET, HASH, TOKEN) VALUES (2, ?, ?, 1, 1, 1, ?, ?, ?)');
 $encrypt = function ($text) {
     $iv = random_bytes(16);
-    return base64_encode($iv . openssl_encrypt($text, 'aes-256-cbc', hash('sha256', 'isolated-test-secret', true), 0, $iv));
+    return base64_encode($iv . openssl_encrypt($text, 'aes-256-cbc', hash('sha256', 'isolated-test-secret-at-least-32-characters', true), 0, $iv));
 };
-$stmt->execute(['testmfa', password_hash('Test-password-42!' . 'isolated-test-secret', PASSWORD_BCRYPT, ['cost' => 4]), $encrypt('JBSWY3DPEHPK3PXP'), str_repeat('a', 40), $encrypt(str_repeat('b', 40))]);
+$stmt->execute(['testmfa', password_hash('Test-password-42!' . 'isolated-test-secret-at-least-32-characters', PASSWORD_BCRYPT, ['cost' => 4]), $encrypt('JBSWY3DPEHPK3PXP'), str_repeat('a', 40), $encrypt(str_repeat('b', 40))]);
 
 // Small fixtures exercise image limits without allocating large images.
 $image = imagecreatetruecolor(2, 10);

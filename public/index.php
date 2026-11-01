@@ -8,6 +8,12 @@
     // Include the Composer autoloader to load dependencies.
     require_once __DIR__ . '/vendor/autoload.php';
 
+    // Refuse an unconfigured secret instead of serving an insecure installation.
+    if (strlen(__OHCRUD_SECRET__) < 32 || __OHCRUD_SECRET__ === 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX') {
+        http_response_code(503);
+        exit('Application configuration is incomplete.');
+    }
+
     // Register the Whoops error handling library if in debug mode.
     if (__OHCRUD_DEBUG_MODE__ === true && PHP_SAPI != 'cli') {
         $GLOBALS['coreErrorHandlersRegistered'] = true;

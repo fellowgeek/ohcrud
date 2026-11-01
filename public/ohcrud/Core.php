@@ -321,7 +321,7 @@ class Core {
         } catch(\Exception $e) {
             $this->outputStatusCode = 500;
             $this->success = false;
-            $this->errors[] = $e->getMessage();
+            $this->errors[] = 'Unable to write application log.';
             if (__OHCRUD_DEBUG_MODE__ == true) {
                 $this->debug();
             }
@@ -342,7 +342,7 @@ class Core {
         }
 
         // Avoid logging 403 and 404 errors to reduce log noise
-        if ($outputStatusCode != 403 || $outputStatusCode != 404) {
+        if ($outputStatusCode != 403 && $outputStatusCode != 404) {
             $this->log('error', $message, $debug);
         }
 
@@ -370,7 +370,12 @@ class Core {
 
     // Custom exception handler for uncaught exceptions
     public function coreExceptionHandler($exception) {
-        $this->log('error', $exception->getMessage(), debug_backtrace());
+        // Keep request arguments and credentials out of exception logs.
+        $this->log('error', $exception->getMessage(), [
+            'file' => $exception->getFile(), 'line' => $exception->getLine(),
+        ]);
+        $this->setOutputType(self::OUTPUT_JSON);
+        $this->error('Internal server error.', 500)->output();
     }
 
     // Shutdown function to handle fatal errors
@@ -378,6 +383,8 @@ class Core {
         $error = error_get_last();
         if ($error && ($error['type'] === E_ERROR || $error['type'] === E_CORE_ERROR || $error['type'] === E_COMPILE_ERROR || $error['type'] === E_PARSE)) {
             $this->log('error', $error['message'], $error);
+            $this->setOutputType(self::OUTPUT_JSON);
+            $this->error('Internal server error.', 500)->output();
         }
     }
 

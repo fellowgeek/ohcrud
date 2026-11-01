@@ -52,7 +52,8 @@ class DB extends \ohCRUD\Core {
             }
         } catch(\PDOException $e) {
             // Handle exceptions if the connection fails
-            $this->error($e->getMessage(), 500);
+            $this->log('error', 'Database operation failed.', ['exception' => $e->getMessage()]);
+            $this->error('Database operation failed.', 500);
             $this->output();
         }
 
@@ -115,7 +116,8 @@ class DB extends \ohCRUD\Core {
         } catch (\PDOException $e) {
             // Handle database query execution exceptions
             $this->data = false;
-            $this->error($e->getMessage(), 500);
+            $this->log('error', 'Database operation failed.', ['exception' => $e->getMessage()]);
+            $this->error('Database operation failed.', 500);
             return $this;
         }
     }
@@ -245,7 +247,8 @@ class DB extends \ohCRUD\Core {
                 }
             }
         } catch (\Exception $e) {
-            $this->error($e->getMessage(), 500);
+            $this->log('error', 'Database operation failed.', ['exception' => $e->getMessage()]);
+            $this->error('Database operation failed.', 500);
         }
 
         // No primary key found or error occurred
@@ -336,7 +339,8 @@ class DB extends \ohCRUD\Core {
             }
 
         } catch (\Exception $e) {
-            $this->error($e->getMessage(), 500);
+            $this->log('error', 'Database operation failed.', ['exception' => $e->getMessage()]);
+            $this->error('Database operation failed.', 500);
             return $this->output();
         }
 
@@ -537,7 +541,8 @@ class DB extends \ohCRUD\Core {
                 foreach ($stmt as $row) $fields[] = $row['Field'];
             }
         } catch (\PDOException $e) {
-            $this->error($e->getMessage(), 500);
+            $this->log('error', 'Database operation failed.', ['exception' => $e->getMessage()]);
+            $this->error('Database operation failed.', 500);
             return [];
         }
 

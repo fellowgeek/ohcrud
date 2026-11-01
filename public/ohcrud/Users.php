@@ -9,11 +9,11 @@ if (isset($GLOBALS['OHCRUD']) == false) { die(); }
 // Class Users - Users class for ohCRUD, this class handles creation and authentication of the ohCRUD framework users.
 class Users extends \ohCRUD\DB {
 
-    function __construct() {
+    function __construct($initializeSchema = false) {
         parent::__construct();
 
-        // Initialize the Users table and populate with default admin user if it doesn't exist
-        if (__OHCRUD_DEBUG_MODE__ == true) {
+        // Initialize schema only in debug mode or during explicit CLI provisioning.
+        if (__OHCRUD_DEBUG_MODE__ == true || ($initializeSchema == true && PHP_SAPI === 'cli')) {
 
             // Check if the Users table exists and create it if it doesn't
             $tableExists = false;
@@ -79,21 +79,9 @@ class Users extends \ohCRUD\DB {
                     break;
             }
 
-            // Create a default admin user if the Users table was just created
+            // Account creation is explicit; never install a publicly known password.
             if ($tableExists === false && $this->success === true) {
-                $this->create('Users', [
-                    'USERNAME' => 'admin',
-                    'EMAIL' => 'admin@example.com',
-                    'HASH' => hash('sha1', 'admin@example.com'),
-                    'PASSWORD' => 'admin',
-                    'NAME' => 'ohcrud admin',
-                    'GROUP' => 1,
-                    'PERMISSIONS' => 1,
-                    'STATUS' => $this::ACTIVE,
-                    'TOTP' => $this::INACTIVE
-                    ]
-                );
-                $this->log('info', 'Default admin user created with username "admin" and password "admin". Please change the password after first login.');
+                $this->log('notice', 'Users schema initialized. Provision an administrator through the CLI.');
             }
         }
     }
