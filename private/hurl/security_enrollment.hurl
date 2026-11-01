@@ -58,3 +58,17 @@ POST {{base}}/ohcrud/users/confirmTOTP/
 Content-Type: application/json
 {"CSRF":"{{csrf}}","TOTP":"invalid"}
 HTTP 403
+
+POST {{base}}/ohcrud/admin/getTableList/
+Content-Type: application/json
+{"CSRF":"{{csrf}}"}
+HTTP 200
+[Asserts]
+jsonpath "$.data.AuthState" not exists
+
+POST {{base}}/ohcrud/admin/getTableDetails/
+Content-Type: application/json
+{"CSRF":"{{csrf}}"}
+HTTP 200
+[Asserts]
+jsonpath "$.data.AuthState" not exists

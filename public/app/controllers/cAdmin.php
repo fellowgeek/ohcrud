@@ -91,9 +91,9 @@ class cAdmin extends \ohCRUD\DB {
         if (isset($request->payload) == true && isset($request->payload->TABLE) == true) {
             // Cleanup the input data
             $table = preg_replace('/[^a-zA-Z0-9_]/', '', $request->payload->TABLE);
-        if (strtolower($table) === 'authstate') {
-            return $this->error('This table requires its dedicated security operations.', 403)->output();
-        }
+            if (strtolower($table) === 'authstate') {
+                return $this->error('This table requires its dedicated security operations.', 403)->output();
+            }
             // Get column details for the given table
             $this->data = $this->details($table, isset($request->payload->COLUMNS) ? true : false);
         } else {
@@ -101,6 +101,8 @@ class cAdmin extends \ohCRUD\DB {
             $this->data = $this->details('', isset($request->payload->COLUMNS) ? true : false);
         }
         unset($this->pagination);
+
+        unset($this->data->AuthState);
 
         // Update the COLUMNS details and add ICON based on detected data types.
         foreach($this->data as $outerIndex => $outerValue) {
