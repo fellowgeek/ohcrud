@@ -68,6 +68,10 @@ class cCMS extends \app\models\mPages {
 
         // Capture and validate action
         $action = $this->request->action ?? '';
+        if ($action === 'users') {
+            $action = 'tables';
+            $this->request->table = 'Users';
+        }
 
         // Check if action is in allowed list AND user has admin permissions
         $this->isAdmin = $this->loggedIn && $_SESSION['User']->PERMISSIONS === 1;
@@ -717,16 +721,13 @@ class cCMS extends \app\models\mPages {
                     break;
                 case 'tables':
                 case 'files':
+                case 'server':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'tables';
                     break;
                 case 'sql':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
                     $this->layout = 'sql';
-                    break;
-                case 'sql':
-                    $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
-                    $this->layout = 'server';
                     break;
                 case 'logs':
                     $this->theme = __OHCRUD_CMS_ADMIN_THEME__;
@@ -761,8 +762,12 @@ class cCMS extends \app\models\mPages {
         $themeContent->html = $output;
         $themeContent = $this->processContent($themeContent);
 
-        // Set HTML output
+        // Reuse the admin shell without initializing table controls on the server page.
         $output = $themeContent->html;
+        if ($this->actionMode === 'server') {
+            $output = str_replace('data-name="tables"', 'data-name="server"', $output);
+            $output = str_replace('ohCRUD Admin - Tables', 'ohCRUD Admin - Server', $output);
+        }
 
         // Process theme (fix the path of all relative href and src attributes, add content, title, stylesheet, javascript, etc...)
         $output = preg_replace("@(<script|<link|<use)(.*?)href=\"(?!(http://)|(\[)|(https://))/?(.*?)\"@i", "$1$2href=\"" . "/themes/". $this->theme. "/$6\"", $output);

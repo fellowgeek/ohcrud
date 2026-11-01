@@ -9,7 +9,7 @@
     }
 
     // Sanitize the table name
-    $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($_REQUEST['table'] ?? 'Users'));
+    $table = preg_replace('/[^a-zA-Z0-9_]/', '', $this->purifier->purify($this->request->table ?? 'Users'));
 ?>
 
 <input type="hidden" id="TABLE" name="TABLE" value="<?= $table ?>" />
