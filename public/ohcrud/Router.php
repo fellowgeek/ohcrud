@@ -65,7 +65,9 @@ class Router extends \ohCRUD\Core {
         if (isset($matchedObject) == true) {
 
             // Build Request (Parse Payload: True)
-            $this->setRequest($isCLI, $rawPath, true);
+            if ($this->setRequest($isCLI, $rawPath, true) === false) {
+                return $this;
+            }
 
             // Security Checks (Skip for CLI)
             if ($isCLI == false) {
@@ -81,6 +83,14 @@ class Router extends \ohCRUD\Core {
 
             // Instantiate Object
             $object = new $matchedObject;
+
+            // Enforce declared verbs before invoking a handler or authenticating it.
+            $allowedMethods = $object->methods[$matchedMethod ?? ''] ?? null;
+            if ($isCLI == false && $allowedMethods !== null && in_array($this->requestMethod, $allowedMethods, true) == false) {
+                $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+                $this->includeOutputHeader('Allow: ' . implode(', ', $allowedMethods));
+                return $this->error('Method not allowed.', 405)->output();
+            }
 
             // Authenticate once, then recheck both permission levels without routing recursively.
             if (isset($object->permissions) == false ||
@@ -149,6 +159,11 @@ class Router extends \ohCRUD\Core {
 
                 if (stripos($contentType, 'json') !== false) {
                     $this->request->payload = json_decode($input);
+                    if (json_last_error() !== JSON_ERROR_NONE || is_object($this->request->payload) == false) {
+                        $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+                        $this->error('Expected a JSON object.', 400)->output();
+                        return false;
+                    }
                 } else {
                     $this->request->payload = $input;
                 }
@@ -190,8 +205,11 @@ class Router extends \ohCRUD\Core {
         if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__) == true || __OHCRUD_ALLOWED_ORIGINS_ENABLED__ == false) {
 
             // Set CORS headers
+            header('Vary: Origin');
             header('Access-Control-Allow-Origin: ' . $origin);
-            header('Access-Control-Allow-Credentials: true');
+            if (in_array($origin, __OHCRUD_ALLOWED_ORIGINS__, true) == true) {
+                header('Access-Control-Allow-Credentials: true');
+            }
             header('Access-Control-Max-Age: 86400');
 
             // Preflight request handling

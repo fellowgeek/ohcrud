@@ -13,6 +13,11 @@ class cThemes extends \ohCRUD\DB {
         'getThemes' => 1,
     ];
 
+    // Declare HTTP methods independently of authorization.
+    public $methods = [
+        'getThemes' => ['GET', 'POST'],
+    ];
+
     // Get themes and layouts from themes directory
     public function getThemes() {
 

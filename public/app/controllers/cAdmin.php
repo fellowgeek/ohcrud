@@ -28,6 +28,25 @@ class cAdmin extends \ohCRUD\DB {
         'runSQLQuery' => 1,
     ];
 
+    // Declare HTTP methods independently of authorization.
+    public $methods = [
+        'getTableList' => ['POST'],
+        'getTableDetails' => ['POST'],
+        'getTableData' => ['POST'],
+        'createTableRow' => ['POST'],
+        'readTableRow' => ['POST'],
+        'updateTableRow' => ['POST'],
+        'deleteTableRow' => ['POST'],
+        'createUserRow' => ['POST'],
+        'updateUserRow' => ['POST'],
+        'getUserSecrets' => ['POST'],
+        'refreshUserSecrets' => ['POST'],
+        'getLogList' => ['POST'],
+        'getLogData' => ['POST'],
+        'clearLog' => ['POST'],
+        'runSQLQuery' => ['POST'],
+    ];
+
     public ?array $pagination = null;
 
     // This function returns a list of all the tables in the database.

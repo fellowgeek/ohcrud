@@ -14,6 +14,12 @@ class cFiles extends \app\models\mFiles {
         'upload' => 1,
     ];
 
+    // Declare HTTP methods independently of authorization.
+    public $methods = [
+        'image' => ['GET'],
+        'upload' => ['POST'],
+    ];
+
     // Match extensions to content types; active SVG documents are not accepted.
     private $mimeTypesAllowed = [
         'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'],

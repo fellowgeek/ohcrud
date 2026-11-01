@@ -16,6 +16,12 @@ class cPages extends \app\models\mPages {
         'restoreDeletePage' => 1,
     ];
 
+    // Declare HTTP methods independently of authorization.
+    public $methods = [
+        'save' => ['POST'],
+        'restoreDeletePage' => ['POST'],
+    ];
+
     // Method to save or edit a page.
     public function save($request) {
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);

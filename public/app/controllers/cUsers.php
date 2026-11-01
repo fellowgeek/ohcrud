@@ -15,6 +15,13 @@ class cUsers extends \ohCRUD\DB {
         'logout' => __OHCRUD_PERMISSION_ALL__,
     ];
 
+    // Declare HTTP methods independently of authorization.
+    public $methods = [
+        'login' => ['POST'],
+        'verify' => ['POST'],
+        'logout' => ['POST'],
+    ];
+
     // This method, handles user login functionality
     public function login($request) {
 
@@ -109,6 +116,10 @@ class cUsers extends \ohCRUD\DB {
 
         // Sets the output type for this controller to JSON.
         $this->setOutputType(\ohCRUD\Core::OUTPUT_JSON);
+
+        if ($this->checkCSRF($request->payload->CSRF ?? '') === false) {
+            return $this->error('Missing or invalid CSRF token.')->output();
+        }
 
         // Unset the User and tempUser sessions (user logout)
         $this->unsetSession('User');
