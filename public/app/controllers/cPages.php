@@ -35,7 +35,7 @@ class cPages extends \app\models\mPages {
             empty($request->payload->URL) == true ||
             empty($request->payload->TITLE) == true ||
             empty($request->payload->TEXT) == true ||
-            empty($request->payload->STATUS) == true)
+            isset($request->payload->STATUS) == false)
             $this->error('Missing or incomplete data.');
 
         // Check if the page is hard-coded as a file.
@@ -61,6 +61,13 @@ class cPages extends \app\models\mPages {
         }
         if (isset($request->payload->LAYOUT) == false) {
             $request->payload->LAYOUT = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+        }
+
+        // Theme selections are names, never filesystem paths or HTML attributes.
+        foreach (['THEME', 'LAYOUT'] as $field) {
+            if (is_string($request->payload->$field) == false || preg_match('/^[a-zA-Z0-9_-]+$/D', $request->payload->$field) !== 1) {
+                return $this->error('Invalid theme or layout.')->output();
+            }
         }
 
         // Set default value for STATUS if missing or invalid in the payload.
@@ -185,7 +192,7 @@ class cPages extends \app\models\mPages {
         $baseDir = realpath(__SELF__ . 'app/views/cms');
         $realFullPath = realpath($fullPath);
 
-        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+        if ($realFullPath !== false && $baseDir !== false && strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) === 0 && file_exists($realFullPath)) {
             return true;
         }
 

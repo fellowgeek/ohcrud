@@ -66,6 +66,7 @@ class cAdmin extends \ohCRUD\DB {
         }
 
         $this->data = $this->details();
+        unset($this->data->AuthState);
         unset($this->pagination);
 
         $this->output();
@@ -778,16 +779,26 @@ class cAdmin extends \ohCRUD\DB {
             )->first();
 
             if ($file != false) {
+                // Resolve stored paths before unlinking: database edits cannot escape uploads.
+                $uploadRoot = realpath(__SELF__ . 'global/files');
+                $filePath = realpath(__SELF__ . $file->PATH);
+                if ($filePath !== false && ($uploadRoot === false ||
+                    strpos($filePath, $uploadRoot . DIRECTORY_SEPARATOR) !== 0)) {
+                    return $this->error('Invalid upload path.', 403)->output();
+                }
                 $fileInfo = pathinfo($file->PATH);
-                $filesFound = glob('global/files/' . $fileInfo['filename'] . '_*.' . $fileInfo['extension']);
-                // Delete the main file
-                if (file_exists(__SELF__ . $file->PATH) == true) {
-                    unlink(__SELF__ . $file->PATH);
+                $filesFound = [];
+                if ($uploadRoot !== false && preg_match('/^[a-f0-9]{32}$/D', $fileInfo['filename']) === 1 &&
+                    preg_match('/^[a-z0-9]+$/D', $fileInfo['extension'] ?? '') === 1) {
+                    $filesFound = glob($uploadRoot . '/' . $fileInfo['filename'] . '_*.' . $fileInfo['extension']);
+                }
+                if ($filePath !== false && is_file($filePath) == true) {
+                    unlink($filePath);
                 }
                 // Delete all resized versions of the file
                 if (is_array($filesFound) == true) {
                     foreach ($filesFound as $foundFile) {
-                        $absoluteFilePath = __SELF__ . $foundFile;
+                        $absoluteFilePath = $foundFile;
                         if (file_exists($absoluteFilePath) == true) {
                             unlink($absoluteFilePath);
                         }

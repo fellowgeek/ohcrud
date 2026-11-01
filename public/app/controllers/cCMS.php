@@ -159,7 +159,7 @@ class cCMS extends \app\models\mPages {
     private function getMetaTags() {
         $this->content->metaTags = '';
         foreach ($this->metaTags as $tag => $value) {
-            $this->content->metaTags .= '<meta name="' . $tag . '" content="' . $value . '">' . "\n";
+            $this->content->metaTags .= '<meta name="' . $this->escapeHTML($tag) . '" content="' . $this->escapeHTML($value) . '">' . "\n";
         }
     }
 
@@ -382,7 +382,7 @@ class cCMS extends \app\models\mPages {
         // Mitigate path traversal.
         $baseDir = realpath(__SELF__ . 'app/views/cms');
         $realFullPath = realpath($fullPath);
-        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+        if ($realFullPath === false || ($baseDir === false || strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) !== 0)) {
             $this->log('warn', 'Local File Inclusion (LFI) attempt blocked.', ['path' => $path]);
             $realFullPath = __SELF__ . 'app/views/cms/404.phtml';
             $content->statusCode = 404;
@@ -566,9 +566,9 @@ class cCMS extends \app\models\mPages {
 
         // Include Javascript constants and assets
         $output .= "<script>\n";
-        $output .= "const __SITE__ = '" . __SITE__ . "';\n";
-        $output .= "const __DOMAIN__ = '" . __DOMAIN__ . "';\n";
-        $output .= "const __SUB_DOMAIN__ = '" . __SUB_DOMAIN__ . "';\n";
+        $output .= "const __SITE__ = " . json_encode(__SITE__, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ";\n";
+        $output .= "const __DOMAIN__ = " . json_encode(__DOMAIN__, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ";\n";
+        $output .= "const __SUB_DOMAIN__ = " . json_encode(__SUB_DOMAIN__, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ";\n";
         $output .= "const __PATH__ = '" . $path . "';\n";
         $output .= "const __OHCRUD_BASE_API_ROUTE__ = '" . __OHCRUD_BASE_API_ROUTE__ . "';\n";
         $output .= "const __OHCRUD_DEBUG_MODE__ = " . (__OHCRUD_DEBUG_MODE__ ? 'true' : 'false') . ";\n";
@@ -620,7 +620,7 @@ class cCMS extends \app\models\mPages {
         $footer = '';
         $footer .= '<p><a href="/" class="external">HOME</a>';
         $footer .= ' | ';
-        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . __SITE__ ;
+        $footer .= 'CMS powered by <a href="https://github.com/fellowgeek/ohcrud" class="external">ohCRUD!</a> - Copyright &copy; ' . date('Y') . ' ' . $this->escapeHTML(__SITE__) ;
         $footer .= ' | ';
         $footer .= 'Generated in ' . round(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4) . ' second(s). - PHP ' . PHP_VERSION;
         $footer .= ' | ';
@@ -674,9 +674,21 @@ class cCMS extends \app\models\mPages {
             }
         }
 
-        // Load theme and layout
+        // Resolve the final template beneath themes, including symlink targets.
+        $themeRoot = realpath(__SELF__ . 'themes');
+        $themePath = realpath(__SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html');
+        if (preg_match('/^[a-zA-Z0-9_-]+$/D', $this->theme) !== 1 ||
+            preg_match('/^[a-zA-Z0-9_-]+$/D', $this->layout) !== 1 ||
+            $themeRoot === false || $themePath === false ||
+            strpos($themePath, $themeRoot . DIRECTORY_SEPARATOR) !== 0) {
+            $this->theme = __OHCRUD_CMS_DEFAULT_THEME__;
+            $this->layout = __OHCRUD_CMS_DEFAULT_LAYOUT__;
+            $themePath = __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
+        }
+
+        // Load theme and layout.
         ob_start();
-        include __SELF__ . 'themes/' . $this->theme . '/' . $this->layout . '.html';
+        include $themePath;
         $output = ob_get_clean();
 
         // Process embedded content in the theme
@@ -731,8 +743,8 @@ class cCMS extends \app\models\mPages {
 
         if ($this->actionMode == true) {
             $output = str_ireplace('{{CMS:CONTENT}}', $this->getAdminView($this->actionMode)->html, $output);
-            $output = str_ireplace('{{CMS:THEME}}', $this->content->theme, $output);
-            $output = str_ireplace('{{CMS:LAYOUT}}', $this->content->layout, $output);
+            $output = str_ireplace('{{CMS:THEME}}', $this->escapeHTML($this->content->theme), $output);
+            $output = str_ireplace('{{CMS:LAYOUT}}', $this->escapeHTML($this->content->layout), $output);
             $output = str_ireplace('{{CMS:STATUS}}', $this->content->status, $output);
             $output = str_ireplace('{{CMS-IS-DELETED}}', $this->content->isDeleted, $output);
         }
@@ -743,9 +755,9 @@ class cCMS extends \app\models\mPages {
 
         // Replace ohCRUD templates with the proccessed content from the cms
         $output = str_ireplace("{{CMS:APP}}", __APP__, $output);
-        $output = str_ireplace("{{CMS:SITE}}", __SITE__, $output);
-        $output = str_ireplace("{{CMS:DOMAIN}}", __DOMAIN__, $output);
-        $output = str_ireplace("{{CMS:SUB_DOMAIN}}", __SUB_DOMAIN__, $output);
+        $output = str_ireplace("{{CMS:SITE}}", $this->escapeHTML(__SITE__), $output);
+        $output = str_ireplace("{{CMS:DOMAIN}}", $this->escapeHTML(__DOMAIN__), $output);
+        $output = str_ireplace("{{CMS:SUB_DOMAIN}}", $this->escapeHTML(__SUB_DOMAIN__), $output);
         $output = str_ireplace("{{CMS:PATH}}", $path, $output);
         $output = str_ireplace("{{CMS:TITLE}}", htmlspecialchars($this->content->title, ENT_QUOTES, 'UTF-8'), $output);
         $output = str_ireplace("{{CMS:META}}", $this->content->metaTags, $output);
@@ -779,7 +791,7 @@ class cCMS extends \app\models\mPages {
         $baseDir = realpath(__SELF__ . 'app/views/admin');
         $realFullPath = realpath($fullPath);
 
-        if ($realFullPath === false || strpos($realFullPath, $baseDir) !== 0) {
+        if ($realFullPath === false || ($baseDir === false || strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) !== 0)) {
             $this->log('warn', 'Admin view Local File Inclusion (LFI) attempt blocked', ['view' => $viewName]);
             $content->html = '<p>Admin view not found.</p>';
             return $content;
@@ -822,7 +834,7 @@ class cCMS extends \app\models\mPages {
         $baseDir = realpath(__SELF__ . 'app/views/cms');
         $realFullPath = realpath($fullPath);
 
-        if ($realFullPath !== false && strpos($realFullPath, $baseDir) === 0 && file_exists($realFullPath)) {
+        if ($realFullPath !== false && $baseDir !== false && strpos($realFullPath, $baseDir . DIRECTORY_SEPARATOR) === 0 && file_exists($realFullPath)) {
             return true;
         }
 

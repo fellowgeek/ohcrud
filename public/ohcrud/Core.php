@@ -74,6 +74,28 @@ class Core {
         return false;
     }
 
+    // Escape plain text for HTML text and quoted attributes.
+    public function escapeHTML($value) {
+        return htmlspecialchars(is_scalar($value) == true ? (string) $value : '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    // Permit ordinary navigation URLs while rejecting active schemes and controls.
+    public function safeURL($value) {
+        if (is_string($value) == false) {
+            return '';
+        }
+        $value = trim(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if (preg_match('/[\\x00-\\x20\\x7f\\\\]/', $value) === 1 || substr($value, 0, 2) === '//') {
+            return '';
+        }
+        $parts = parse_url($value);
+        if ($parts === false || (isset($parts['scheme']) == true &&
+            in_array(strtolower($parts['scheme']), ['http', 'https', 'mailto', 'tel'], true) == false)) {
+            return '';
+        }
+        return $value;
+    }
+
     // Accept only local absolute paths for browser return destinations.
     public function localRedirect($url) {
         if (is_string($url) == false || $url === '' || $url[0] !== '/' ||

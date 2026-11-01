@@ -1,4 +1,4 @@
 <figure class="hero">
-    <img src="<?php print($image); ?>" alt="<?php print($alt); ?>" />
-    <figcaption><?php print($caption); ?></figcaption>
+    <img src="<?php print($this->escapeHTML($this->safeURL($image))); ?>" alt="<?php print($this->escapeHTML($alt)); ?>" />
+    <figcaption><?php print($this->escapeHTML($caption)); ?></figcaption>
 </figure>
